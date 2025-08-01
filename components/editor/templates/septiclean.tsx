@@ -5,9 +5,10 @@ import { EditableElement } from "../editable-element"
 interface SeptiCleanTemplateProps {
   selectedElement: string | null
   onElementSelect: (elementId: string) => void
+  isEditable: boolean // Added prop
 }
 
-export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCleanTemplateProps) {
+export function SeptiCleanTemplate({ selectedElement, onElementSelect, isEditable }: SeptiCleanTemplateProps) {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -21,6 +22,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
               isSelected={selectedElement === "nav-logo"}
               onSelect={onElementSelect}
               defaultContent="SeptiClean"
+              isEditable={isEditable} // Pass prop
             />
             <div className="hidden md:flex items-center space-x-8">
               <EditableElement
@@ -30,6 +32,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "nav-features"}
                 onSelect={onElementSelect}
                 defaultContent="Features"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="nav-testimonials"
@@ -38,6 +41,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "nav-testimonials"}
                 onSelect={onElementSelect}
                 defaultContent="Testimonials"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="nav-cta"
@@ -46,6 +50,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "nav-cta"}
                 onSelect={onElementSelect}
                 defaultContent="Get Started"
+                isEditable={isEditable} // Pass prop
               />
             </div>
           </div>
@@ -64,6 +69,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "hero-title"}
                 onSelect={onElementSelect}
                 defaultContent="The Hidden Danger In Your Septic Tank!"
+                isEditable={isEditable} // Pass prop
               />
 
               <EditableElement
@@ -73,6 +79,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "hero-subtitle"}
                 onSelect={onElementSelect}
                 defaultContent="Protect Your Family and Home from Harmful Contaminants."
+                isEditable={isEditable} // Pass prop
               />
 
               <EditableElement
@@ -82,6 +89,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "hero-cta"}
                 onSelect={onElementSelect}
                 defaultContent="Get Your Tiny Tab Now! →"
+                isEditable={isEditable} // Pass prop
               />
 
               <EditableElement
@@ -91,6 +99,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "hero-disclaimer"}
                 onSelect={onElementSelect}
                 defaultContent="(No sign-up required. Limited time access only!)"
+                isEditable={isEditable} // Pass prop
               />
             </div>
             <div className="relative">
@@ -101,6 +110,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "hero-product-image"}
                 onSelect={onElementSelect}
                 defaultContent="/placeholder.svg?height=320&width=400&text=SeptiClean+Product"
+                isEditable={isEditable} // Pass prop
               />
             </div>
           </div>
@@ -118,6 +128,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
               isSelected={selectedElement === "breakthrough-title"}
               onSelect={onElementSelect}
               defaultContent="A Breakthrough in Septic System Maintenance"
+              isEditable={isEditable} // Pass prop
             />
 
             <EditableElement
@@ -127,6 +138,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
               isSelected={selectedElement === "breakthrough-description"}
               onSelect={onElementSelect}
               defaultContent="A team of 14 scientists from a leading U.S. university has developed a tiny but powerful flushable tab that helps break down waste, reduce sludge buildup, and neutralize odors—keeping your septic system clean and efficient!"
+              isEditable={isEditable} // Pass prop
             />
           </div>
 
@@ -139,6 +151,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "breakthrough-image"}
                 onSelect={onElementSelect}
                 defaultContent="/placeholder.svg?height=320&width=480&text=Septic+Tank+Image"
+                isEditable={isEditable} // Pass prop
               />
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:bg-gray-50 transition-colors">
@@ -161,6 +174,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "breakthrough-feature-image"}
                 onSelect={onElementSelect}
                 defaultContent="/placeholder.svg?height=160&width=400&text=Before+After+Comparison"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="breakthrough-scientist-image"
@@ -169,6 +183,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "breakthrough-scientist-image"}
                 onSelect={onElementSelect}
                 defaultContent="/placeholder.svg?height=160&width=400&text=Scientists+Team"
+                isEditable={isEditable} // Pass prop
               />
             </div>
           </div>
@@ -186,6 +201,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
               isSelected={selectedElement === "switch-title"}
               onSelect={onElementSelect}
               defaultContent="Why Homeowners Are Making the Switch"
+              isEditable={isEditable} // Pass prop
             />
 
             <EditableElement
@@ -195,6 +211,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
               isSelected={selectedElement === "switch-subtitle"}
               onSelect={onElementSelect}
               defaultContent="Over 21,374 homeowners have already switched to this simple monthly trick to help maintain their septic system and avoid costly pump-outs!"
+              isEditable={isEditable} // Pass prop
             />
           </div>
 
@@ -212,6 +229,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "feature-1-title"}
                 onSelect={onElementSelect}
                 defaultContent="Easy to Use"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="feature-1-description"
@@ -220,6 +238,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "feature-1-description"}
                 onSelect={onElementSelect}
                 defaultContent="Just flush it! It's that simple to start protecting your system."
+                isEditable={isEditable} // Pass prop
               />
             </Card>
 
@@ -236,6 +255,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "feature-2-title"}
                 onSelect={onElementSelect}
                 defaultContent="Prevents Problems"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="feature-2-description"
@@ -244,6 +264,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "feature-2-description"}
                 onSelect={onElementSelect}
                 defaultContent="Helps prevent odors, clogs, and nasty backups effectively."
+                isEditable={isEditable} // Pass prop
               />
             </Card>
 
@@ -265,6 +286,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "feature-3-title"}
                 onSelect={onElementSelect}
                 defaultContent="Join Happy Customers"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="feature-3-description"
@@ -273,6 +295,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "feature-3-description"}
                 onSelect={onElementSelect}
                 defaultContent="Become one of the thousands enjoying a worry-free septic system."
+                isEditable={isEditable} // Pass prop
               />
             </Card>
           </div>
@@ -290,6 +313,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
               isSelected={selectedElement === "testimonials-title"}
               onSelect={onElementSelect}
               defaultContent="What People Are Experiencing"
+              isEditable={isEditable} // Pass prop
             />
           </div>
 
@@ -303,6 +327,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                   isSelected={selectedElement === "testimonial-1-avatar"}
                   onSelect={onElementSelect}
                   defaultContent="/placeholder.svg?height=64&width=64&text=Sarah+J"
+                  isEditable={isEditable} // Pass prop
                 />
                 <div>
                   <EditableElement
@@ -312,6 +337,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                     isSelected={selectedElement === "testimonial-1-name"}
                     onSelect={onElementSelect}
                     defaultContent="Sarah J."
+                    isEditable={isEditable} // Pass prop
                   />
                   <EditableElement
                     id="testimonial-1-location"
@@ -320,6 +346,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                     isSelected={selectedElement === "testimonial-1-location"}
                     onSelect={onElementSelect}
                     defaultContent="Texas"
+                    isEditable={isEditable} // Pass prop
                   />
                 </div>
               </div>
@@ -330,6 +357,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "testimonial-1-content"}
                 onSelect={onElementSelect}
                 defaultContent="I was skeptical at first, but after just a month, the foul odor from my drain field is completely gone. I'm a believer!"
+                isEditable={isEditable} // Pass prop
               />
             </Card>
 
@@ -342,6 +370,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                   isSelected={selectedElement === "testimonial-2-avatar"}
                   onSelect={onElementSelect}
                   defaultContent="/placeholder.svg?height=64&width=64&text=Mike+R"
+                  isEditable={isEditable} // Pass prop
                 />
                 <div>
                   <EditableElement
@@ -351,6 +380,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                     isSelected={selectedElement === "testimonial-2-name"}
                     onSelect={onElementSelect}
                     defaultContent="Mike R."
+                    isEditable={isEditable} // Pass prop
                   />
                   <EditableElement
                     id="testimonial-2-location"
@@ -359,6 +389,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                     isSelected={selectedElement === "testimonial-2-location"}
                     onSelect={onElementSelect}
                     defaultContent="Florida"
+                    isEditable={isEditable} // Pass prop
                   />
                 </div>
               </div>
@@ -369,6 +400,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
                 isSelected={selectedElement === "testimonial-2-content"}
                 onSelect={onElementSelect}
                 defaultContent="We used to get backups every few years. Since we started using these tabs, we haven't had a single issue. Saved us thousands in plumbing bills!"
+                isEditable={isEditable} // Pass prop
               />
             </Card>
           </div>
@@ -385,6 +417,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
             isSelected={selectedElement === "final-cta-title"}
             onSelect={onElementSelect}
             defaultContent="Don't Wait Until It's Too Late!"
+            isEditable={isEditable} // Pass prop
           />
 
           <EditableElement
@@ -394,6 +427,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
             isSelected={selectedElement === "final-cta-subtitle"}
             onSelect={onElementSelect}
             defaultContent="Protect your property, your family, and your wallet. Secure your septic system's health today."
+            isEditable={isEditable} // Pass prop
           />
 
           <EditableElement
@@ -403,6 +437,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
             isSelected={selectedElement === "final-cta-button"}
             onSelect={onElementSelect}
             defaultContent="Get Your Tiny Tab Now! →"
+            isEditable={isEditable} // Pass prop
           />
 
           <EditableElement
@@ -412,6 +447,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
             isSelected={selectedElement === "final-cta-disclaimer"}
             onSelect={onElementSelect}
             defaultContent="*Limited time offer. Act now!"
+            isEditable={isEditable} // Pass prop
           />
         </div>
       </section>
@@ -427,6 +463,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
               isSelected={selectedElement === "footer-terms"}
               onSelect={onElementSelect}
               defaultContent="Terms of Service"
+              isEditable={isEditable} // Pass prop
             />
             <EditableElement
               id="footer-privacy"
@@ -435,6 +472,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
               isSelected={selectedElement === "footer-privacy"}
               onSelect={onElementSelect}
               defaultContent="Privacy Policy"
+              isEditable={isEditable} // Pass prop
             />
           </div>
 
@@ -445,6 +483,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
             isSelected={selectedElement === "footer-copyright"}
             onSelect={onElementSelect}
             defaultContent="© 2025. All Rights Reserved."
+            isEditable={isEditable} // Pass prop
           />
 
           <EditableElement
@@ -454,6 +493,7 @@ export function SeptiCleanTemplate({ selectedElement, onElementSelect }: SeptiCl
             isSelected={selectedElement === "footer-disclaimer"}
             onSelect={onElementSelect}
             defaultContent="This site is not affiliated with, sponsored by, or endorsed by Google Inc. or Google.com. YouTube is a trademark of Google Inc. All trademarks & logos are properties of their respective owners. This website is provided by a qualified professional before implementing any strategies discussed on this website."
+            isEditable={isEditable} // Pass prop
           />
         </div>
       </footer>

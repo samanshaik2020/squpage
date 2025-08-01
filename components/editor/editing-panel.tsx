@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
-import { useEditorStore } from "@/lib/editor-store"
+import { useEditor } from "@/lib/editor-context" // Updated import
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +29,7 @@ interface EditingPanelProps {
 }
 
 export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
-  const { elements, updateElement, addElement, deleteElement } = useEditorStore()
+  const { elements, updateElement, addElement, deleteElement } = useEditor() // Use useEditor hook
   const element = elements.find((el) => el.id === elementId)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)

@@ -6,9 +6,10 @@ import { EditableElement } from "../editable-element"
 interface SaasLandingTemplateProps {
   selectedElement: string | null
   onElementSelect: (elementId: string) => void
+  isEditable: boolean // Added prop
 }
 
-export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLandingTemplateProps) {
+export function SaasLandingTemplate({ selectedElement, onElementSelect, isEditable }: SaasLandingTemplateProps) {
   return (
     <div className="min-h-screen">
       {/* Navigation */}
@@ -22,6 +23,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
               isSelected={selectedElement === "nav-logo"}
               onSelect={onElementSelect}
               defaultContent="SaaSify"
+              isEditable={isEditable} // Pass prop
             />
             <div className="hidden md:flex items-center space-x-8">
               <EditableElement
@@ -31,6 +33,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "nav-features"}
                 onSelect={onElementSelect}
                 defaultContent="Features"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="nav-pricing"
@@ -39,6 +42,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "nav-pricing"}
                 onSelect={onElementSelect}
                 defaultContent="Pricing"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="nav-about"
@@ -47,6 +51,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "nav-about"}
                 onSelect={onElementSelect}
                 defaultContent="About"
+                isEditable={isEditable} // Pass prop
               />
             </div>
             <div className="flex items-center space-x-4">
@@ -57,6 +62,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "nav-signin"}
                 onSelect={onElementSelect}
                 defaultContent="Sign In"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="nav-signup"
@@ -64,6 +70,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "nav-signup"}
                 onSelect={onElementSelect}
                 defaultContent="Get Started"
+                isEditable={isEditable} // Pass prop
               />
             </div>
           </div>
@@ -82,6 +89,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "hero-badge"}
                 onSelect={onElementSelect}
                 defaultContent="🚀 New: AI-Powered Analytics"
+                isEditable={isEditable} // Pass prop
               />
 
               <EditableElement
@@ -91,6 +99,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "hero-title"}
                 onSelect={onElementSelect}
                 defaultContent="Scale Your Business with Smart SaaS Solutions"
+                isEditable={isEditable} // Pass prop
               />
 
               <EditableElement
@@ -100,6 +109,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "hero-subtitle"}
                 onSelect={onElementSelect}
                 defaultContent="Streamline operations, boost productivity, and grow faster with our all-in-one platform trusted by 10,000+ businesses worldwide."
+                isEditable={isEditable} // Pass prop
               />
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -111,6 +121,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                   isSelected={selectedElement === "hero-cta-primary"}
                   onSelect={onElementSelect}
                   defaultContent="Start Free Trial"
+                  isEditable={isEditable} // Pass prop
                 />
                 <EditableElement
                   id="hero-cta-secondary"
@@ -121,6 +132,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                   isSelected={selectedElement === "hero-cta-secondary"}
                   onSelect={onElementSelect}
                   defaultContent="Watch Demo"
+                  isEditable={isEditable} // Pass prop
                 />
               </div>
 
@@ -131,6 +143,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "hero-trust"}
                 onSelect={onElementSelect}
                 defaultContent="Trusted by teams at Google, Microsoft, and 10,000+ growing companies"
+                isEditable={isEditable} // Pass prop
               />
             </div>
 
@@ -142,6 +155,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "hero-image"}
                 onSelect={onElementSelect}
                 defaultContent="/placeholder.svg?height=400&width=600&text=SaaS+Dashboard+Preview"
+                isEditable={isEditable} // Pass prop
               />
             </div>
           </div>
@@ -158,6 +172,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
             isSelected={selectedElement === "logos-title"}
             onSelect={onElementSelect}
             defaultContent="Trusted by leading companies worldwide"
+            isEditable={isEditable} // Pass prop
           />
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 items-center opacity-60">
             {[1, 2, 3, 4, 5].map((index) => (
@@ -169,6 +184,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === `logo-${index}`}
                 onSelect={onElementSelect}
                 defaultContent={`/placeholder.svg?height=48&width=120&text=Logo+${index}`}
+                isEditable={isEditable} // Pass prop
               />
             ))}
           </div>
@@ -186,6 +202,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
               isSelected={selectedElement === "features-title"}
               onSelect={onElementSelect}
               defaultContent="Everything you need to succeed"
+              isEditable={isEditable} // Pass prop
             />
             <EditableElement
               id="features-subtitle"
@@ -194,6 +211,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
               isSelected={selectedElement === "features-subtitle"}
               onSelect={onElementSelect}
               defaultContent="Powerful features designed to help your business grow faster and more efficiently"
+              isEditable={isEditable} // Pass prop
             />
           </div>
 
@@ -259,6 +277,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                     isSelected={selectedElement === `feature-${index}-title`}
                     onSelect={onElementSelect}
                     defaultContent={feature.title}
+                    isEditable={isEditable} // Pass prop
                   />
                   <EditableElement
                     id={`feature-${index}-desc`}
@@ -267,6 +286,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                     isSelected={selectedElement === `feature-${index}-desc`}
                     onSelect={onElementSelect}
                     defaultContent={feature.desc}
+                    isEditable={isEditable} // Pass prop
                   />
                 </CardContent>
               </Card>
@@ -287,6 +307,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "demo-title"}
                 onSelect={onElementSelect}
                 defaultContent="See SaaSify in Action"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="demo-description"
@@ -295,6 +316,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "demo-description"}
                 onSelect={onElementSelect}
                 defaultContent="Watch how our platform transforms the way teams collaborate, manage projects, and drive results. From onboarding to advanced analytics, see every feature in action."
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="demo-cta"
@@ -304,6 +326,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "demo-cta"}
                 onSelect={onElementSelect}
                 defaultContent="Schedule Demo"
+                isEditable={isEditable} // Pass prop
               />
             </div>
             <div className="relative">
@@ -314,6 +337,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "demo-image"}
                 onSelect={onElementSelect}
                 defaultContent="/placeholder.svg?height=320&width=500&text=Product+Demo+Video"
+                isEditable={isEditable} // Pass prop
               />
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:bg-gray-50 transition-colors">
@@ -336,6 +360,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
               isSelected={selectedElement === "pricing-title"}
               onSelect={onElementSelect}
               defaultContent="Simple, transparent pricing"
+              isEditable={isEditable} // Pass prop
             />
             <EditableElement
               id="pricing-subtitle"
@@ -344,6 +369,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
               isSelected={selectedElement === "pricing-subtitle"}
               onSelect={onElementSelect}
               defaultContent="Choose the perfect plan for your business needs"
+              isEditable={isEditable} // Pass prop
             />
           </div>
 
@@ -376,6 +402,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                     isSelected={selectedElement === `plan-${index}-name`}
                     onSelect={onElementSelect}
                     defaultContent={plan.name}
+                    isEditable={isEditable} // Pass prop
                   />
                   <div className="mb-6">
                     <EditableElement
@@ -385,6 +412,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                       isSelected={selectedElement === `plan-${index}-price`}
                       onSelect={onElementSelect}
                       defaultContent={plan.price}
+                      isEditable={isEditable} // Pass prop
                     />
                     <span className="text-gray-600">/month</span>
                   </div>
@@ -406,6 +434,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                           isSelected={selectedElement === `plan-${index}-feature-${featureIndex}`}
                           onSelect={onElementSelect}
                           defaultContent={feature}
+                          isEditable={isEditable} // Pass prop
                         />
                       </li>
                     ))}
@@ -418,6 +447,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                     isSelected={selectedElement === `plan-${index}-cta`}
                     onSelect={onElementSelect}
                     defaultContent="Get Started"
+                    isEditable={isEditable} // Pass prop
                   />
                 </CardContent>
               </Card>
@@ -437,6 +467,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
               isSelected={selectedElement === "testimonials-title"}
               onSelect={onElementSelect}
               defaultContent="Loved by thousands of customers"
+              isEditable={isEditable} // Pass prop
             />
           </div>
 
@@ -477,6 +508,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                     isSelected={selectedElement === `testimonial-${index}-content`}
                     onSelect={onElementSelect}
                     defaultContent={`"${testimonial.content}"`}
+                    isEditable={isEditable} // Pass prop
                   />
                   <div className="flex items-center">
                     <EditableElement
@@ -486,6 +518,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                       isSelected={selectedElement === `testimonial-${index}-avatar`}
                       onSelect={onElementSelect}
                       defaultContent={testimonial.avatar}
+                      isEditable={isEditable} // Pass prop
                     />
                     <div>
                       <EditableElement
@@ -495,6 +528,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                         isSelected={selectedElement === `testimonial-${index}-name`}
                         onSelect={onElementSelect}
                         defaultContent={testimonial.name}
+                        isEditable={isEditable} // Pass prop
                       />
                       <EditableElement
                         id={`testimonial-${index}-role`}
@@ -503,6 +537,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                         isSelected={selectedElement === `testimonial-${index}-role`}
                         onSelect={onElementSelect}
                         defaultContent={testimonial.role}
+                        isEditable={isEditable} // Pass prop
                       />
                     </div>
                   </div>
@@ -523,6 +558,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
             isSelected={selectedElement === "cta-title"}
             onSelect={onElementSelect}
             defaultContent="Ready to transform your business?"
+            isEditable={isEditable} // Pass prop
           />
           <EditableElement
             id="cta-subtitle"
@@ -531,6 +567,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
             isSelected={selectedElement === "cta-subtitle"}
             onSelect={onElementSelect}
             defaultContent="Join thousands of companies already using SaaSify to scale their operations"
+            isEditable={isEditable} // Pass prop
           />
           <EditableElement
             id="cta-button"
@@ -541,6 +578,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
             isSelected={selectedElement === "cta-button"}
             onSelect={onElementSelect}
             defaultContent="Start Your Free Trial"
+            isEditable={isEditable} // Pass prop
           />
         </div>
       </section>
@@ -557,6 +595,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "footer-logo"}
                 onSelect={onElementSelect}
                 defaultContent="SaaSify"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="footer-description"
@@ -565,6 +604,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "footer-description"}
                 onSelect={onElementSelect}
                 defaultContent="Empowering businesses with smart SaaS solutions since 2020."
+                isEditable={isEditable} // Pass prop
               />
             </div>
             <div>
@@ -575,6 +615,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "footer-product-title"}
                 onSelect={onElementSelect}
                 defaultContent="Product"
+                isEditable={isEditable} // Pass prop
               />
               <div className="space-y-2">
                 <EditableElement
@@ -584,6 +625,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                   isSelected={selectedElement === "footer-features"}
                   onSelect={onElementSelect}
                   defaultContent="Features"
+                  isEditable={isEditable} // Pass prop
                 />
                 <EditableElement
                   id="footer-pricing-link"
@@ -592,6 +634,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                   isSelected={selectedElement === "footer-pricing-link"}
                   onSelect={onElementSelect}
                   defaultContent="Pricing"
+                  isEditable={isEditable} // Pass prop
                 />
               </div>
             </div>
@@ -603,6 +646,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "footer-company-title"}
                 onSelect={onElementSelect}
                 defaultContent="Company"
+                isEditable={isEditable} // Pass prop
               />
               <div className="space-y-2">
                 <EditableElement
@@ -612,6 +656,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                   isSelected={selectedElement === "footer-about-link"}
                   onSelect={onElementSelect}
                   defaultContent="About"
+                  isEditable={isEditable} // Pass prop
                 />
                 <EditableElement
                   id="footer-contact"
@@ -620,6 +665,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                   isSelected={selectedElement === "footer-contact"}
                   onSelect={onElementSelect}
                   defaultContent="Contact"
+                  isEditable={isEditable} // Pass prop
                 />
               </div>
             </div>
@@ -631,6 +677,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                 isSelected={selectedElement === "footer-support-title"}
                 onSelect={onElementSelect}
                 defaultContent="Support"
+                isEditable={isEditable} // Pass prop
               />
               <div className="space-y-2">
                 <EditableElement
@@ -640,6 +687,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                   isSelected={selectedElement === "footer-help"}
                   onSelect={onElementSelect}
                   defaultContent="Help Center"
+                  isEditable={isEditable} // Pass prop
                 />
                 <EditableElement
                   id="footer-docs"
@@ -648,6 +696,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
                   isSelected={selectedElement === "footer-docs"}
                   onSelect={onElementSelect}
                   defaultContent="Documentation"
+                  isEditable={isEditable} // Pass prop
                 />
               </div>
             </div>
@@ -660,6 +709,7 @@ export function SaasLandingTemplate({ selectedElement, onElementSelect }: SaasLa
               isSelected={selectedElement === "footer-copyright"}
               onSelect={onElementSelect}
               defaultContent="© 2024 SaaSify. All rights reserved."
+              isEditable={isEditable} // Pass prop
             />
           </div>
         </div>

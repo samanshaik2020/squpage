@@ -5,9 +5,10 @@ import { EditableElement } from "../editable-element"
 interface PortfolioTemplateProps {
   selectedElement: string | null
   onElementSelect: (elementId: string) => void
+  isEditable: boolean // Added prop
 }
 
-export function PortfolioTemplate({ selectedElement, onElementSelect }: PortfolioTemplateProps) {
+export function PortfolioTemplate({ selectedElement, onElementSelect, isEditable }: PortfolioTemplateProps) {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -21,6 +22,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
               isSelected={selectedElement === "nav-name"}
               onSelect={onElementSelect}
               defaultContent="John Doe"
+              isEditable={isEditable} // Pass prop
             />
             <div className="hidden md:flex items-center space-x-8">
               <EditableElement
@@ -30,6 +32,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                 isSelected={selectedElement === "nav-about"}
                 onSelect={onElementSelect}
                 defaultContent="About"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="nav-projects"
@@ -38,6 +41,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                 isSelected={selectedElement === "nav-projects"}
                 onSelect={onElementSelect}
                 defaultContent="Projects"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="nav-skills"
@@ -46,6 +50,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                 isSelected={selectedElement === "nav-skills"}
                 onSelect={onElementSelect}
                 defaultContent="Skills"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="nav-contact"
@@ -54,6 +59,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                 isSelected={selectedElement === "nav-contact"}
                 onSelect={onElementSelect}
                 defaultContent="Contact"
+                isEditable={isEditable} // Pass prop
               />
             </div>
           </div>
@@ -72,6 +78,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                 isSelected={selectedElement === "hero-greeting"}
                 onSelect={onElementSelect}
                 defaultContent="Hello, I'm"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="hero-name"
@@ -80,6 +87,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                 isSelected={selectedElement === "hero-name"}
                 onSelect={onElementSelect}
                 defaultContent="John Doe"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="hero-title"
@@ -88,6 +96,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                 isSelected={selectedElement === "hero-title"}
                 onSelect={onElementSelect}
                 defaultContent="Full-Stack Developer & UI/UX Designer"
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="hero-description"
@@ -96,6 +105,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                 isSelected={selectedElement === "hero-description"}
                 onSelect={onElementSelect}
                 defaultContent="I create beautiful, functional, and user-centered digital experiences. With 5+ years of experience in web development and design."
+                isEditable={isEditable} // Pass prop
               />
               <div className="flex flex-col sm:flex-row gap-4">
                 <EditableElement
@@ -105,6 +115,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                   isSelected={selectedElement === "hero-cta-primary"}
                   onSelect={onElementSelect}
                   defaultContent="View My Work"
+                  isEditable={isEditable} // Pass prop
                 />
                 <EditableElement
                   id="hero-cta-secondary"
@@ -114,6 +125,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                   isSelected={selectedElement === "hero-cta-secondary"}
                   onSelect={onElementSelect}
                   defaultContent="Download CV"
+                  isEditable={isEditable} // Pass prop
                 />
               </div>
             </div>
@@ -125,6 +137,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                 isSelected={selectedElement === "hero-profile-image"}
                 onSelect={onElementSelect}
                 defaultContent="/placeholder.svg?height=320&width=320&text=Profile+Photo"
+                isEditable={isEditable} // Pass prop
               />
             </div>
           </div>
@@ -142,6 +155,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
               isSelected={selectedElement === "about-title"}
               onSelect={onElementSelect}
               defaultContent="About Me"
+              isEditable={isEditable} // Pass prop
             />
             <EditableElement
               id="about-subtitle"
@@ -150,6 +164,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
               isSelected={selectedElement === "about-subtitle"}
               onSelect={onElementSelect}
               defaultContent="Passionate about creating digital solutions that make a difference"
+              isEditable={isEditable} // Pass prop
             />
           </div>
 
@@ -162,6 +177,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                 isSelected={selectedElement === "about-description"}
                 onSelect={onElementSelect}
                 defaultContent="I'm a passionate full-stack developer with a keen eye for design. I love turning complex problems into simple, beautiful, and intuitive solutions. When I'm not coding, you'll find me exploring new technologies, contributing to open-source projects, or sharing my knowledge through blog posts and mentoring."
+                isEditable={isEditable} // Pass prop
               />
               <EditableElement
                 id="about-experience"
@@ -170,6 +186,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                 isSelected={selectedElement === "about-experience"}
                 onSelect={onElementSelect}
                 defaultContent="With over 5 years of experience in the industry, I've had the privilege of working with startups and established companies, helping them bring their digital visions to life."
+                isEditable={isEditable} // Pass prop
               />
             </div>
             <div className="grid grid-cols-2 gap-6">
@@ -187,6 +204,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                     isSelected={selectedElement === `stat-${index}-number`}
                     onSelect={onElementSelect}
                     defaultContent={stat.number}
+                    isEditable={isEditable} // Pass prop
                   />
                   <EditableElement
                     id={`stat-${index}-label`}
@@ -195,6 +213,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                     isSelected={selectedElement === `stat-${index}-label`}
                     onSelect={onElementSelect}
                     defaultContent={stat.label}
+                    isEditable={isEditable} // Pass prop
                   />
                 </Card>
               ))}
@@ -214,6 +233,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
               isSelected={selectedElement === "skills-title"}
               onSelect={onElementSelect}
               defaultContent="Skills & Technologies"
+              isEditable={isEditable} // Pass prop
             />
             <EditableElement
               id="skills-subtitle"
@@ -222,6 +242,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
               isSelected={selectedElement === "skills-subtitle"}
               onSelect={onElementSelect}
               defaultContent="Technologies I love working with"
+              isEditable={isEditable} // Pass prop
             />
           </div>
 
@@ -248,6 +269,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                   isSelected={selectedElement === `skill-group-${groupIndex}-title`}
                   onSelect={onElementSelect}
                   defaultContent={skillGroup.category}
+                  isEditable={isEditable} // Pass prop
                 />
                 <div className="flex flex-wrap gap-2">
                   {skillGroup.skills.map((skill, skillIndex) => (
@@ -259,6 +281,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                       isSelected={selectedElement === `skill-${groupIndex}-${skillIndex}`}
                       onSelect={onElementSelect}
                       defaultContent={skill}
+                      isEditable={isEditable} // Pass prop
                     />
                   ))}
                 </div>
@@ -279,6 +302,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
               isSelected={selectedElement === "projects-title"}
               onSelect={onElementSelect}
               defaultContent="Featured Projects"
+              isEditable={isEditable} // Pass prop
             />
             <EditableElement
               id="projects-subtitle"
@@ -287,6 +311,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
               isSelected={selectedElement === "projects-subtitle"}
               onSelect={onElementSelect}
               defaultContent="Some of my recent work"
+              isEditable={isEditable} // Pass prop
             />
           </div>
 
@@ -319,6 +344,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                   isSelected={selectedElement === `project-${index}-image`}
                   onSelect={onElementSelect}
                   defaultContent={project.image}
+                  isEditable={isEditable} // Pass prop
                 />
                 <CardContent className="p-6">
                   <EditableElement
@@ -328,6 +354,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                     isSelected={selectedElement === `project-${index}-title`}
                     onSelect={onElementSelect}
                     defaultContent={project.title}
+                    isEditable={isEditable} // Pass prop
                   />
                   <EditableElement
                     id={`project-${index}-description`}
@@ -336,6 +363,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                     isSelected={selectedElement === `project-${index}-description`}
                     onSelect={onElementSelect}
                     defaultContent={project.description}
+                    isEditable={isEditable} // Pass prop
                   />
                   <div className="flex flex-wrap gap-2 mb-4">
                     {project.tech.map((tech, techIndex) => (
@@ -348,6 +376,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                         isSelected={selectedElement === `project-${index}-tech-${techIndex}`}
                         onSelect={onElementSelect}
                         defaultContent={tech}
+                        isEditable={isEditable} // Pass prop
                       />
                     ))}
                   </div>
@@ -359,6 +388,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                       isSelected={selectedElement === `project-${index}-demo`}
                       onSelect={onElementSelect}
                       defaultContent="Live Demo"
+                      isEditable={isEditable} // Pass prop
                     />
                     <EditableElement
                       id={`project-${index}-code`}
@@ -368,6 +398,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
                       isSelected={selectedElement === `project-${index}-code`}
                       onSelect={onElementSelect}
                       defaultContent="View Code"
+                      isEditable={isEditable} // Pass prop
                     />
                   </div>
                 </CardContent>
@@ -387,6 +418,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
             isSelected={selectedElement === "contact-title"}
             onSelect={onElementSelect}
             defaultContent="Let's Work Together"
+            isEditable={isEditable} // Pass prop
           />
           <EditableElement
             id="contact-description"
@@ -395,6 +427,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
             isSelected={selectedElement === "contact-description"}
             onSelect={onElementSelect}
             defaultContent="I'm always interested in new opportunities and exciting projects. Let's discuss how we can bring your ideas to life."
+            isEditable={isEditable} // Pass prop
           />
 
           <div className="flex justify-center space-x-6 mb-8">
@@ -406,6 +439,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
               isSelected={selectedElement === "contact-email"}
               onSelect={onElementSelect}
               defaultContent="john@example.com"
+              isEditable={isEditable} // Pass prop
             />
             <EditableElement
               id="contact-linkedin"
@@ -415,6 +449,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
               isSelected={selectedElement === "contact-linkedin"}
               onSelect={onElementSelect}
               defaultContent="LinkedIn"
+              isEditable={isEditable} // Pass prop
             />
             <EditableElement
               id="contact-github"
@@ -424,6 +459,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
               isSelected={selectedElement === "contact-github"}
               onSelect={onElementSelect}
               defaultContent="GitHub"
+              isEditable={isEditable} // Pass prop
             />
           </div>
 
@@ -435,6 +471,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
             isSelected={selectedElement === "contact-cta"}
             onSelect={onElementSelect}
             defaultContent="Get In Touch"
+            isEditable={isEditable} // Pass prop
           />
         </div>
       </section>
@@ -449,6 +486,7 @@ export function PortfolioTemplate({ selectedElement, onElementSelect }: Portfoli
             isSelected={selectedElement === "footer-copyright"}
             onSelect={onElementSelect}
             defaultContent="© 2024 John Doe. All rights reserved."
+            isEditable={isEditable} // Pass prop
           />
         </div>
       </footer>

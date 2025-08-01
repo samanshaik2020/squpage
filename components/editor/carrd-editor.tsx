@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -7,39 +9,54 @@ import { SaasLandingTemplate } from "./templates/saas-landing"
 import { PortfolioTemplate } from "./templates/portfolio"
 import { SeptiCleanTemplate } from "./templates/septiclean"
 import { EditingPanel } from "./editing-panel"
-import { useEditorStore } from "@/lib/editor-store"
+import { EditorProvider, useEditor } from "@/lib/editor-context"
 
 interface CarrdEditorProps {
   templateId: string
 }
 
 export function CarrdEditor({ templateId }: CarrdEditorProps) {
-  const [selectedElement, setSelectedElement] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<"desktop" | "tablet" | "mobile">("desktop")
-  const { canUndo, canRedo, undo, redo } = useEditorStore()
   const editorRef = useRef<HTMLDivElement>(null)
 
-  // Close editing panel when clicking outside
+  return (
+    <EditorProvider>
+      <CarrdEditorContent templateId={templateId} viewMode={viewMode} setViewMode={setViewMode} editorRef={editorRef} />
+    </EditorProvider>
+  )
+}
+
+function CarrdEditorContent({
+  templateId,
+  viewMode,
+  setViewMode,
+  editorRef,
+}: {
+  templateId: string
+  viewMode: "desktop" | "tablet" | "mobile"
+  setViewMode: React.Dispatch<React.SetStateAction<"desktop" | "tablet" | "mobile">>
+  editorRef: React.RefObject<HTMLDivElement>
+}) {
+  const { selectedElement, selectElement, canUndo, canRedo, undo, redo } = useEditor()
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
 
-      // Don't close if clicking on the editing panel or its children
       if (target.closest(".editing-panel")) {
         return
       }
 
-      // Don't close if clicking on an editable element
       if (target.closest("[data-editable]")) {
         return
       }
 
-      setSelectedElement(null)
+      selectElement(null)
     }
 
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+  }, [selectElement])
 
   const getViewportWidth = () => {
     switch (viewMode) {
@@ -70,7 +87,8 @@ export function CarrdEditor({ templateId }: CarrdEditorProps) {
   const renderTemplate = () => {
     const commonProps = {
       selectedElement,
-      onElementSelect: setSelectedElement,
+      onElementSelect: selectElement,
+      isEditable: true, // Pass isEditable as true for the editor
     }
 
     switch (templateId) {
@@ -202,7 +220,7 @@ export function CarrdEditor({ templateId }: CarrdEditorProps) {
         </div>
 
         {/* Editing Panel */}
-        {selectedElement && <EditingPanel elementId={selectedElement} onClose={() => setSelectedElement(null)} />}
+        {selectedElement && <EditingPanel elementId={selectedElement} onClose={() => selectElement(null)} />}
       </div>
     </div>
   )

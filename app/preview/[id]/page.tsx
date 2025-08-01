@@ -29,6 +29,7 @@ export default function PreviewPage({ params }: PreviewPageProps) {
     const commonProps = {
       selectedElement: null,
       onElementSelect: () => {}, // No-op for preview
+      isEditable: false, // Pass isEditable as false for preview
     }
 
     switch (params.id) {
