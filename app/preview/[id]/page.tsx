@@ -4,6 +4,7 @@ import Link from "next/link"
 import { SaasLandingTemplate } from "@/components/editor/templates/saas-landing"
 import { PortfolioTemplate } from "@/components/editor/templates/portfolio"
 import { SeptiCleanTemplate } from "@/components/editor/templates/septiclean"
+import { EbookLandingTemplate } from "@/components/editor/templates/ebook-landing"
 
 interface PreviewPageProps {
   params: {
@@ -20,6 +21,8 @@ export default function PreviewPage({ params }: PreviewPageProps) {
         return "Portfolio"
       case "septiclean":
         return "SeptiClean"
+      case "ebook-landing":
+        return "Ebook Landing Page"
       default:
         return "Template"
     }
@@ -39,6 +42,8 @@ export default function PreviewPage({ params }: PreviewPageProps) {
         return <PortfolioTemplate {...commonProps} />
       case "septiclean":
         return <SeptiCleanTemplate {...commonProps} />
+      case "ebook-landing":
+        return <EbookLandingTemplate {...commonProps} />
       default:
         return <SaasLandingTemplate {...commonProps} />
     }

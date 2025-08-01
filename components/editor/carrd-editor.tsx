@@ -8,6 +8,7 @@ import Link from "next/link"
 import { SaasLandingTemplate } from "./templates/saas-landing"
 import { PortfolioTemplate } from "./templates/portfolio"
 import { SeptiCleanTemplate } from "./templates/septiclean"
+import { EbookLandingTemplate } from "./templates/ebook-landing"
 import { EditingPanel } from "./editing-panel"
 import { EditorProvider, useEditor } from "@/lib/editor-context"
 
@@ -79,6 +80,8 @@ function CarrdEditorContent({
         return "Portfolio"
       case "septiclean":
         return "SeptiClean"
+      case "ebook-landing":
+        return "Ebook Landing"
       default:
         return "Template"
     }
@@ -98,6 +101,8 @@ function CarrdEditorContent({
         return <PortfolioTemplate {...commonProps} />
       case "septiclean":
         return <SeptiCleanTemplate {...commonProps} />
+      case "ebook-landing":
+        return <EbookLandingTemplate {...commonProps} />
       default:
         return <SaasLandingTemplate {...commonProps} />
     }

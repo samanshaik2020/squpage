@@ -4,12 +4,12 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
-import { useContext } from "react" // Import useContext
-import { EditorContext } from "@/lib/editor-context" // Import EditorContext directly
+import { useContext } from "react"
+import { EditorContext } from "@/lib/editor-context"
 
 interface EditableElementProps {
   id: string
-  type: "text" | "heading" | "button" | "badge" | "image"
+  type: "text" | "heading" | "button" | "badge" | "image" | "section" // Added "section" type
   className?: string
   isSelected: boolean
   onSelect: (id: string) => void
@@ -18,7 +18,8 @@ interface EditableElementProps {
   size?: "sm" | "default" | "lg"
   children?: React.ReactNode
   isEditable: boolean // New prop to indicate if the element is in an editable context
-  url?: string // Keep url prop for buttons/images
+  url?: string // Keep url prop for buttons/images/sections (e.g., background image)
+  style?: React.CSSProperties // Allow passing through custom styles
 }
 
 export function EditableElement({
@@ -33,21 +34,20 @@ export function EditableElement({
   children,
   isEditable,
   url: defaultUrl = "", // Use defaultUrl for the prop
+  style: defaultStyle = {}, // Use defaultStyle for the prop
 }: EditableElementProps) {
   let content = defaultContent
   let elementUrl = defaultUrl
-  let styles: any = {}
+  let styles: any = defaultStyle
 
-  // Always call useContext at the top level, but only use its return value conditionally
   const editorContext = useContext(EditorContext)
 
-  // Conditionally get editor context data only if in editable mode and context is available
   if (isEditable && editorContext) {
     const { elements } = editorContext
     const element = elements.find((el) => el.id === id)
     content = element?.content || defaultContent
-    styles = element?.styles || {}
-    elementUrl = element?.url || defaultUrl // Get URL from editor state if available
+    styles = element?.styles || defaultStyle
+    elementUrl = element?.url || defaultUrl
   }
 
   const handleClick = (e: React.MouseEvent) => {
@@ -55,7 +55,6 @@ export function EditableElement({
       e.stopPropagation()
       onSelect(id)
     } else if (type === "button" && elementUrl) {
-      // In preview mode, if it's a button and has a URL, navigate
       window.open(elementUrl, "_blank")
     }
   }
@@ -66,7 +65,6 @@ export function EditableElement({
     ${isEditable ? "cursor-pointer relative" : ""}
   `
 
-  // Apply text alignment from styles (only if editable, otherwise assume static styling from className)
   const alignmentClass = isEditable && styles.textAlign ? `text-${styles.textAlign}` : ""
   const finalClassName = `${baseClasses} ${alignmentClass}`.trim()
 
@@ -84,10 +82,9 @@ export function EditableElement({
           top: styles.yPosition ? `${styles.yPosition}px` : undefined,
           ...styles,
         }
-      : {}, // No inline styles from editor state in preview
+      : defaultStyle, // Use defaultStyle in preview mode
   }
 
-  // Add data-editable only if in editable mode
   if (isEditable) {
     ;(commonProps as any)["data-editable"] = true
   }
@@ -141,6 +138,16 @@ export function EditableElement({
           )}
           {isEditable && isSelected && (
             <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded z-10">Image</div>
+          )}
+        </div>
+      )
+
+    case "section": // New case for section elements
+      return (
+        <div {...commonProps}>
+          {children}
+          {isEditable && isSelected && (
+            <div className="absolute -top-6 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded z-10">Section</div>
           )}
         </div>
       )

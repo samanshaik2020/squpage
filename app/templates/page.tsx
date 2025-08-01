@@ -37,9 +37,17 @@ const templates = [
     image: "/placeholder.svg?height=300&width=400&text=Startup+Landing",
     tags: ["Conversion", "Modern", "CTA"],
   },
+  {
+    id: "ebook-landing",
+    name: "Ebook Landing Page",
+    category: "Marketing",
+    description: "Capture leads with a high-converting ebook landing page",
+    image: "/placeholder.svg?height=300&width=400&text=Ebook+Landing+Page",
+    tags: ["Ebook", "Lead Gen", "Marketing"],
+  },
 ]
 
-const categories = ["All", "Business", "Portfolio", "Agency", "Blog", "Service"]
+const categories = ["All", "Business", "Portfolio", "Agency", "Blog", "Service", "Marketing"]
 
 export default function TemplatesPage() {
   return (

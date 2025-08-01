@@ -35,7 +35,7 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const [content, setContent] = useState(element?.content || "")
-  const [url, setUrl] = useState(element?.url || "")
+  const [url, setUrl] = useState(element?.url || "") // State for URL, used for buttons/images/sections
   const [styles, setStyles] = useState(
     element?.styles || {
       color: "#000000",
@@ -51,7 +51,7 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
   useEffect(() => {
     if (element) {
       setContent(element.content || "")
-      setUrl(element.url || "")
+      setUrl(element.url || "") // Set URL from element state
       setStyles(
         element.styles || {
           color: "#000000",
@@ -88,7 +88,11 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
       const reader = new FileReader()
       reader.onload = (e) => {
         const imageUrl = e.target?.result as string
-        handleContentChange(imageUrl)
+        if (elementType === "image") {
+          handleContentChange(imageUrl) // For image elements, content is the URL
+        } else if (elementType === "section") {
+          handleUrlChange(imageUrl) // For sections, URL is the background image
+        }
       }
       reader.readAsDataURL(file)
     }
@@ -104,10 +108,10 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
     if (element) {
       updateElement(elementId, updates)
     } else {
-      // Create new element if it doesn't exist
+      // Create new element if it doesn't exist (this part might need more specific logic for adding new elements)
       addElement({
         id: elementId,
-        type: "text",
+        type: "text", // Default type, should be more specific based on context
         content: content,
         styles: styles,
         url: url,
@@ -121,6 +125,7 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
     if (elementId.includes("image") || elementId.includes("avatar") || elementId.includes("logo")) return "image"
     if (elementId.includes("button") || elementId.includes("cta")) return "button"
     if (elementId.includes("title") || elementId.includes("heading")) return "heading"
+    if (elementId.includes("section")) return "section" // Identify sections
     return "text"
   }
 
@@ -178,7 +183,13 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
           <TabsContent value="content" className="p-4 space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">{elementType === "image" ? "Image Content" : "Text Content"}</CardTitle>
+                <CardTitle className="text-sm">
+                  {elementType === "image"
+                    ? "Image Content"
+                    : elementType === "section"
+                      ? "Section Properties"
+                      : "Text Content"}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {elementType === "image" ? (
@@ -226,6 +237,61 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
                           <img
                             src={content || "/placeholder.svg"}
                             alt="Preview"
+                            className="w-full h-32 object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.style.display = "none"
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : elementType === "section" ? (
+                  <>
+                    <div>
+                      <Label htmlFor="background-image-url">Background Image URL</Label>
+                      <Input
+                        id="background-image-url"
+                        value={url}
+                        onChange={(e) => handleUrlChange(e.target.value)}
+                        className="mt-1"
+                        placeholder="https://example.com/background.jpg"
+                      />
+                    </div>
+                    <div className="text-center">
+                      <span className="text-sm text-gray-500">or</span>
+                    </div>
+                    <div>
+                      <Label>Upload Background Image</Label>
+                      <div className="mt-1">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                            />
+                          </svg>
+                          Upload Image
+                        </Button>
+                      </div>
+                    </div>
+                    {url && (
+                      <div className="mt-4">
+                        <Label>Preview</Label>
+                        <div className="mt-2 border rounded-lg overflow-hidden">
+                          <img
+                            src={url || "/placeholder.svg"}
+                            alt="Background Preview"
                             className="w-full h-32 object-cover"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement
