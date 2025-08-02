@@ -5,6 +5,7 @@ import { SaasLandingTemplate } from "@/components/editor/templates/saas-landing"
 import { PortfolioTemplate } from "@/components/editor/templates/portfolio"
 import { SeptiCleanTemplate } from "@/components/editor/templates/septiclean"
 import { EbookLandingTemplate } from "@/components/editor/templates/ebook-landing"
+import { AIGeneratedBlogPostTemplate } from "@/components/editor/templates/ai-generated-blog-post" // Import new template
 
 interface PreviewPageProps {
   params: {
@@ -23,6 +24,8 @@ export default function PreviewPage({ params }: PreviewPageProps) {
         return "SeptiClean"
       case "ebook-landing":
         return "Ebook Landing Page"
+      case "ai-generated-blog-post": // New template name
+        return "AI Blog Post"
       default:
         return "Template"
     }
@@ -44,6 +47,8 @@ export default function PreviewPage({ params }: PreviewPageProps) {
         return <SeptiCleanTemplate {...commonProps} />
       case "ebook-landing":
         return <EbookLandingTemplate {...commonProps} />
+      case "ai-generated-blog-post": // Render new template
+        return <AIGeneratedBlogPostTemplate {...commonProps} />
       default:
         return <SaasLandingTemplate {...commonProps} />
     }

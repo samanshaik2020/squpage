@@ -1,13 +1,8 @@
 "use client"
 import { Card, CardContent } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-
 import { Input } from "@/components/ui/input"
 import { EditableElement } from "../editable-element"
 import { useEditor } from "@/lib/editor-context" // Import useEditor
-import { Button } from "@/components/ui/button" // Import Button
-import { useActionState } from "react" // Import useActionState
-import { generateAIContent } from "@/app/actions/generate-ai-content" // Import the Server Action
 
 interface EbookLandingTemplateProps {
   selectedElement: string | null
@@ -16,24 +11,11 @@ interface EbookLandingTemplateProps {
 }
 
 export function EbookLandingTemplate({ selectedElement, onElementSelect, isEditable }: EbookLandingTemplateProps) {
-  const { elements, updateElement } = useEditor() // Get elements and updateElement from editor context
+  const { elements } = useEditor() // Get elements from editor context
 
   // Find the hero section element to get its background URL
   const heroSectionElement = elements.find((el) => el.id === "hero-section")
   const heroBackgroundUrl = heroSectionElement?.url || "/images/ebook-bg.png" // Use URL from state or default
-
-  // State for AI content generation
-  const [aiState, aiAction, isPending] = useActionState(generateAIContent, null)
-
-  // Update editor elements when AI content is generated
-  if (aiState?.success && aiState.content) {
-    // Update the AI-generated title
-    updateElement("ai-generated-title", { content: aiState.content.title })
-    // Update the AI-generated body
-    updateElement("ai-generated-body", { content: aiState.content.body })
-    // Reset aiState to prevent re-rendering loop if not needed
-    aiState.success = false // Simple way to prevent re-triggering updateElement on subsequent renders
-  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
@@ -192,57 +174,6 @@ export function EbookLandingTemplate({ selectedElement, onElementSelect, isEdita
               ))}
             </div>
           </div>
-
-          {/* AI Content Generation Section */}
-          {isEditable && ( // Only show this section in editor mode
-            <div className="p-8 md:p-12 bg-purple-50 rounded-b-xl">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Generate Content with AI</h2>
-              <form action={aiAction} className="space-y-4">
-                <div>
-                  <Label htmlFor="topic" className="sr-only">
-                    Topic
-                  </Label>
-                  <Input
-                    id="topic"
-                    name="topic"
-                    type="text"
-                    placeholder="Enter a topic (e.g., 'benefits of meditation')"
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-900"
-                    disabled={isPending}
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-                  disabled={isPending}
-                >
-                  {isPending ? "Generating..." : "Generate Content"}
-                </Button>
-                {aiState?.error && <p className="text-red-500 text-sm mt-2 text-center">{aiState.error}</p>}
-              </form>
-
-              <div className="mt-8 space-y-4">
-                <EditableElement
-                  id="ai-generated-title"
-                  type="heading"
-                  className="text-xl font-bold text-gray-900 text-center"
-                  isSelected={selectedElement === "ai-generated-title"}
-                  onSelect={onElementSelect}
-                  defaultContent="AI Generated Title Appears Here"
-                  isEditable={isEditable}
-                />
-                <EditableElement
-                  id="ai-generated-body"
-                  type="text"
-                  className="text-gray-700 text-center leading-relaxed"
-                  isSelected={selectedElement === "ai-generated-body"}
-                  onSelect={onElementSelect}
-                  defaultContent="The AI-generated content will appear here after you enter a topic and click 'Generate Content'."
-                  isEditable={isEditable}
-                />
-              </div>
-            </div>
-          )}
 
           {/* Testimonial and Footer */}
           <div className="p-8 md:p-12 pt-0 text-center">

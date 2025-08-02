@@ -9,8 +9,10 @@ import { SaasLandingTemplate } from "./templates/saas-landing"
 import { PortfolioTemplate } from "./templates/portfolio"
 import { SeptiCleanTemplate } from "./templates/septiclean"
 import { EbookLandingTemplate } from "./templates/ebook-landing"
+import { AIGeneratedBlogPostTemplate } from "./templates/ai-generated-blog-post" // Import new template
 import { EditingPanel } from "./editing-panel"
 import { EditorProvider, useEditor } from "@/lib/editor-context"
+import { Sparkles } from "lucide-react" // Import Sparkles icon
 
 interface CarrdEditorProps {
   templateId: string
@@ -38,7 +40,8 @@ function CarrdEditorContent({
   setViewMode: React.Dispatch<React.SetStateAction<"desktop" | "tablet" | "mobile">>
   editorRef: React.RefObject<HTMLDivElement>
 }) {
-  const { selectedElement, selectElement, canUndo, canRedo, undo, redo } = useEditor()
+  const { selectedElement, selectElement, canUndo, canRedo, undo, redo, updateElement } = useEditor()
+  const [isGenerating, setIsGenerating] = useState(false)
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -82,8 +85,46 @@ function CarrdEditorContent({
         return "SeptiClean"
       case "ebook-landing":
         return "Ebook Landing"
+      case "ai-generated-blog-post": // New template name
+        return "AI Blog Post"
       default:
         return "Template"
+    }
+  }
+
+  const handleGenerateAIContent = async () => {
+    const topic = prompt("Enter a topic for your blog post:")
+    if (!topic) return
+
+    setIsGenerating(true)
+    try {
+      const response = await fetch("/api/generate-content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ topic }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("AI Generated Content:", data)
+
+      // Update elements with AI-generated content
+      if (data["blog-title"]) updateElement("blog-title", { content: data["blog-title"] })
+      if (data["blog-intro"]) updateElement("blog-intro", { content: data["blog-intro"] })
+      if (data["blog-paragraph-1"]) updateElement("blog-paragraph-1", { content: data["blog-paragraph-1"] })
+      if (data["blog-paragraph-2"]) updateElement("blog-paragraph-2", { content: data["blog-paragraph-2"] })
+      if (data["blog-paragraph-3"]) updateElement("blog-paragraph-3", { content: data["blog-paragraph-3"] })
+      if (data["blog-conclusion"]) updateElement("blog-conclusion", { content: data["blog-conclusion"] })
+    } catch (error) {
+      console.error("Failed to generate AI content:", error)
+      alert("Failed to generate AI content. Check console for details.")
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -103,6 +144,8 @@ function CarrdEditorContent({
         return <SeptiCleanTemplate {...commonProps} />
       case "ebook-landing":
         return <EbookLandingTemplate {...commonProps} />
+      case "ai-generated-blog-post": // Render new template
+        return <AIGeneratedBlogPostTemplate {...commonProps} />
       default:
         return <SaasLandingTemplate {...commonProps} />
     }
@@ -158,6 +201,13 @@ function CarrdEditorContent({
               </svg>
             </Button>
           </div>
+
+          {templateId === "ai-generated-blog-post" && ( // Show AI button only for this template
+            <Button size="sm" onClick={handleGenerateAIContent} disabled={isGenerating}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              {isGenerating ? "Generating..." : "Generate with AI"}
+            </Button>
+          )}
 
           <Button variant="ghost" size="sm" disabled={!canUndo} onClick={undo}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +274,6 @@ function CarrdEditorContent({
           </div>
         </div>
 
-        {/* Editing Panel */}
         {selectedElement && <EditingPanel elementId={selectedElement} onClose={() => selectElement(null)} />}
       </div>
     </div>
