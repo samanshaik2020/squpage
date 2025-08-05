@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useState, useCallback, useContext, useMemo } from "react"
+import { createContext, useState, useCallback, useContext, useMemo, useEffect } from "react"
 
 interface Element {
   id: string
@@ -34,10 +34,16 @@ interface EditorActions {
 export const EditorContext = createContext<(EditorState & EditorActions) | undefined>(undefined) // Added export keyword
 
 export function EditorProvider({ children }: { children: React.ReactNode }) {
+  // Initialize with empty elements array
   const [elements, setElements] = useState<Element[]>([])
   const [selectedElement, setSelectedElement] = useState<string | null>(null)
   const [history, setHistory] = useState<Element[][]>([[]])
   const [historyIndex, setHistoryIndex] = useState(0)
+  
+  // Debug log when elements change
+  useEffect(() => {
+    console.log("Editor elements updated:", elements);
+  }, [elements])
 
   const canUndo = historyIndex > 0
   const canRedo = historyIndex < history.length - 1
@@ -69,23 +75,68 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
   const updateElement = useCallback(
     (id: string, updates: Partial<Element>) => {
+      console.log(`Updating element with id: ${id}`, updates);
+      
       setElements((prevElements) => {
-        const updatedElements = prevElements.map((el) => (el.id === id ? { ...el, ...updates } : el))
-        saveToHistory(updatedElements)
-        return updatedElements
-      })
+        // Check if the element exists
+        const elementExists = prevElements.some(el => el.id === id);
+        
+        let updatedElements;
+        
+        if (elementExists) {
+          // Update existing element
+          console.log(`Element ${id} exists, updating it`);
+          updatedElements = prevElements.map((el) => (el.id === id ? { ...el, ...updates } : el));
+        } else {
+          // Create new element with default values
+          console.log(`Element ${id} doesn't exist, creating it`);
+          const newElement: Element = {
+            id,
+            type: updates.type || 'text',
+            content: updates.content || '',
+            styles: updates.styles || {},
+            position: updates.position || { x: 0, y: 0 },
+            url: updates.url
+          };
+          
+          updatedElements = [...prevElements, newElement];
+        }
+        
+        console.log('Updated elements:', updatedElements);
+        saveToHistory(updatedElements);
+        return updatedElements;
+      });
     },
     [saveToHistory],
   )
 
   const deleteElement = useCallback(
     (id: string) => {
+      console.log(`Editor context: Attempting to delete element with id: ${id}`)
+      
       setElements((prevElements) => {
+        // Check if the element exists before attempting to delete
+        const elementExists = prevElements.some(el => el.id === id);
+        if (!elementExists) {
+          console.warn(`Element with id ${id} not found in elements array`)
+          return prevElements // Return unchanged if element doesn't exist
+        }
+        
+        console.log(`Deleting element with id: ${id}`)
         const newElements = prevElements.filter((el) => el.id !== id)
+        console.log(`Elements after deletion:`, newElements)
         saveToHistory(newElements)
         return newElements
       })
-      setSelectedElement((prevSelected) => (prevSelected === id ? null : prevSelected))
+      
+      // Clear selection if the deleted element was selected
+      setSelectedElement((prevSelected) => {
+        if (prevSelected === id) {
+          console.log(`Clearing selection as selected element ${id} was deleted`)
+          return null
+        }
+        return prevSelected
+      })
     },
     [saveToHistory],
   )

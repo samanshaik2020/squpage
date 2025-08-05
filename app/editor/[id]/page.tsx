@@ -1,11 +1,15 @@
+"use client"
+
+import { use } from "react"
 import { CarrdEditor } from "@/components/editor/carrd-editor"
 
 interface EditorPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function EditorPage({ params }: EditorPageProps) {
-  return <CarrdEditor templateId={params.id} />
+  const resolvedParams = use(params)
+  return <CarrdEditor templateId={resolvedParams.id} />
 }

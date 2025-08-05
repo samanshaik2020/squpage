@@ -9,7 +9,8 @@ import { SaasLandingTemplate } from "./templates/saas-landing"
 import { PortfolioTemplate } from "./templates/portfolio"
 import { SeptiCleanTemplate } from "./templates/septiclean"
 import { EbookLandingTemplate } from "./templates/ebook-landing"
-import { AIGeneratedBlogPostTemplate } from "./templates/ai-generated-blog-post" // Import new template
+import { AIGeneratedBlogPostTemplate } from "./templates/ai-generated-blog-post"
+import { ProductLandingPageTemplate } from "./templates/product-landing-page" // Import product landing page template
 import { EditingPanel } from "./editing-panel"
 import { EditorProvider, useEditor } from "@/lib/editor-context"
 import { Sparkles } from "lucide-react" // Import Sparkles icon
@@ -38,11 +39,47 @@ function CarrdEditorContent({
   templateId: string
   viewMode: "desktop" | "tablet" | "mobile"
   setViewMode: React.Dispatch<React.SetStateAction<"desktop" | "tablet" | "mobile">>
-  editorRef: React.RefObject<HTMLDivElement>
+  editorRef: React.RefObject<HTMLDivElement | null>
 }) {
   const { selectedElement, selectElement, canUndo, canRedo, undo, redo, updateElement } = useEditor()
   const [isGenerating, setIsGenerating] = useState(false)
 
+  // State to track if elements have been initialized
+  const [elementsInitialized, setElementsInitialized] = useState(false);
+  
+  // Initialize template elements when component mounts (only once)
+  useEffect(() => {
+    // Only initialize if not already done
+    if (!elementsInitialized && templateId === "product-landing-page") {
+      console.log("Initializing template elements for:", templateId);
+      
+      // Initialize product landing page elements with default content
+      updateElement("product-title", { 
+        type: "heading", 
+        content: "Your Amazing Product",
+        styles: {},
+        position: { x: 0, y: 0 }
+      });
+      
+      updateElement("product-tagline", { 
+        type: "text", 
+        content: "A short, memorable tagline that highlights the main value proposition",
+        styles: {},
+        position: { x: 0, y: 0 }
+      });
+      
+      updateElement("product-description", { 
+        type: "text", 
+        content: "A compelling 2-3 sentence description that explains what the product is and its main benefits.",
+        styles: {},
+        position: { x: 0, y: 0 }
+      });
+      
+      // Mark as initialized
+      setElementsInitialized(true);
+    }
+  }, [templateId, updateElement, elementsInitialized]);
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
@@ -85,16 +122,29 @@ function CarrdEditorContent({
         return "SeptiClean"
       case "ebook-landing":
         return "Ebook Landing"
-      case "ai-generated-blog-post": // New template name
+      case "ai-generated-blog-post":
         return "AI Blog Post"
+      case "product-landing-page":
+        return "Product Landing Page"
       default:
         return "Template"
     }
   }
 
   const handleGenerateAIContent = async () => {
-    const topic = prompt("Enter a topic for your blog post:")
-    if (!topic) return
+    let promptText = "Enter a topic for your blog post:"
+    let requestParam = "topic"
+    
+    if (templateId === "product-landing-page") {
+      promptText = "Enter a product name to generate a landing page:"
+      requestParam = "productName"
+    } else {
+      promptText = "Enter a topic for your blog post:"
+      requestParam = "topic"
+    }
+    
+    const userInput = prompt(promptText)
+    if (!userInput) return
 
     setIsGenerating(true)
     try {
@@ -103,7 +153,7 @@ function CarrdEditorContent({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ topic }),
+        body: JSON.stringify({ [requestParam]: userInput }),
       })
 
       if (!response.ok) {
@@ -112,14 +162,67 @@ function CarrdEditorContent({
 
       const data = await response.json()
       console.log("AI Generated Content:", data)
+      
+      // Debug: Check if we received the expected data structure
+      console.log("Keys in response:", Object.keys(data))
+      console.log("Product title:", data["product-title"])
+      console.log("Product tagline:", data["product-tagline"])
+      console.log("Product description:", data["product-description"])
+      console.log("Product features:", data["product-features"])
+      console.log("Product CTA:", data["product-cta"])
 
-      // Update elements with AI-generated content
-      if (data["blog-title"]) updateElement("blog-title", { content: data["blog-title"] })
-      if (data["blog-intro"]) updateElement("blog-intro", { content: data["blog-intro"] })
-      if (data["blog-paragraph-1"]) updateElement("blog-paragraph-1", { content: data["blog-paragraph-1"] })
-      if (data["blog-paragraph-2"]) updateElement("blog-paragraph-2", { content: data["blog-paragraph-2"] })
-      if (data["blog-paragraph-3"]) updateElement("blog-paragraph-3", { content: data["blog-paragraph-3"] })
-      if (data["blog-conclusion"]) updateElement("blog-conclusion", { content: data["blog-conclusion"] })
+      // Update elements with AI-generated content based on template
+      if (templateId === "product-landing-page") {
+        console.log("Attempting to update product landing page elements with:", data);
+        
+        // Update product landing page elements
+        if (data["product-title"]) {
+          console.log("Updating product-title with:", data["product-title"]);
+          updateElement("product-title", { content: data["product-title"] });
+        }
+        
+        if (data["product-tagline"]) {
+          console.log("Updating product-tagline with:", data["product-tagline"]);
+          updateElement("product-tagline", { content: data["product-tagline"] });
+        }
+        
+        if (data["product-description"]) {
+          console.log("Updating product-description with:", data["product-description"]);
+          updateElement("product-description", { content: data["product-description"] });
+        }
+        
+        // Handle features - parse and distribute to feature elements
+        if (data["product-features"]) {
+          const features = data["product-features"].split('\n').filter((f: string) => f.trim() !== '').slice(0, 4)
+          
+          features.forEach((feature: string, index: number) => {
+            const featureNumber = index + 1
+            const featureParts = feature.split(': ')
+            
+            if (featureParts.length > 1) {
+              // If feature is in "Feature: Description" format
+              updateElement(`product-feature-${featureNumber}`, { content: featureParts[0].trim() })
+              updateElement(`product-feature-${featureNumber}-desc`, { content: featureParts[1].trim() })
+            } else {
+              // If feature is just text
+              updateElement(`product-feature-${featureNumber}-desc`, { content: feature.trim() })
+            }
+          })
+        }
+        
+        if (data["product-cta"]) {
+          updateElement("product-cta", { content: data["product-cta"] })
+          updateElement("product-cta-button", { content: data["product-cta"] })
+        }
+      } else {
+        // Update blog post elements
+        if (data["blog-title"]) updateElement("blog-title", { content: data["blog-title"] })
+        if (data["blog-intro"]) updateElement("blog-intro", { content: data["blog-intro"] })
+        if (data["blog-paragraph-1"]) updateElement("blog-paragraph-1", { content: data["blog-paragraph-1"] })
+        if (data["blog-paragraph-2"]) updateElement("blog-paragraph-2", { content: data["blog-paragraph-2"] })
+        if (data["blog-paragraph-3"]) updateElement("blog-paragraph-3", { content: data["blog-paragraph-3"] })
+        if (data["blog-conclusion"]) updateElement("blog-conclusion", { content: data["blog-conclusion"] })
+      }
     } catch (error) {
       console.error("Failed to generate AI content:", error)
       alert("Failed to generate AI content. Check console for details.")
@@ -144,8 +247,10 @@ function CarrdEditorContent({
         return <SeptiCleanTemplate {...commonProps} />
       case "ebook-landing":
         return <EbookLandingTemplate {...commonProps} />
-      case "ai-generated-blog-post": // Render new template
+      case "ai-generated-blog-post":
         return <AIGeneratedBlogPostTemplate {...commonProps} />
+      case "product-landing-page":
+        return <ProductLandingPageTemplate {...commonProps} />
       default:
         return <SaasLandingTemplate {...commonProps} />
     }
@@ -202,7 +307,7 @@ function CarrdEditorContent({
             </Button>
           </div>
 
-          {templateId === "ai-generated-blog-post" && ( // Show AI button only for this template
+          {(templateId === "ai-generated-blog-post" || templateId === "product-landing-page") && (
             <Button size="sm" onClick={handleGenerateAIContent} disabled={isGenerating}>
               <Sparkles className="w-4 h-4 mr-2" />
               {isGenerating ? "Generating..." : "Generate with AI"}

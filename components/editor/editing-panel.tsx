@@ -99,9 +99,14 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
   }
 
   const handleDeleteElement = () => {
-    deleteElement(elementId)
-    setShowDeleteDialog(false)
-    onClose()
+    console.log(`Deleting element with ID: ${elementId}`)
+    if (elementId) {
+      deleteElement(elementId)
+      setShowDeleteDialog(false)
+      onClose()
+    } else {
+      console.error('Cannot delete element: elementId is undefined or null')
+    }
   }
 
   const updateElementData = (updates: any) => {

@@ -1,3 +1,6 @@
+"use client"
+
+import { use } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Share2 } from "lucide-react"
 import Link from "next/link"
@@ -8,14 +11,16 @@ import { EbookLandingTemplate } from "@/components/editor/templates/ebook-landin
 import { AIGeneratedBlogPostTemplate } from "@/components/editor/templates/ai-generated-blog-post" // Import new template
 
 interface PreviewPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function PreviewPage({ params }: PreviewPageProps) {
+  const resolvedParams = use(params)
+  
   const getTemplateName = () => {
-    switch (params.id) {
+    switch (resolvedParams.id) {
       case "saas-landing":
         return "SaaS Landing"
       case "portfolio":
@@ -38,7 +43,7 @@ export default function PreviewPage({ params }: PreviewPageProps) {
       isEditable: false, // Pass isEditable as false for preview
     }
 
-    switch (params.id) {
+    switch (resolvedParams.id) {
       case "saas-landing":
         return <SaasLandingTemplate {...commonProps} />
       case "portfolio":
@@ -61,7 +66,7 @@ export default function PreviewPage({ params }: PreviewPageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link
-              href={`/editor/${params.id}`}
+              href={`/editor/${resolvedParams.id}`}
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
             >
               <ArrowLeft className="w-5 h-5" />

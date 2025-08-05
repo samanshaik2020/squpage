@@ -64,7 +64,17 @@ const templates = [
     image: "/placeholder.svg?height=300&width=400&text=AI+Blog+Post",
     tags: ["AI", "Content", "Premium"],
     isPremium: true,
-    isLocked: true, // Set to true to lock it
+    isLocked: false, // Set to false to unlock it
+  },
+  {
+    id: "product-landing-page",
+    name: "Product Landing Page",
+    category: "Marketing",
+    description: "Generate a customized landing page for any product with AI.",
+    image: "/placeholder.svg?height=300&width=400&text=Product+Landing+Page",
+    tags: ["AI", "Marketing", "Product", "Premium"],
+    isPremium: true,
+    isLocked: false,
   },
 ]
 

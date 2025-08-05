@@ -44,10 +44,13 @@ export function EditableElement({
 
   if (isEditable && editorContext) {
     const { elements } = editorContext
+    console.log(`EditableElement ${id}: Looking for element in context`, { elements });
     const element = elements.find((el) => el.id === id)
+    console.log(`EditableElement ${id}: Found element:`, element);
     content = element?.content || defaultContent
     styles = element?.styles || defaultStyle
     elementUrl = element?.url || defaultUrl
+    console.log(`EditableElement ${id}: Using content:`, content);
   }
 
   const handleClick = (e: React.MouseEvent) => {
