@@ -21,6 +21,10 @@ export default function HomePage() {
               <Link href="/templates" className="text-gray-600 hover:text-gray-900">
                 Templates
               </Link>
+              <Link href="/elementor" className="text-gray-600 hover:text-gray-900 flex items-center">
+                <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs font-medium mr-1.5">NEW</span>
+                Elementor Builder
+              </Link>
               <Button variant="outline" size="sm">
                 Sign In
               </Button>
@@ -63,9 +67,12 @@ export default function HomePage() {
                 </svg>
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="px-8 py-3 text-lg bg-transparent">
-              View Examples
-            </Button>
+            <Link href="/elementor">
+              <Button variant="outline" size="lg" className="px-8 py-3 text-lg bg-transparent border-blue-500 text-blue-600 hover:bg-blue-50">
+                Try Elementor Builder
+                <span className="ml-2 bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs font-medium">NEW</span>
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
