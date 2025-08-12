@@ -1,10 +1,11 @@
 "use client"
 
 import React, { createContext, useContext, useState, useCallback } from "react"
+import { ElementorStorage, ElementorPage } from "./elementor-storage"
 
 export interface ElementorElement {
   id: string
-  type: 'section' | 'row' | 'column' | 'text' | 'heading' | 'image' | 'button' | 'video' | 'spacer' | 'form' | 'pricing-table' | 'testimonial-carousel'
+  type: 'section' | 'row' | 'column' | 'text' | 'heading' | 'headline' | 'image' | 'button' | 'video' | 'spacer' | 'form' | 'pricing-table' | 'testimonial-carousel'
   parentId?: string
   children?: string[]
   content?: string
@@ -112,6 +113,7 @@ export interface Testimonial {
 interface ElementorContextType {
   elements: ElementorElement[]
   selectedElement: string | null
+  currentPageId: string | null
   addElement: (element: ElementorElement) => void
   updateElement: (id: string, updates: Partial<ElementorElement>) => void
   deleteElement: (id: string) => void
@@ -119,6 +121,9 @@ interface ElementorContextType {
   moveElement: (elementId: string, newParentId: string | null, index?: number) => void
   getElementChildren: (parentId: string) => ElementorElement[]
   getElementById: (id: string) => ElementorElement | undefined
+  savePage: (title: string) => string
+  loadPage: (pageId: string) => void
+  clearPage: () => void
 }
 
 const ElementorContext = createContext<ElementorContextType | undefined>(undefined)
@@ -126,6 +131,7 @@ const ElementorContext = createContext<ElementorContextType | undefined>(undefin
 export function ElementorProvider({ children }: { children: React.ReactNode }) {
   const [elements, setElements] = useState<ElementorElement[]>([])
   const [selectedElement, setSelectedElement] = useState<string | null>(null)
+  const [currentPageId, setCurrentPageId] = useState<string | null>(null)
 
   const addElement = useCallback((element: ElementorElement) => {
     setElements(prev => [...prev, element])
@@ -201,17 +207,50 @@ export function ElementorProvider({ children }: { children: React.ReactNode }) {
     return elements.find(el => el.id === id)
   }, [elements])
 
+  const savePage = useCallback((title: string): string => {
+    const pageId = currentPageId || ElementorStorage.generatePageId()
+    const page: ElementorPage = {
+      id: pageId,
+      title,
+      elements,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    ElementorStorage.savePage(page)
+    setCurrentPageId(pageId)
+    return pageId
+  }, [elements, currentPageId])
+
+  const loadPage = useCallback((pageId: string) => {
+    const page = ElementorStorage.getPage(pageId)
+    if (page) {
+      setElements(page.elements)
+      setCurrentPageId(pageId)
+      setSelectedElement(null)
+    }
+  }, [])
+
+  const clearPage = useCallback(() => {
+    setElements([])
+    setCurrentPageId(null)
+    setSelectedElement(null)
+  }, [])
+
   return (
     <ElementorContext.Provider value={{
       elements,
       selectedElement,
+      currentPageId,
       addElement,
       updateElement,
       deleteElement,
       selectElement,
       moveElement,
       getElementChildren,
-      getElementById
+      getElementById,
+      savePage,
+      loadPage,
+      clearPage
     }}>
       {children}
     </ElementorContext.Provider>

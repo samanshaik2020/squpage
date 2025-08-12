@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { 
   Bold, 
   Italic, 
@@ -49,8 +50,21 @@ export function FloatingToolbar({
     if (!toolbarRef.current || !position) return
 
     const toolbar = toolbarRef.current
-    toolbar.style.top = `${position.top}px`
-    toolbar.style.left = `${position.left}px`
+    const padding = 8
+    const width = toolbar.offsetWidth || 320
+    const height = toolbar.offsetHeight || 40
+
+    let left = position.left
+    let top = position.top
+
+    // Clamp within viewport
+    const maxLeft = window.innerWidth - width - padding
+    const maxTop = window.innerHeight - height - padding
+    left = Math.max(padding, Math.min(left, maxLeft))
+    top = Math.max(padding, Math.min(top, maxTop))
+
+    toolbar.style.top = `${top}px`
+    toolbar.style.left = `${left}px`
   }, [position])
 
   if (!isVisible || !position) return null
@@ -75,11 +89,11 @@ export function FloatingToolbar({
 
   const fontSizes = [12, 14, 16, 18, 20, 24, 28, 32, 36, 42, 48, 56, 64, 72]
 
-  return (
-    <div 
-      ref={toolbarRef} 
-      className="absolute z-50 bg-white rounded-md shadow-lg border border-gray-200 p-1 flex items-center gap-1 flex-wrap"
-      style={{ maxWidth: '320px', transform: 'translateY(-100%)' }}
+  const toolbar = (
+    <div
+      ref={toolbarRef}
+      className="fixed z-[10000] bg-white rounded-md shadow-lg border border-gray-200 p-1 flex items-center gap-1 flex-wrap"
+      style={{ maxWidth: '320px' }}
     >
       <Button 
         variant="ghost" 
@@ -264,4 +278,10 @@ export function FloatingToolbar({
       </Popover>
     </div>
   )
+
+  // Render into body to avoid clipping by transformed/overflow-hidden ancestors
+  if (typeof document !== 'undefined') {
+    return createPortal(toolbar, document.body)
+  }
+  return toolbar
 }

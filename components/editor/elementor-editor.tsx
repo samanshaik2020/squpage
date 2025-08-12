@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import ColumnElement from './column-element'
 import { 
   Type, 
   Square, 
@@ -28,6 +29,8 @@ import {
   Trash
 } from "lucide-react"
 import Link from "next/link"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { UniversalRenderer } from "./universal-renderer"
 import {
   DndContext,
   DragOverlay,
@@ -45,10 +48,12 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { ElementorProvider, useElementor } from "@/lib/elementor-context"
 import { ElementorPropertiesPanel } from "./elementor-properties-panel"
 import { EditableText } from "./editable-text"
 import { EditableTestimonial } from "./editable-testimonial"
+import { ElementorProvider, useElementor } from "@/lib/elementor-context"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 interface ElementorEditorProps {
   templateId?: string
@@ -154,6 +159,8 @@ function ElementorEditorContent() {
   const [viewMode, setViewMode] = useState<"desktop" | "tablet" | "mobile">("desktop")
   const [activeId, setActiveId] = useState<string | null>(null)
   const [showProperties, setShowProperties] = useState(false)
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [pageTitle, setPageTitle] = useState('')
   
   // State for headline inline editing - moved to component top level to avoid Rules of Hooks violations
   const [editingStates, setEditingStates] = useState<Record<string, boolean>>({})
@@ -167,7 +174,11 @@ function ElementorEditorContent() {
     selectElement, 
     moveElement,
     getElementChildren,
-    deleteElement 
+    deleteElement,
+    currentPageId,
+    savePage,
+    loadPage,
+    clearPage
   } = useElementor()
 
   const sensors = useSensors(
@@ -227,55 +238,61 @@ function ElementorEditorContent() {
             contentWidth: 'boxed'
           }
         })
-      } else if (elementType === 'row') {
+      } else if (elementType.startsWith('row-')) {
         // Row can only be dropped inside a section
         const targetElement = elements.find(el => el.id === overId)
         if (targetElement?.type === 'section') {
+          // Extract column count from the row type (row-1, row-2, row-3, row-4)
+          const columnCount = parseInt(elementType.split('-')[1])
           const rowId = generateId()
-          const col1Id = generateId()
-          const col2Id = generateId()
+          const columnIds: string[] = []
+          
+          // Calculate column width based on count
+          const getColumnWidth = (count: number) => {
+            switch (count) {
+              case 1: return '100%'
+              case 2: return '50%'
+              case 3: return '33.333%'
+              case 4: return '25%'
+              default: return '50%'
+            }
+          }
+          
+          // Create column IDs
+          for (let i = 0; i < columnCount; i++) {
+            columnIds.push(generateId())
+          }
           
           // Add row
           addElement({
             id: rowId,
             type: 'row',
             parentId: overId,
-            children: [col1Id, col2Id],
+            children: columnIds,
             styles: {
               padding: '10px'
             },
             settings: {
-              columnGap: '20px'
+              columnGap: '20px',
+              columnCount: columnCount
             }
           })
           
           // Add columns
-          addElement({
-            id: col1Id,
-            type: 'column',
-            parentId: rowId,
-            children: [],
-            styles: {
-              width: '50%',
-              padding: '15px'
-            },
-            settings: {
-              alignment: 'left'
-            }
-          })
-          
-          addElement({
-            id: col2Id,
-            type: 'column',
-            parentId: rowId,
-            children: [],
-            styles: {
-              width: '50%',
-              padding: '15px'
-            },
-            settings: {
-              alignment: 'left'
-            }
+          columnIds.forEach((colId) => {
+            addElement({
+              id: colId,
+              type: 'column',
+              parentId: rowId,
+              children: [],
+              styles: {
+                width: getColumnWidth(columnCount),
+                padding: '15px'
+              },
+              settings: {
+                alignment: 'left'
+              }
+            })
           })
           
           // Update parent section
@@ -354,6 +371,30 @@ function ElementorEditorContent() {
                 settings: {
                   linkUrl: '',
                   linkTarget: '_self'
+                }
+              }
+              break
+              
+            case 'video':
+              newElement = {
+                ...newElement,
+                styles: {
+                  width: '100%',
+                  aspectRatio: '16/9',
+                  borderRadius: '0px'
+                },
+                settings: {
+                  videoUrl: ''
+                }
+              }
+              break
+              
+            case 'spacer':
+              newElement = {
+                ...newElement,
+                styles: {
+                  height: '50px',
+                  width: '100%'
                 }
               }
               break
@@ -661,7 +702,7 @@ function ElementorEditorContent() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {children.map(child => renderElement(child))}
+                  {children.map(child => <React.Fragment key={child.id}>{renderElement(child)}</React.Fragment>)}
                   
                   {/* Always show drop zone for adding more rows */}
                   <div 
@@ -770,243 +811,26 @@ function ElementorEditorContent() {
                 gap: element.settings?.columnGap || '20px'
               }}
             >
-              {children.map(child => renderElement(child))}
+              {children.map(child => <React.Fragment key={child.id}>{renderElement(child)}</React.Fragment>)}
             </div>
           </div>
         )
         
       case 'column':
         return (
-          <div
-            key={element.id}
-            className={`relative border-2 transition-all duration-200 min-h-[100px] ${
-              isSelected ? 'border-purple-500 bg-purple-50/20' : 'border-transparent hover:border-purple-300'
-            }`}
-            style={{
-              width: element.styles?.width || '50%',
-              padding: element.styles?.padding || '15px'
-            }}
-            onClick={handleElementClick}
-          >
-            {isSelected && (
-              <>
-                <div className="absolute -top-6 left-0 bg-purple-500 text-white px-2 py-1 text-xs rounded z-10">
-                  Column
-                </div>
-                <DeleteButton elementId={element.id} elementType="column" />
-              </>
-            )}
-            
-            {children.length === 0 ? (
-              <div 
-                className="flex items-center justify-center h-full border-2 border-dashed border-gray-300 rounded-lg min-h-[100px]"
-                onDrop={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  const elementType = e.dataTransfer.getData('text/plain')
-                  
-                  if (['headline', 'text', 'image', 'button', 'form', 'pricing-table', 'testimonial-carousel'].includes(elementType)) {
-                    const newElementId = generateId()
-                    let newElement: any = {
-                      id: newElementId,
-                      type: elementType,
-                      parentId: element.id
-                    }
-                    
-                    switch (elementType) {
-                      case 'headline':
-                        newElement = {
-                          ...newElement,
-                          content: 'Your Heading Here',
-                          styles: {
-                            fontSize: '32px',
-                            fontWeight: 'bold',
-                            color: '#000000',
-                            textAlign: 'left',
-                            margin: '0 0 16px 0'
-                          }
-                        }
-                        break
-                        
-                      case 'text':
-                        newElement = {
-                          ...newElement,
-                          content: 'Your text content here. Click to edit this text and add your own content.',
-                          styles: {
-                            fontSize: '16px',
-                            fontWeight: 'normal',
-                            color: '#000000',
-                            textAlign: 'left',
-                            lineHeight: '1.6',
-                            margin: '0 0 16px 0'
-                          }
-                        }
-                        break
-                        
-                      case 'image':
-                        newElement = {
-                          ...newElement,
-                          styles: {
-                            width: '100%',
-                            textAlign: 'left',
-                            borderRadius: '0px'
-                          },
-                          settings: {
-                            imageUrl: 'https://via.placeholder.com/400x200/e2e8f0/64748b?text=Image+Placeholder',
-                            alt: 'Placeholder image'
-                          }
-                        }
-                        break
-                        
-                      case 'button':
-                        newElement = {
-                          ...newElement,
-                          content: 'Click Me',
-                          styles: {
-                            fontSize: '16px',
-                            fontWeight: 'normal',
-                            color: '#ffffff',
-                            backgroundColor: '#007bff',
-                            borderRadius: '4px',
-                            padding: '12px 24px',
-                            textAlign: 'center',
-                            display: 'inline-block',
-                            cursor: 'pointer'
-                          },
-                          settings: {
-                            linkUrl: '',
-                            linkTarget: '_self'
-                          }
-                        }
-                        break
-                        
-                      case 'form':
-                        newElement = {
-                          ...newElement,
-                          formFields: [
-                            {
-                              id: generateId(),
-                              type: 'text',
-                              label: 'Name',
-                              placeholder: 'Enter your name',
-                              required: true,
-                              width: '100%'
-                            },
-                            {
-                              id: generateId(),
-                              type: 'email',
-                              label: 'Email',
-                              placeholder: 'Enter your email',
-                              required: true,
-                              width: '100%'
-                            },
-                            {
-                              id: generateId(),
-                              type: 'textarea',
-                              label: 'Message',
-                              placeholder: 'Enter your message',
-                              required: false,
-                              width: '100%'
-                            }
-                          ],
-                          styles: {
-                            padding: '20px',
-                            backgroundColor: '#ffffff',
-                            borderRadius: '8px',
-                            border: '1px solid #e2e8f0'
-                          },
-                          settings: {
-                            submitAction: 'email',
-                            submitEmail: '',
-                            successMessage: 'Thank you for your message!'
-                          }
-                        }
-                        break
-                        
-                      case 'pricing-table':
-                        newElement = {
-                          ...newElement,
-                          content: 'Basic Plan',
-                          pricingFeatures: [
-                            { id: generateId(), text: 'Feature 1', included: true },
-                            { id: generateId(), text: 'Feature 2', included: true },
-                            { id: generateId(), text: 'Feature 3', included: false }
-                          ],
-                          styles: {
-                            padding: '30px',
-                            backgroundColor: '#ffffff',
-                            borderRadius: '12px',
-                            border: '1px solid #e2e8f0',
-                            textAlign: 'center'
-                          },
-                          settings: {
-                            currency: '$',
-                            period: '/month',
-                            featured: false,
-                            ribbonText: 'Popular'
-                          }
-                        }
-                        break
-                        
-                      case 'testimonial-carousel':
-                        newElement = {
-                          ...newElement,
-                          testimonials: [
-                            {
-                              id: generateId(),
-                              name: 'John Doe',
-                              position: 'CEO',
-                              company: 'Company Inc.',
-                              content: 'This is an amazing product that has transformed our business.',
-                              rating: 5
-                            },
-                            {
-                              id: generateId(),
-                              name: 'Jane Smith',
-                              position: 'Marketing Director',
-                              company: 'Business Corp.',
-                              content: 'Highly recommend this service to anyone looking for quality.',
-                              rating: 5
-                            }
-                          ],
-                          styles: {
-                            padding: '40px',
-                            backgroundColor: '#f8fafc',
-                            borderRadius: '12px'
-                          },
-                          settings: {
-                            autoplay: true,
-                            autoplaySpeed: 3000,
-                            showDots: true,
-                            showArrows: true,
-                            slidesToShow: 1
-                          }
-                        }
-                        break
-                    }
-                    
-                    addElement(newElement)
-                    moveElement(newElementId, element.id)
-                  }
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                }}
-              >
-                <div className="text-center text-gray-500">
-                  <Plus className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                  <p className="text-xs">Drop content here</p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {children.map(child => renderElement(child))}
-              </div>
-            )}
-          </div>
+          <ColumnElement 
+            element={element} 
+            isSelected={isSelected} 
+            children={children} 
+            handleElementClick={handleElementClick} 
+            renderElement={renderElement}
+            addElement={addElement}
+            updateElement={updateElement}
+            elements={elements}
+            generateId={generateId}
+          />
         )
-        
+
       case 'headline':
         return (
           <div
@@ -1142,7 +966,14 @@ function ElementorEditorContent() {
                 <DeleteButton elementId={element.id} elementType="button" />
               </>
             )}
-            <button
+            <div 
+              style={{
+                display: 'flex',
+                justifyContent: element.styles?.justifyContent || 'flex-start',
+                width: '100%'
+              }}
+            >
+              <button
               id={buttonId}
               style={{
                 fontSize: element.styles?.fontSize || '16px',
@@ -1168,6 +999,99 @@ function ElementorEditorContent() {
             >
               {element.content || 'Click Me'}
             </button>
+            </div>
+          </div>
+        )
+        
+      case 'video':
+        return (
+          <div
+            key={element.id}
+            className={`relative border-2 transition-all duration-200 ${
+              isSelected ? 'border-purple-500 bg-purple-50/20' : 'border-transparent hover:border-purple-300'
+            }`}
+            onClick={handleElementClick}
+          >
+            {isSelected && (
+              <>
+                <div className="absolute -top-6 left-0 bg-purple-500 text-white px-2 py-1 text-xs rounded z-10">
+                  Video
+                </div>
+                <DeleteButton elementId={element.id} elementType="video" />
+              </>
+            )}
+            <div style={{ width: '100%', aspectRatio: element.styles?.aspectRatio || '16/9' }}>
+              {element.settings?.videoUrl ? (
+                <iframe
+                  src={element.settings.videoUrl}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    borderRadius: element.styles?.borderRadius || '0px'
+                  }}
+                  allowFullScreen
+                  title="Video Player"
+                />
+              ) : (
+                <div 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: '#f3f4f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: element.styles?.borderRadius || '0px',
+                    border: '2px dashed #d1d5db'
+                  }}
+                >
+                  <div className="text-center text-gray-500">
+                    <Video className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No video URL set</p>
+                    <p className="text-xs">Configure in properties panel</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+        
+      case 'spacer':
+        return (
+          <div
+            key={element.id}
+            className={`relative border-2 transition-all duration-200 ${
+              isSelected ? 'border-gray-500 bg-gray-50/20' : 'border-transparent hover:border-gray-300'
+            }`}
+            onClick={handleElementClick}
+          >
+            {isSelected && (
+              <>
+                <div className="absolute -top-6 left-0 bg-gray-500 text-white px-2 py-1 text-xs rounded z-10">
+                  Spacer
+                </div>
+                <DeleteButton elementId={element.id} elementType="spacer" />
+              </>
+            )}
+            <div 
+              style={{
+                height: element.styles?.height || '50px',
+                width: '100%',
+                backgroundColor: isSelected ? '#f9fafb' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: element.styles?.borderRadius || '0px'
+              }}
+            >
+              {isSelected && (
+                <div className="text-center text-gray-400">
+                  <Square className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                  <p className="text-xs">Spacer: {element.styles?.height || '50px'}</p>
+                </div>
+              )}
+            </div>
           </div>
         )
         
@@ -1433,13 +1357,27 @@ function ElementorEditorContent() {
                 <Redo className="w-4 h-4" />
               </Button>
               <div className="h-6 w-px bg-gray-300" />
-              <Link href="/elementor/preview">
-                <Button variant="outline" size="sm">
-                  <Eye className="w-4 h-4 mr-2" />
-                  Preview
-                </Button>
-              </Link>
-              <Button size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  if (!currentPageId) {
+                    // If no current page, save first
+                    setShowSaveDialog(true)
+                  } else {
+                    // Save current page and open preview
+                    savePage(currentPageId)
+                    window.open(`/elementor-preview/${currentPageId}`, '_blank')
+                  }
+                }}
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Preview
+              </Button>
+              <Button 
+                size="sm"
+                onClick={() => setShowSaveDialog(true)}
+              >
                 <Save className="w-4 h-4 mr-2" />
                 Save
               </Button>
@@ -1499,9 +1437,19 @@ function ElementorEditorContent() {
                     </div>
                   </div>
                 ) : (
-                  /* Render Elements */
+                  /* Render Elements using UniversalRenderer */
                   <div className="p-4 space-y-4">
-                    {rootElements.map(element => renderElement(element))}
+                    <UniversalRenderer 
+                      elements={elements}
+                      isEditable={true}
+                      selectedElement={selectedElement}
+                      onElementClick={(e, elementId) => {
+                        e.stopPropagation();
+                        selectElement(elementId);
+                        setShowProperties(true);
+                      }}
+                      getElementChildren={getElementChildren}
+                    />
                   </div>
                 )}
               </div>
@@ -1515,6 +1463,54 @@ function ElementorEditorContent() {
         )}
       </div>
 
+      {/* Save Dialog */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Page</DialogTitle>
+            <DialogDescription>
+              Enter a title for your page to save it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="page-title" className="text-right">
+                Page Title
+              </Label>
+              <Input 
+                id="page-title" 
+                value={pageTitle} 
+                onChange={(e) => setPageTitle(e.target.value)} 
+                className="col-span-3" 
+                placeholder="My Awesome Page"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>Cancel</Button>
+            <Button 
+              onClick={() => {
+                if (pageTitle.trim() === '') return;
+                
+                // Save the page
+                const pageId = savePage(pageTitle);
+                
+                // Close dialog and reset title
+                setShowSaveDialog(false);
+                setPageTitle('');
+                
+                // Optionally open preview
+                if (window.confirm('Page saved! Would you like to open the preview?')) {
+                  window.open(`/elementor-preview/${pageId}`, '_blank');
+                }
+              }}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <DragOverlay>
         {activeId ? (
           <div className="bg-white border border-gray-300 rounded-lg p-4 shadow-lg">

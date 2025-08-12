@@ -862,6 +862,25 @@ export function ElementorPropertiesPanel({ onClose }: ElementorPropertiesPanelPr
                 placeholder="12px 24px"
               />
             </div>
+
+            <div>
+              <Label htmlFor="button-alignment">Button Alignment</Label>
+              <Select 
+                value={element.styles?.justifyContent || 'flex-start'} 
+                onValueChange={(value) => handleStyleUpdate('justifyContent', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flex-start">Left</SelectItem>
+                  <SelectItem value="center">Center</SelectItem>
+                  <SelectItem value="flex-end">Right</SelectItem>
+                  <SelectItem value="space-between">Space Between</SelectItem>
+                  <SelectItem value="space-around">Space Around</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </TabsContent>
 
           <TabsContent value="hover" className="space-y-4 mt-4">
@@ -1029,6 +1048,157 @@ export function ElementorPropertiesPanel({ onClose }: ElementorPropertiesPanelPr
     </Tabs>
   )
 
+  const renderVideoProperties = () => (
+    <Tabs defaultValue="content" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="content">
+          <Play className="w-4 h-4 mr-1" />
+          Content
+        </TabsTrigger>
+        <TabsTrigger value="style">
+          <Palette className="w-4 h-4 mr-1" />
+          Style
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="content" className="space-y-4">
+        <div>
+          <Label htmlFor="video-url">Video URL</Label>
+          <Input
+            id="video-url"
+            type="url"
+            value={element.settings?.videoUrl || ''}
+            onChange={(e) => handleSettingUpdate('videoUrl', e.target.value)}
+            placeholder="https://www.youtube.com/embed/VIDEO_ID or https://player.vimeo.com/video/VIDEO_ID"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="video-aspect-ratio">Aspect Ratio</Label>
+          <Select 
+            value={element.styles?.aspectRatio || '16/9'} 
+            onValueChange={(value) => handleStyleUpdate('aspectRatio', value)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="16/9">16:9 (Widescreen)</SelectItem>
+              <SelectItem value="4/3">4:3 (Standard)</SelectItem>
+              <SelectItem value="1/1">1:1 (Square)</SelectItem>
+              <SelectItem value="21/9">21:9 (Ultrawide)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="style" className="space-y-4">
+        <div>
+          <Label htmlFor="video-border-radius">Border Radius (px)</Label>
+          <Input
+            id="video-border-radius"
+            type="number"
+            value={element.styles?.borderRadius?.replace('px', '') || '0'}
+            onChange={(e) => handleStyleUpdate('borderRadius', `${e.target.value}px`)}
+            placeholder="0"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="video-width">Width</Label>
+          <Input
+            id="video-width"
+            value={element.styles?.width || '100%'}
+            onChange={(e) => handleStyleUpdate('width', e.target.value)}
+            placeholder="100%"
+          />
+        </div>
+      </TabsContent>
+    </Tabs>
+  )
+
+  const renderSpacerProperties = () => (
+    <Tabs defaultValue="layout" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="layout">
+          <Layout className="w-4 h-4 mr-1" />
+          Layout
+        </TabsTrigger>
+        <TabsTrigger value="advanced">
+          <AlignJustify className="w-4 h-4 mr-1" />
+          Advanced
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="layout" className="space-y-4">
+        <div>
+          <Label htmlFor="spacer-height">Height (px)</Label>
+          <Input
+            id="spacer-height"
+            type="number"
+            value={element.styles?.height?.replace('px', '') || '50'}
+            onChange={(e) => handleStyleUpdate('height', `${e.target.value}px`)}
+            placeholder="50"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="spacer-width">Width</Label>
+          <Input
+            id="spacer-width"
+            value={element.styles?.width || '100%'}
+            onChange={(e) => handleStyleUpdate('width', e.target.value)}
+            placeholder="100%"
+          />
+        </div>
+      </TabsContent>
+
+      <TabsContent value="advanced" className="space-y-4">
+        <div className="space-y-2">
+          <Label>Responsive Visibility</Label>
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="spacer-hide-desktop"
+                checked={element.settings?.responsive?.hideOnDesktop || false}
+                onChange={(e) => handleSettingUpdate('responsive', {
+                  ...element.settings?.responsive,
+                  hideOnDesktop: e.target.checked
+                })}
+              />
+              <Label htmlFor="spacer-hide-desktop">Hide on Desktop</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="spacer-hide-tablet"
+                checked={element.settings?.responsive?.hideOnTablet || false}
+                onChange={(e) => handleSettingUpdate('responsive', {
+                  ...element.settings?.responsive,
+                  hideOnTablet: e.target.checked
+                })}
+              />
+              <Label htmlFor="spacer-hide-tablet">Hide on Tablet</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="spacer-hide-mobile"
+                checked={element.settings?.responsive?.hideOnMobile || false}
+                onChange={(e) => handleSettingUpdate('responsive', {
+                  ...element.settings?.responsive,
+                  hideOnMobile: e.target.checked
+                })}
+              />
+              <Label htmlFor="spacer-hide-mobile">Hide on Mobile</Label>
+            </div>
+          </div>
+        </div>
+      </TabsContent>
+    </Tabs>
+  )
+
   const renderProperties = () => {
     switch (element.type) {
       case 'section':
@@ -1045,6 +1215,10 @@ export function ElementorPropertiesPanel({ onClose }: ElementorPropertiesPanelPr
         return renderImageProperties()
       case 'button':
         return renderButtonProperties()
+      case 'video':
+        return renderVideoProperties()
+      case 'spacer':
+        return renderSpacerProperties()
       case 'form':
         return (
           <div className="space-y-4">

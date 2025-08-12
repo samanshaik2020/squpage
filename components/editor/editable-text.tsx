@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react'
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { createEditor, Descendant, Editor, Element as SlateElement, Transforms, Text, Range as SlateRange } from 'slate'
 import { Slate, Editable, withReact, ReactEditor, useSlate } from 'slate-react'
 import { withHistory } from 'slate-history'
@@ -11,8 +11,8 @@ import { CustomElement, CustomText } from '@/lib/editor-types'
 interface EditableTextProps {
   element: any
   isSelected: boolean
-  elementType?: 'headline' | 'text' | 'paragraph'
-  defaultTag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span'
+  elementType?: 'headline' | 'text' | 'paragraph' | 'button'
+  defaultTag?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span' | 'button'
   placeholder?: string
 }
 
@@ -47,6 +47,8 @@ const serializeToHtml = (nodes: Descendant[]): string => {
         return `<h2 style="text-align:${node.align || 'left'}">${children}</h2>`
       case 'heading3':
         return `<h3 style="text-align:${node.align || 'left'}">${children}</h3>`
+      case 'button':
+        return `<button style="text-align:${node.align || 'center'}">${children}</button>`
       case 'text':
         return `<p style="text-align:${node.align || 'left'}">${children}</p>`
       default:
@@ -89,6 +91,7 @@ export function EditableText({
   placeholder = 'Your text content here'
 }: EditableTextProps) {
   const { updateElement } = useElementor()
+  const containerRef = useRef<HTMLDivElement>(null)
   
   // Create a Slate editor
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
@@ -106,7 +109,8 @@ export function EditableText({
     // Default value
     return [
       {
-        type: (elementType === 'headline' ? 'heading1' : 'text') as 'heading1' | 'text',
+        type: elementType === 'headline' ? 'heading1' : 
+              elementType === 'button' ? 'button' : 'text',
         align: (element.styles?.textAlign || 'left') as 'left' | 'center' | 'right',
         children: [{ 
           text: element.content || placeholder,
@@ -123,6 +127,31 @@ export function EditableText({
   const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null)
   const [showToolbar, setShowToolbar] = useState(false)
   
+  // Calculate toolbar position relative to the editable element (viewport coords)
+  const updateToolbarPosition = useCallback(() => {
+    try {
+      const rect = (containerRef.current?.getBoundingClientRect() || (ReactEditor.toDOMNode(editor, editor) as HTMLElement).getBoundingClientRect())
+
+      const viewportWidth = window.innerWidth
+      const toolbarWidth = 320 // width of toolbar
+      const toolbarHeight = 40 // height of toolbar
+
+      // Center horizontally above the editable element
+      let leftPos = rect.left + (rect.width / 2) - (toolbarWidth / 2)
+      leftPos = Math.max(10, Math.min(leftPos, viewportWidth - toolbarWidth - 10))
+
+      // Prefer above; if not enough space, place below
+      let topPos = rect.top - toolbarHeight - 8
+      if (topPos < 8) {
+        topPos = rect.bottom + 8
+      }
+
+      setToolbarPosition({ top: topPos, left: leftPos })
+    } catch (e) {
+      // no-op
+    }
+  }, [editor])
+  
   // Update content when it changes
   const handleChange = (value: Descendant[]) => {
     const isAstChange = editor.operations.some(op => op.type !== 'set_selection')
@@ -133,52 +162,39 @@ export function EditableText({
       updateElement(element.id, { content: htmlContent })
     }
     
-    // Update selection for toolbar positioning
-    const { selection } = editor
-    if (selection && !SlateRange.isCollapsed(selection)) {
-      const domSelection = window.getSelection()
-      if (domSelection && domSelection.rangeCount > 0) {
-        const domRange = domSelection.getRangeAt(0)
-        const rect = domRange.getBoundingClientRect()
-        
-        // Get the editor element's position
-        const editorElement = ReactEditor.toDOMNode(editor, editor)
-        const editorRect = editorElement.getBoundingClientRect()
-        
-        // Calculate position ensuring the toolbar stays within viewport
-        const viewportWidth = window.innerWidth
-        const toolbarWidth = 320 // Approximate width of toolbar
-        const toolbarHeight = 40 // Approximate height of toolbar
-        
-        // Calculate left position to ensure toolbar doesn't go off-screen
-        // Center it on the selection
-        let leftPos = rect.left + (rect.width / 2) - (toolbarWidth / 2)
-        
-        // Ensure toolbar doesn't go off left edge
-        leftPos = Math.max(10, leftPos)
-        
-        // Ensure toolbar doesn't go off right edge
-        leftPos = Math.min(leftPos, viewportWidth - toolbarWidth - 10)
-        
-        // Always position the toolbar above the selection
-        let topPos = rect.top - toolbarHeight - 10 + window.scrollY
-        
-        // If there's not enough space at the very top of the page, add minimum padding
-        if (topPos < window.scrollY) {
-          topPos = window.scrollY + 5
-        }
-        
-        setToolbarPosition({
-          top: topPos,
-          left: leftPos
-        })
-        setShowToolbar(true)
-        setSelection(selection)
-      }
+    // Track selection for formatting
+    setSelection(editor.selection ?? null)
+
+    // Keep toolbar visible and positioned when element is selected
+    if (isSelected) {
+      setShowToolbar(true)
+      updateToolbarPosition()
     } else {
       setShowToolbar(false)
     }
   }
+
+  // Recalculate toolbar position whenever the element selection state changes
+  useEffect(() => {
+    if (isSelected) {
+      setShowToolbar(true)
+      updateToolbarPosition()
+    } else {
+      setShowToolbar(false)
+    }
+  }, [isSelected, updateToolbarPosition])
+
+  // Reposition on scroll and resize while selected
+  useEffect(() => {
+    if (!isSelected) return
+    const handler = () => updateToolbarPosition()
+    window.addEventListener('scroll', handler, true)
+    window.addEventListener('resize', handler)
+    return () => {
+      window.removeEventListener('scroll', handler, true)
+      window.removeEventListener('resize', handler)
+    }
+  }, [isSelected, updateToolbarPosition])
   
   // Format text with the toolbar actions
   const formatText = useCallback((format: string, value: any = true) => {
@@ -217,13 +233,21 @@ export function EditableText({
     
     Transforms.select(editor, selection)
     
-    // We're just wrapping the text with a link tag in HTML output
-    // For a full implementation, you'd need to handle links as a custom element type
+    // Get the selected text
     const selectedText = Editor.string(editor, selection)
-    const linkHtml = `<a href="${url}">${selectedText}</a>`
     
-    Editor.deleteFragment(editor)
-    Editor.insertText(editor, linkHtml)
+    // If no text is selected, insert the URL as text
+    if (!selectedText) {
+      Editor.insertText(editor, url)
+      return
+    }
+    
+    // Apply link formatting to the selected text
+    Transforms.setNodes(
+      editor,
+      { link: url },
+      { match: n => Text.isText(n), split: true }
+    )
   }, [editor, selection])
 
   // Get default styles based on element type
@@ -235,6 +259,20 @@ export function EditableText({
         color: element.styles?.color || '#000000',
         textAlign: (element.styles?.textAlign as any) || 'left',
         margin: element.styles?.margin || '0 0 16px 0',
+      }
+    } else if (elementType === 'button') {
+      return {
+        fontSize: element.styles?.fontSize || '16px',
+        fontWeight: element.styles?.fontWeight || 'normal',
+        color: element.styles?.color || '#ffffff',
+        backgroundColor: element.styles?.backgroundColor || '#007bff',
+        borderRadius: element.styles?.borderRadius || '4px',
+        padding: element.styles?.padding || '12px 24px',
+        border: 'none',
+        cursor: 'pointer',
+        display: 'inline-block',
+        transition: 'all 0.3s ease',
+        textAlign: (element.styles?.textAlign as any) || 'center',
       }
     } else {
       return {
@@ -249,7 +287,7 @@ export function EditableText({
   }
   
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <Slate editor={editor} initialValue={initialValue} onChange={handleChange}>
         <Editable
           className={`outline-none ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
@@ -260,6 +298,29 @@ export function EditableText({
             const { element, attributes, children } = props
             const style: React.CSSProperties = {
               textAlign: element.align || 'left',
+            }
+            
+            if (elementType === 'button') {
+              return (
+                <button 
+                  style={{
+                    ...style,
+                    fontSize: element.styles?.fontSize || '16px',
+                    fontWeight: element.styles?.fontWeight || 'normal',
+                    color: element.styles?.color || '#ffffff',
+                    backgroundColor: element.styles?.backgroundColor || '#007bff',
+                    borderRadius: element.styles?.borderRadius || '4px',
+                    padding: element.styles?.padding || '12px 24px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-block',
+                    transition: 'all 0.3s ease'
+                  }} 
+                  {...attributes}
+                >
+                  {children}
+                </button>
+              )
             }
             
             return (
@@ -282,6 +343,20 @@ export function EditableText({
             
             if (leaf.underline) {
               el = <u>{el}</u>
+            }
+            
+            if (leaf.link) {
+              el = (
+                <a 
+                  href={leaf.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: '#007bff', textDecoration: 'underline' }}
+                  onClick={(e) => e.preventDefault()} // Prevent navigation in editor
+                >
+                  {el}
+                </a>
+              )
             }
             
             const style: React.CSSProperties = {}
