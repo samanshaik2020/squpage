@@ -28,7 +28,7 @@ export function ElementorPreviewRenderer({ elements }: ElementorPreviewRendererP
           <div
             style={{
               backgroundColor: styles.backgroundColor || "transparent",
-              padding: styles.padding || "20px",
+              padding: styles.padding || "0px",
               margin: styles.margin || "0px",
               borderRadius: styles.borderRadius || "0px",
               display: 'flex',
@@ -170,7 +170,7 @@ export function ElementorPreviewRenderer({ elements }: ElementorPreviewRendererP
               style={{
                 backgroundColor: styles.backgroundColor || "#4F46E5",
                 color: styles.color || "white",
-                padding: styles.padding || "10px 20px",
+                padding: styles.padding || "5px 10px",
                 borderRadius: styles.borderRadius || "4px",
                 textDecoration: "none",
                 display: "inline-block",
@@ -447,7 +447,7 @@ export function ElementorPreviewRenderer({ elements }: ElementorPreviewRendererP
       default:
         console.warn(`Unsupported element type: ${type}`, element);
         return (
-          <div style={{ padding: "10px", border: "1px dashed #ff0000", margin: "5px 0" }}>
+          <div style={{ padding: "5px", border: "1px dashed #ff0000", margin: "2px 0" }}>
             <div style={{ color: "#ff0000", fontWeight: "bold" }}>Unsupported element type: {type}</div>
             {content && <div>{content}</div>}
           </div>

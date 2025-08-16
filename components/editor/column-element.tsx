@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 interface ColumnElementProps {
   element: any;
   isSelected: boolean;
+  isPreview: boolean;
   children: any[];
   handleElementClick: (e: React.MouseEvent) => void;
   renderElement: (element: any) => React.ReactNode;
@@ -16,6 +17,7 @@ interface ColumnElementProps {
 const ColumnElement: React.FC<ColumnElementProps> = ({
   element,
   isSelected,
+  isPreview,
   children,
   handleElementClick,
   renderElement,
@@ -318,16 +320,21 @@ const ColumnElement: React.FC<ColumnElementProps> = ({
   return (
     <div
       key={element.id}
-      className={`relative border-2 transition-all duration-200 min-h-[100px] ${
-        isSelected ? 'border-purple-500 bg-purple-50/20' : 'border-transparent hover:border-purple-300'
+      className={`relative ${!isPreview ? (isSelected ? 'border-2' : 'hover:border hover:border-dashed') : ''} transition-all duration-200 min-h-[100px] ${
+        isSelected ? 'border-purple-500 bg-purple-50/20' : isPreview ? '' : 'border-transparent hover:border-purple-300'
       }`}
       style={{
-        width: element.styles?.width || '50%',
-        padding: element.styles?.padding || '15px'
+        width: element.styles?.width || '100%',
+        padding: element.styles?.padding || '10px',
+        float: element.styles?.float || 'left',
+        boxSizing: 'border-box',
+        minHeight: '100px',
+        marginBottom: '20px',
+        backgroundColor: isSelected ? 'rgba(168, 85, 247, 0.05)' : 'transparent'
       }}
       onClick={handleElementClick}
     >
-      {isSelected && (
+      {isSelected && !isPreview && (
         <>
           <div className="absolute -top-6 left-0 bg-purple-500 text-white px-2 py-1 text-xs rounded z-10">
             Column

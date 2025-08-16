@@ -29,8 +29,6 @@ import {
   Trash
 } from "lucide-react"
 import Link from "next/link"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { UniversalRenderer } from "./universal-renderer"
 import {
   DndContext,
   DragOverlay,
@@ -48,12 +46,10 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
+import { ElementorProvider, useElementor } from "@/lib/elementor-context"
 import { ElementorPropertiesPanel } from "./elementor-properties-panel"
 import { EditableText } from "./editable-text"
 import { EditableTestimonial } from "./editable-testimonial"
-import { ElementorProvider, useElementor } from "@/lib/elementor-context"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
 interface ElementorEditorProps {
   templateId?: string
@@ -62,34 +58,28 @@ interface ElementorEditorProps {
 // Define the available elements for the side panel
 const AVAILABLE_ELEMENTS = [
   {
-    id: 'section',
-    name: 'Section',
-    icon: Layout,
-    description: 'Add a container section'
-  },
-  {
-    id: 'row-1',
+    id: 'column-1',
     name: '1 Column',
-    icon: Rows,
-    description: 'Add a single column row'
+    icon: Columns,
+    description: 'Add a single column'
   },
   {
-    id: 'row-2',
+    id: 'column-2',
     name: '2 Columns',
-    icon: Rows,
-    description: 'Add a two column row'
+    icon: Columns,
+    description: 'Add a two column layout'
   },
   {
-    id: 'row-3',
+    id: 'column-3',
     name: '3 Columns',
-    icon: Rows,
-    description: 'Add a three column row'
+    icon: Columns,
+    description: 'Add a three column layout'
   },
   {
-    id: 'row-4',
+    id: 'column-4',
     name: '4 Columns',
-    icon: Rows,
-    description: 'Add a four column row'
+    icon: Columns,
+    description: 'Add a four column layout'
   },
   {
     id: 'headline',
@@ -159,8 +149,6 @@ function ElementorEditorContent() {
   const [viewMode, setViewMode] = useState<"desktop" | "tablet" | "mobile">("desktop")
   const [activeId, setActiveId] = useState<string | null>(null)
   const [showProperties, setShowProperties] = useState(false)
-  const [showSaveDialog, setShowSaveDialog] = useState(false)
-  const [pageTitle, setPageTitle] = useState('')
   
   // State for headline inline editing - moved to component top level to avoid Rules of Hooks violations
   const [editingStates, setEditingStates] = useState<Record<string, boolean>>({})
@@ -169,16 +157,14 @@ function ElementorEditorContent() {
   const { 
     elements, 
     selectedElement, 
+    isPreview,
+    setIsPreview,
     addElement, 
     updateElement,
     selectElement, 
     moveElement,
     getElementChildren,
-    deleteElement,
-    currentPageId,
-    savePage,
-    loadPage,
-    clearPage
+    deleteElement 
   } = useElementor()
 
   const sensors = useSensors(
@@ -223,85 +209,34 @@ function ElementorEditorContent() {
       const elementType = activeId as any
       const newElementId = generateId()
       
-      if (elementType === 'section') {
-        addElement({
-          id: newElementId,
-          type: 'section',
-          children: [],
-          styles: {
-            backgroundColor: '#ffffff',
-            padding: '40px',
-            margin: '0px',
-            height: '400px'
-          },
-          settings: {
-            contentWidth: 'boxed'
-          }
-        })
-      } else if (elementType.startsWith('row-')) {
-        // Row can only be dropped inside a section
-        const targetElement = elements.find(el => el.id === overId)
-        if (targetElement?.type === 'section') {
-          // Extract column count from the row type (row-1, row-2, row-3, row-4)
-          const columnCount = parseInt(elementType.split('-')[1])
-          const rowId = generateId()
-          const columnIds: string[] = []
+      if (['column-1', 'column-2', 'column-3', 'column-4'].includes(elementType)) {
+        // Directly create columns without section/row structure
+        const columnCount = parseInt(elementType.split('-')[1])
+        
+        // Create columns directly in the editor
+        for (let i = 0; i < columnCount; i++) {
+          const columnId = generateId()
+          const columnWidth = `${100 / columnCount}%`
           
-          // Calculate column width based on count
-          const getColumnWidth = (count: number) => {
-            switch (count) {
-              case 1: return '100%'
-              case 2: return '50%'
-              case 3: return '33.333%'
-              case 4: return '25%'
-              default: return '50%'
-            }
-          }
-          
-          // Create column IDs
-          for (let i = 0; i < columnCount; i++) {
-            columnIds.push(generateId())
-          }
-          
-          // Add row
           addElement({
-            id: rowId,
-            type: 'row',
-            parentId: overId,
-            children: columnIds,
+            id: columnId,
+            type: 'column',
+            children: [],
             styles: {
-              padding: '10px'
+              width: columnWidth,
+              padding: '10px',
+              float: 'left',
+              boxSizing: 'border-box'
             },
             settings: {
-              columnGap: '20px',
-              columnCount: columnCount
+              alignment: 'left'
             }
           })
-          
-          // Add columns
-          columnIds.forEach((colId) => {
-            addElement({
-              id: colId,
-              type: 'column',
-              parentId: rowId,
-              children: [],
-              styles: {
-                width: getColumnWidth(columnCount),
-                padding: '15px'
-              },
-              settings: {
-                alignment: 'left'
-              }
-            })
-          })
-          
-          // Update parent section
-          moveElement(rowId, overId)
         }
       } else if (['headline', 'text', 'image', 'button', 'form', 'pricing-table', 'testimonial-carousel'].includes(elementType)) {
-        // Content elements can only be dropped inside columns
+        // Content elements can be dropped inside columns or directly in the editor
         const targetElement = elements.find(el => el.id === overId)
-        if (targetElement?.type === 'column') {
+        if (targetElement?.type === 'column' || overId === 'editor-canvas') {
           let newElement: any = {
             id: newElementId,
             type: elementType,
@@ -318,7 +253,7 @@ function ElementorEditorContent() {
                   fontWeight: 'bold',
                   color: '#000000',
                   textAlign: 'left',
-                  margin: '0 0 16px 0'
+                  margin: '0'
                 }
               }
               break
@@ -333,7 +268,7 @@ function ElementorEditorContent() {
                   color: '#000000',
                   textAlign: 'left',
                   lineHeight: '1.6',
-                  margin: '0 0 16px 0'
+                  margin: '0'
                 }
               }
               break
@@ -532,10 +467,12 @@ function ElementorEditorContent() {
   }
 
   const renderElement = (element: any) => {
-    const isSelected = selectedElement === element.id
+    const isSelected = !isPreview && selectedElement === element.id
+    const isParentOfSelected = !isPreview && !isSelected && selectedElement && elements.find(el => el.id === selectedElement)?.parentId === element.id
     const children = getElementChildren(element.id)
     
     const handleElementClick = (e: React.MouseEvent) => {
+      if (isPreview) return // Disable element selection in preview mode
       e.stopPropagation()
       selectElement(element.id)
       setShowProperties(true)
@@ -554,273 +491,12 @@ function ElementorEditorContent() {
     }
 
     switch (element.type) {
-      case 'section':
-        const sectionStyle: React.CSSProperties = {
-          backgroundColor: element.settings?.backgroundType === 'color' ? element.styles?.backgroundColor || '#ffffff' : 'transparent',
-          padding: element.styles?.padding || '40px',
-          margin: element.styles?.margin || '0px',
-          minHeight: element.styles?.height || '400px',
-          position: 'relative',
-          overflow: 'hidden'
-        }
-
-        if (element.settings?.backgroundType === 'image' && element.styles?.backgroundImage) {
-          sectionStyle.backgroundImage = element.styles.backgroundImage
-          sectionStyle.backgroundSize = element.styles?.backgroundSize || 'cover'
-          sectionStyle.backgroundPosition = element.styles?.backgroundPosition || 'center center'
-          sectionStyle.backgroundRepeat = 'no-repeat'
-        }
-
-        if (element.styles?.border) {
-          sectionStyle.border = element.styles.border
-        }
-
-        if (element.styles?.borderRadius) {
-          sectionStyle.borderRadius = element.styles.borderRadius
-        }
-
-        if (element.styles?.boxShadow) {
-          sectionStyle.boxShadow = element.styles.boxShadow
-        }
-
-        return (
-          <div
-            key={element.id}
-            className={`relative border-2 transition-all duration-200 ${
-              isSelected ? 'border-blue-500 bg-blue-50/20' : 'border-transparent hover:border-blue-300'
-            }`}
-            style={sectionStyle}
-            onClick={handleElementClick}
-          >
-            {/* Background Video */}
-            {element.settings?.backgroundType === 'video' && element.settings?.backgroundVideoUrl && (
-              <video
-                autoPlay
-                muted
-                loop
-                className="absolute inset-0 w-full h-full object-cover z-0"
-                style={{ pointerEvents: 'none' }}
-              >
-                <source src={element.settings.backgroundVideoUrl} type="video/mp4" />
-              </video>
-            )}
-
-            {/* Background Overlay */}
-            {element.settings?.backgroundOverlay && (
-              <div
-                className="absolute inset-0 z-10"
-                style={{
-                  backgroundColor: element.settings?.overlayColor || '#000000',
-                  opacity: (element.settings?.overlayOpacity || 50) / 100
-                }}
-              />
-            )}
-            {isSelected && (
-              <>
-                <div className="absolute -top-6 left-0 bg-blue-500 text-white px-2 py-1 text-xs rounded z-10">
-                  Section
-                </div>
-                <DeleteButton elementId={element.id} elementType="section" />
-              </>
-            )}
-            
-            <div className="relative z-20">
-              {children.length === 0 ? (
-                <div 
-                  className="flex items-center justify-center h-full border-2 border-dashed border-gray-300 rounded-lg min-h-[200px]"
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    const elementType = e.dataTransfer.getData('text/plain')
-                    if (elementType.startsWith('row-')) {
-                      const columnCount = parseInt(elementType.split('-')[1])
-                      const rowId = generateId()
-                      const columnIds: string[] = []
-                      
-                      // Calculate column width based on count
-                      const getColumnWidth = (count: number) => {
-                        switch (count) {
-                          case 1: return '100%'
-                          case 2: return '50%'
-                          case 3: return '33.333%'
-                          case 4: return '25%'
-                          default: return '50%'
-                        }
-                      }
-                      
-                      // Create column IDs
-                      for (let i = 0; i < columnCount; i++) {
-                        columnIds.push(generateId())
-                      }
-                      
-                      // Add row
-                      addElement({
-                        id: rowId,
-                        type: 'row',
-                        parentId: element.id,
-                        children: columnIds,
-                        styles: {
-                          padding: '10px'
-                        },
-                        settings: {
-                          columnGap: '20px',
-                          columnCount: columnCount
-                        }
-                      })
-                      
-                      // Add columns
-                      columnIds.forEach((colId) => {
-                        addElement({
-                          id: colId,
-                          type: 'column',
-                          parentId: rowId,
-                          children: [],
-                          styles: {
-                            width: getColumnWidth(columnCount),
-                            padding: '15px'
-                          },
-                          settings: {
-                            alignment: 'left'
-                          }
-                        })
-                      })
-                      
-                      // Update parent section
-                      moveElement(rowId, element.id)
-                    }
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                  }}
-                >
-                  <div className="text-center text-gray-500">
-                    <Rows className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Drop a Row here</p>
-                    <p className="text-xs mt-1 opacity-75">Choose 1, 2, 3, or 4 columns</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {children.map(child => <React.Fragment key={child.id}>{renderElement(child)}</React.Fragment>)}
-                  
-                  {/* Always show drop zone for adding more rows */}
-                  <div 
-                    className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg min-h-[60px] hover:border-blue-400 hover:bg-blue-50/20 transition-colors"
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      const elementType = e.dataTransfer.getData('text/plain')
-                      if (elementType.startsWith('row-')) {
-                        const columnCount = parseInt(elementType.split('-')[1])
-                        const rowId = generateId()
-                        const columnIds: string[] = []
-                        
-                        // Calculate column width based on count
-                        const getColumnWidth = (count: number) => {
-                          switch (count) {
-                            case 1: return '100%'
-                            case 2: return '50%'
-                            case 3: return '33.333%'
-                            case 4: return '25%'
-                            default: return '50%'
-                          }
-                        }
-                        
-                        // Create column IDs
-                        for (let i = 0; i < columnCount; i++) {
-                          columnIds.push(generateId())
-                        }
-                        
-                        // Add row
-                        addElement({
-                          id: rowId,
-                          type: 'row',
-                          parentId: element.id,
-                          children: columnIds,
-                          styles: {
-                            padding: '10px'
-                          },
-                          settings: {
-                            columnGap: '20px',
-                            columnCount: columnCount
-                          }
-                        })
-                        
-                        // Add columns
-                        columnIds.forEach((colId) => {
-                          addElement({
-                            id: colId,
-                            type: 'column',
-                            parentId: rowId,
-                            children: [],
-                            styles: {
-                              width: getColumnWidth(columnCount),
-                              padding: '15px'
-                            },
-                            settings: {
-                              alignment: 'left'
-                            }
-                          })
-                        })
-                        
-                        // Update parent section
-                        moveElement(rowId, element.id)
-                      }
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                    }}
-                  >
-                    <div className="text-center text-gray-500">
-                      <Plus className="w-5 h-5 mx-auto mb-1 opacity-50" />
-                      <p className="text-xs">Add another row</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )
-        
-      case 'row':
-        return (
-          <div
-            key={element.id}
-            className={`relative border-2 transition-all duration-200 ${
-              isSelected ? 'border-green-500 bg-green-50/20' : 'border-transparent hover:border-green-300'
-            }`}
-            style={{
-              padding: element.styles?.padding || '10px'
-            }}
-            onClick={handleElementClick}
-          >
-            {isSelected && (
-              <>
-                <div className="absolute -top-6 left-0 bg-green-500 text-white px-2 py-1 text-xs rounded z-10">
-                  Row ({element.settings?.columnCount || 2} columns)
-                </div>
-                <DeleteButton elementId={element.id} elementType="row" />
-              </>
-            )}
-            
-            <div 
-              className="flex"
-              style={{
-                gap: element.settings?.columnGap || '20px'
-              }}
-            >
-              {children.map(child => <React.Fragment key={child.id}>{renderElement(child)}</React.Fragment>)}
-            </div>
-          </div>
-        )
-        
       case 'column':
         return (
           <ColumnElement 
             element={element} 
             isSelected={isSelected} 
+            isPreview={isPreview}
             children={children} 
             handleElementClick={handleElementClick} 
             renderElement={renderElement}
@@ -835,10 +511,11 @@ function ElementorEditorContent() {
         return (
           <div
             key={element.id}
-            className={`relative border-2 transition-all duration-200 ${
-              isSelected ? 'border-orange-500 bg-orange-50/20' : 'border-transparent hover:border-orange-300'
+            className={`relative ${!isPreview ? 'border-2 transition-all duration-200' : ''} ${
+              isSelected ? 'border-orange-500 bg-orange-50/20' : isPreview ? '' : 'border-transparent hover:border-orange-300'
             }`}
             onClick={(e) => {
+              if (isPreview) return; // Disable element selection in preview mode
               // Only open properties panel if clicking on the container, not the text content
               if (e.target === e.currentTarget) {
                 handleElementClick(e);
@@ -849,7 +526,7 @@ function ElementorEditorContent() {
               }
             }}
           >
-            {isSelected && (
+            {isSelected && !isPreview && (
               <>
                 <div className="absolute -top-6 left-0 bg-orange-500 text-white px-2 py-1 text-xs rounded z-10">
                   Headline
@@ -871,10 +548,11 @@ function ElementorEditorContent() {
         return (
           <div
             key={element.id}
-            className={`relative border-2 transition-all duration-200 ${
-              isSelected ? 'border-indigo-500 bg-indigo-50/20' : 'border-transparent hover:border-indigo-300'
+            className={`relative ${!isPreview ? 'border-2 transition-all duration-200' : ''} ${
+              isSelected ? 'border-indigo-500 bg-indigo-50/20' : isPreview ? '' : 'border-transparent hover:border-indigo-300'
             }`}
             onClick={(e) => {
+              if (isPreview) return; // Disable element selection in preview mode
               // Only open properties panel if clicking on the container, not the text content
               if (e.target === e.currentTarget) {
                 handleElementClick(e);
@@ -885,7 +563,7 @@ function ElementorEditorContent() {
               }
             }}
           >
-            {isSelected && (
+            {isSelected && !isPreview && (
               <>
                 <div className="absolute -top-6 left-0 bg-indigo-500 text-white px-2 py-1 text-xs rounded z-10">
                   Text
@@ -906,15 +584,18 @@ function ElementorEditorContent() {
         return (
           <div
             key={element.id}
-            className={`relative border-2 transition-all duration-200 ${
-              isSelected ? 'border-pink-500 bg-pink-50/20' : 'border-transparent hover:border-pink-300'
+            className={`relative ${!isPreview ? 'border-2 transition-all duration-200' : ''} ${
+              isSelected ? 'border-pink-500 bg-pink-50/20' : isPreview ? '' : 'border-transparent hover:border-pink-300'
             }`}
             style={{
               textAlign: element.styles?.textAlign || 'left'
             }}
-            onClick={handleElementClick}
+            onClick={(e) => {
+              if (isPreview) return; // Disable element selection in preview mode
+              handleElementClick(e);
+            }}
           >
-            {isSelected && (
+            {isSelected && !isPreview && (
               <>
                 <div className="absolute -top-6 left-0 bg-pink-500 text-white px-2 py-1 text-xs rounded z-10">
                   Image
@@ -943,10 +624,13 @@ function ElementorEditorContent() {
         return (
           <div
             key={element.id}
-            className={`relative border-2 transition-all duration-200 ${
-              isSelected ? 'border-emerald-500 bg-emerald-50/20' : 'border-transparent hover:border-emerald-300'
+            className={`relative ${!isPreview ? 'border-2 transition-all duration-200' : ''} ${
+              isSelected ? 'border-emerald-500 bg-emerald-50/20' : isPreview ? '' : 'border-transparent hover:border-emerald-300'
             }`}
-            onClick={handleElementClick}
+            onClick={(e) => {
+              if (isPreview) return; // Disable element selection in preview mode
+              handleElementClick(e);
+            }}
           >
             {/* Dynamic hover styles */}
             <style>{`
@@ -958,7 +642,7 @@ function ElementorEditorContent() {
               }
             `}</style>
             
-            {isSelected && (
+            {isSelected && !isPreview && (
               <>
                 <div className="absolute -top-6 left-0 bg-emerald-500 text-white px-2 py-1 text-xs rounded z-10">
                   Button
@@ -1007,12 +691,15 @@ function ElementorEditorContent() {
         return (
           <div
             key={element.id}
-            className={`relative border-2 transition-all duration-200 ${
-              isSelected ? 'border-purple-500 bg-purple-50/20' : 'border-transparent hover:border-purple-300'
+            className={`relative ${!isPreview ? 'border-2 transition-all duration-200' : ''} ${
+              isSelected ? 'border-purple-500 bg-purple-50/20' : isPreview ? '' : 'border-transparent hover:border-purple-300'
             }`}
-            onClick={handleElementClick}
+            onClick={(e) => {
+              if (isPreview) return; // Disable element selection in preview mode
+              handleElementClick(e);
+            }}
           >
-            {isSelected && (
+            {isSelected && !isPreview && (
               <>
                 <div className="absolute -top-6 left-0 bg-purple-500 text-white px-2 py-1 text-xs rounded z-10">
                   Video
@@ -1061,12 +748,15 @@ function ElementorEditorContent() {
         return (
           <div
             key={element.id}
-            className={`relative border-2 transition-all duration-200 ${
-              isSelected ? 'border-gray-500 bg-gray-50/20' : 'border-transparent hover:border-gray-300'
+            className={`relative ${!isPreview ? 'border-2 transition-all duration-200' : ''} ${
+              isSelected ? 'border-gray-500 bg-gray-50/20' : isPreview ? '' : 'border-transparent hover:border-gray-300'
             }`}
-            onClick={handleElementClick}
+            onClick={(e) => {
+              if (isPreview) return; // Disable element selection in preview mode
+              handleElementClick(e);
+            }}
           >
-            {isSelected && (
+            {isSelected && !isPreview && (
               <>
                 <div className="absolute -top-6 left-0 bg-gray-500 text-white px-2 py-1 text-xs rounded z-10">
                   Spacer
@@ -1085,7 +775,7 @@ function ElementorEditorContent() {
                 borderRadius: element.styles?.borderRadius || '0px'
               }}
             >
-              {isSelected && (
+              {isSelected && !isPreview && (
                 <div className="text-center text-gray-400">
                   <Square className="w-6 h-6 mx-auto mb-1 opacity-50" />
                   <p className="text-xs">Spacer: {element.styles?.height || '50px'}</p>
@@ -1099,11 +789,14 @@ function ElementorEditorContent() {
         return (
           <div
             key={element.id}
-            className={`relative ${isSelected ? 'ring-2 ring-yellow-500' : ''}`}
+            className={`relative ${isSelected && !isPreview ? 'ring-2 ring-yellow-500' : ''}`}
             style={element.styles}
-            onClick={handleElementClick}
+            onClick={(e) => {
+              if (isPreview) return; // Disable element selection in preview mode
+              handleElementClick(e);
+            }}
           >
-            {isSelected && (
+            {isSelected && !isPreview && (
               <>
                 <div className="absolute -top-6 left-0 bg-yellow-500 text-white px-2 py-1 text-xs rounded z-10">
                   Form
@@ -1159,11 +852,14 @@ function ElementorEditorContent() {
         return (
           <div
             key={element.id}
-            className={`relative ${isSelected ? 'ring-2 ring-green-500' : ''}`}
+            className={`relative ${isSelected && !isPreview ? 'ring-2 ring-green-500' : ''}`}
             style={element.styles}
-            onClick={handleElementClick}
+            onClick={(e) => {
+              if (isPreview) return; // Disable element selection in preview mode
+              handleElementClick(e);
+            }}
           >
-            {isSelected && (
+            {isSelected && !isPreview && (
               <>
                 <div className="absolute -top-6 left-0 bg-green-500 text-white px-2 py-1 text-xs rounded z-10">
                   Pricing Table
@@ -1209,8 +905,10 @@ function ElementorEditorContent() {
         return (
           <div
             key={element.id}
-            className={`relative border-2 transition-all duration-200 ${isSelected ? 'border-purple-500 bg-purple-50/20' : 'border-transparent hover:border-purple-300'}`}
+            className={`relative ${!isPreview ? 'border-2 transition-all duration-200' : ''} ${isSelected ? 'border-purple-500 bg-purple-50/20' : isPreview ? '' : 'border-transparent hover:border-purple-300'}`}
             onClick={(e) => {
+              if (isPreview) return; // Disable element selection in preview mode
+              
               // Only open properties panel if clicking on the container, not the testimonial content
               if (e.target === e.currentTarget) {
                 handleElementClick(e);
@@ -1221,7 +919,7 @@ function ElementorEditorContent() {
               }
             }}
           >
-            {isSelected && (
+            {isSelected && !isPreview && (
               <>
                 <div className="absolute -top-6 left-0 bg-purple-500 text-white px-2 py-1 text-xs rounded z-10">
                   Testimonial
@@ -1233,6 +931,7 @@ function ElementorEditorContent() {
               element={element}
               isSelected={isSelected}
               updateElement={updateElement}
+              isPreview={isPreview}
             />
           </div>
         )
@@ -1241,15 +940,19 @@ function ElementorEditorContent() {
         return (
           <div
             key={element.id}
-            className="p-4 border border-gray-300 rounded bg-gray-50"
-            onClick={handleElementClick}
+            className={`p-4 ${!isPreview ? 'border border-gray-300 rounded bg-gray-50' : ''}`}
+            onClick={(e) => {
+              if (isPreview) return; // Disable element selection in preview mode
+              handleElementClick(e);
+            }}
           >
-            {element.type} element (coming soon)
+            {isPreview ? '' : `${element.type} element (coming soon)`}
           </div>
         )
     }
   }
 
+  // Get root elements - now these are columns directly
   const rootElements = elements.filter(el => !el.parentId)
 
   return (
@@ -1260,8 +963,9 @@ function ElementorEditorContent() {
       onDragEnd={handleDragEnd}
     >
       <div className="h-screen flex bg-gray-50">
-        {/* Side Panel */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        {/* Side Panel - Hidden in Preview Mode */}
+        {!isPreview && (
+          <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
           {/* Side Panel Header */}
           <div className="p-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Elements</h2>
@@ -1303,6 +1007,7 @@ function ElementorEditorContent() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
@@ -1358,26 +1063,17 @@ function ElementorEditorContent() {
               </Button>
               <div className="h-6 w-px bg-gray-300" />
               <Button 
-                variant="outline" 
+                variant={isPreview ? "default" : "outline"} 
                 size="sm"
                 onClick={() => {
-                  if (!currentPageId) {
-                    // If no current page, save first
-                    setShowSaveDialog(true)
-                  } else {
-                    // Save current page and open preview
-                    savePage(currentPageId)
-                    window.open(`/elementor-preview/${currentPageId}`, '_blank')
-                  }
+                  // Toggle preview mode
+                  setIsPreview(!isPreview)
                 }}
               >
                 <Eye className="w-4 h-4 mr-2" />
-                Preview
+                {isPreview ? "Edit" : "Preview"}
               </Button>
-              <Button 
-                size="sm"
-                onClick={() => setShowSaveDialog(true)}
-              >
+              <Button size="sm">
                 <Save className="w-4 h-4 mr-2" />
                 Save
               </Button>
@@ -1392,27 +1088,37 @@ function ElementorEditorContent() {
                 style={{ 
                   width: getViewportWidth(), 
                   maxWidth: "100%",
-                  minHeight: "600px"
+                  minHeight: "600px",
+                  position: "relative",
+                  overflow: "hidden"
                 }}
                 onDrop={(e) => {
                   e.preventDefault()
                   const elementType = e.dataTransfer.getData('text/plain')
-                  if (elementType === 'section') {
-                    const newElementId = generateId()
-                    addElement({
-                      id: newElementId,
-                      type: 'section',
-                      children: [],
-                      styles: {
-                        backgroundColor: '#ffffff',
-                        padding: '40px',
-                        margin: '0px',
-                        height: '400px'
-                      },
-                      settings: {
-                        contentWidth: 'boxed'
-                      }
-                    })
+                  if (elementType.startsWith('column-')) {
+                    // Directly create columns
+                    const columnCount = parseInt(elementType.split('-')[1])
+                    
+                    // Create columns
+                    for (let i = 0; i < columnCount; i++) {
+                      const columnId = generateId()
+                      const columnWidth = `${100 / columnCount}%`
+                      
+                      addElement({
+                        id: columnId,
+                        type: 'column',
+                        children: [],
+                        styles: {
+                          width: columnWidth,
+                          padding: '10px',
+                          float: 'left',
+                          boxSizing: 'border-box'
+                        },
+                        settings: {
+                          alignment: 'left'
+                        }
+                      })
+                    }
                   }
                 }}
                 onDragOver={(e) => e.preventDefault()}
@@ -1428,28 +1134,23 @@ function ElementorEditorContent() {
                         Start Building Your Page
                       </h3>
                       <p className="text-gray-500 mb-4 max-w-md">
-                        Drag a Section from the left panel to start creating your page.
+                        Drag Columns from the left panel to start creating your page.
                       </p>
                       <div className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
-                        <Layout className="w-4 h-4 mr-2" />
-                        Drag a Section here
+                        <Columns className="w-4 h-4 mr-2" />
+                        Drag Columns here
                       </div>
                     </div>
                   </div>
                 ) : (
-                  /* Render Elements using UniversalRenderer */
-                  <div className="p-4 space-y-4">
-                    <UniversalRenderer 
-                      elements={elements}
-                      isEditable={true}
-                      selectedElement={selectedElement}
-                      onElementClick={(e, elementId) => {
-                        e.stopPropagation();
-                        selectElement(elementId);
-                        setShowProperties(true);
-                      }}
-                      getElementChildren={getElementChildren}
-                    />
+                  /* Render Elements */
+                  <div className="editor-row clearfix">
+                    {/* Render all columns directly */}
+                    {elements.filter(el => el.type === 'column').map(element => (
+                      <React.Fragment key={element.id}>
+                        {renderElement(element)}
+                      </React.Fragment>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1463,54 +1164,6 @@ function ElementorEditorContent() {
         )}
       </div>
 
-      {/* Save Dialog */}
-      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Save Page</DialogTitle>
-            <DialogDescription>
-              Enter a title for your page to save it.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="page-title" className="text-right">
-                Page Title
-              </Label>
-              <Input 
-                id="page-title" 
-                value={pageTitle} 
-                onChange={(e) => setPageTitle(e.target.value)} 
-                className="col-span-3" 
-                placeholder="My Awesome Page"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>Cancel</Button>
-            <Button 
-              onClick={() => {
-                if (pageTitle.trim() === '') return;
-                
-                // Save the page
-                const pageId = savePage(pageTitle);
-                
-                // Close dialog and reset title
-                setShowSaveDialog(false);
-                setPageTitle('');
-                
-                // Optionally open preview
-                if (window.confirm('Page saved! Would you like to open the preview?')) {
-                  window.open(`/elementor-preview/${pageId}`, '_blank');
-                }
-              }}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
       <DragOverlay>
         {activeId ? (
           <div className="bg-white border border-gray-300 rounded-lg p-4 shadow-lg">

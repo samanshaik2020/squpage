@@ -31,12 +31,14 @@ interface EditableTestimonialProps {
   element: TestimonialElement
   isSelected: boolean
   updateElement: (id: string, updates: any) => void
+  isPreview?: boolean
 }
 
 export function EditableTestimonial({ 
   element, 
   isSelected,
-  updateElement
+  updateElement,
+  isPreview = false
 }: EditableTestimonialProps) {
   const [activeTestimonial, setActiveTestimonial] = useState(0)
   
@@ -107,8 +109,8 @@ export function EditableTestimonial({
     }
   }
   
-  // Display the testimonial in view mode if not selected
-  if (!isSelected) {
+  // Display the testimonial in view mode if not selected or in preview mode
+  if (!isSelected || isPreview) {
     return (
       <div className="testimonial-card p-6 bg-white rounded-lg shadow-md">
         <div className="flex mb-2">

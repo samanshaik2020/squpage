@@ -88,3 +88,36 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Editor Column Styles */
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+#editor-canvas .space-y-4 > div {
+  margin-bottom: 1rem;
+}
+
+#editor-canvas-dropzone {
+  clear: both;
+  width: 100%;
+  display: block;
+}
+
+/* Column Row Styles */
+.editor-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -10px;
+  margin-right: -10px;
+  clear: both;
+}
+
+/* Make sure columns fill their container */
+.editor-row::after {
+  content: "";
+  display: table;
+  clear: both;
+}
