@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import ColumnElement from './column-element'
@@ -46,10 +46,14 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import { ElementorProvider, useElementor } from "@/lib/elementor-context"
+import { ElementorProvider, useElementor, ElementorElement } from "@/lib/elementor-context"
 import { ElementorPropertiesPanel } from "./elementor-properties-panel"
+import { SidePanelStructureSelector } from "./side-panel-structure-selector"
 import { EditableText } from "./editable-text"
-import { EditableTestimonial } from "./editable-testimonial"
+import { EditableTestimonial, TestimonialElement, TestimonialItem } from "./editable-testimonial"
+import { ColumnStructureSelector } from "./column-structure-selector"
+import { AddStructureButton } from "./add-structure-button"
+import { StructureOption } from "./structure-option"
 
 interface ElementorEditorProps {
   templateId?: string
@@ -57,30 +61,6 @@ interface ElementorEditorProps {
 
 // Define the available elements for the side panel
 const AVAILABLE_ELEMENTS = [
-  {
-    id: 'column-1',
-    name: '1 Column',
-    icon: Columns,
-    description: 'Add a single column'
-  },
-  {
-    id: 'column-2',
-    name: '2 Columns',
-    icon: Columns,
-    description: 'Add a two column layout'
-  },
-  {
-    id: 'column-3',
-    name: '3 Columns',
-    icon: Columns,
-    description: 'Add a three column layout'
-  },
-  {
-    id: 'column-4',
-    name: '4 Columns',
-    icon: Columns,
-    description: 'Add a four column layout'
-  },
   {
     id: 'headline',
     name: 'Headline',
@@ -145,36 +125,43 @@ export function ElementorEditor({ templateId }: ElementorEditorProps) {
   )
 }
 
-function ElementorEditorContent() {
-  const [viewMode, setViewMode] = useState<"desktop" | "tablet" | "mobile">("desktop")
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [showProperties, setShowProperties] = useState(false)
-  
-  // State for headline inline editing - moved to component top level to avoid Rules of Hooks violations
-  const [editingStates, setEditingStates] = useState<Record<string, boolean>>({})
-  const [contentStates, setContentStates] = useState<Record<string, string>>({})
-  
-  const { 
-    elements, 
-    selectedElement, 
+const ElementorEditorContent = (): React.ReactElement => {
+  // Destructure context
+  const {
+    elements,
+    selectedElement,
     isPreview,
     setIsPreview,
-    addElement, 
+    selectElement,
+    addElement,
     updateElement,
-    selectElement, 
+    deleteElement,
     moveElement,
-    getElementChildren,
-    deleteElement 
+    getElementChildren
   } = useElementor()
 
+  // State for showing structure selector
+  const [showStructureSelector, setShowStructureSelector] = useState(false)
+  const [showProperties, setShowProperties] = useState(false)
+  const [viewMode, setViewMode] = useState<"desktop" | "tablet" | "mobile">("desktop")
+  const [activeId, setActiveId] = useState<string | null>(null)
+  
+  // Helper function to generate unique IDs
+  const generateId = () => {
+    return `element_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  }
+  
+  // Filter root elements (columns)
+  const rootElements = elements.filter((el: ElementorElement) => el.type === 'column')
+  
+  // Sensors for drag and drop
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
-  const getViewportWidth = () => {
+  // Function to get viewport width based on selected view mode
+  const getViewportWidth = (): string => {
     switch (viewMode) {
       case "desktop":
         return "100%"
@@ -187,64 +174,85 @@ function ElementorEditorContent() {
     }
   }
 
-  const generateId = () => {
-    return `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  }
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string)
-  }
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    setActiveId(null)
-
-    if (!over) return
-
-    const activeId = active.id as string
-    const overId = over.id as string
-
-    // Check if we're dragging from the elements panel
-    if (AVAILABLE_ELEMENTS.find(el => el.id === activeId)) {
-      const elementType = activeId as any
-      const newElementId = generateId()
-      
-      if (['column-1', 'column-2', 'column-3', 'column-4'].includes(elementType)) {
-        // Directly create columns without section/row structure
-        const columnCount = parseInt(elementType.split('-')[1])
-        
-        // Create columns directly in the editor
-        for (let i = 0; i < columnCount; i++) {
-          const columnId = generateId()
-          const columnWidth = `${100 / columnCount}%`
-          
-          addElement({
-            id: columnId,
-            type: 'column',
-            children: [],
-            styles: {
-              width: columnWidth,
-              padding: '10px',
-              float: 'left',
-              boxSizing: 'border-box'
-            },
-            settings: {
-              alignment: 'left'
-            }
-          })
+  // Handle structure selection
+  const handleStructureSelect = useCallback((structure: any) => {
+    setShowStructureSelector(false)
+    structure.columns.forEach((width: number) => {
+      const columnId = generateId()
+      addElement({
+        id: columnId,
+        type: 'column',
+        children: [],
+        styles: {
+          width: `${width}%`,
+          padding: '10px',
+          float: 'left',
+          boxSizing: 'border-box'
+        },
+        settings: {
+          alignment: 'left'
         }
-      } else if (['headline', 'text', 'image', 'button', 'form', 'pricing-table', 'testimonial-carousel'].includes(elementType)) {
-        // Content elements can be dropped inside columns or directly in the editor
-        const targetElement = elements.find(el => el.id === overId)
-        if (targetElement?.type === 'column' || overId === 'editor-canvas') {
-          let newElement: any = {
-            id: newElementId,
-            type: elementType,
-            parentId: overId
-          }
+      })
+    })
+  }, [addElement])
+
+  function handleDragStart(event: DragStartEvent) {
+    const id = event.active.id as string
+    setActiveId(id)
+    
+    // Show structure selector if the Add Structure element is dragged
+    if (id === 'add-structure') {
+      // We'll show the structure selector on drag end instead
+      // This allows the drag operation to complete normally
+    }
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const activeId = event.active.id as string
+    const overId = event.over?.id as string
+    setActiveId(null)
+    
+    // We don't need to handle add-structure drag anymore since we're using the SidePanelStructureSelector
+    // instead of draggable column elements
+    
+    if (overId && AVAILABLE_ELEMENTS.some(el => el.id === activeId)) {
+      // Handle dropping an element from the side panel
+      handleElementDrop(activeId, overId)
+    }
+  }
+  
+  // Function to create a new element based on element type
+  const createNewElement = useCallback((elementType: string) => {
+    const id = generateId()
+    const newElement = {
+      id,
+      type: elementType,
+      children: [],
+      styles: {},
+      settings: {}
+    }
+    
+    return newElement
+  }, [])
+
+  // Handle element drop
+  function handleElementDrop(elementType: string, overId: string) {
+    if (['heading', 'text', 'image', 'button', 'form', 'pricing-table', 'testimonial-carousel'].includes(elementType)) {
+      // Content elements can be dropped inside columns or directly in the editor
+      const targetElement = elements.find((el: ElementorElement) => el.id === overId)
+      if (targetElement?.type === 'column' || overId === 'editor-canvas') {
+        const id = generateId()
+        let newElement: ElementorElement = {
+          id,
+          type: elementType as any,
+          parentId: overId === 'editor-canvas' ? undefined : overId,
+          children: [],
+          styles: {},
+          settings: {}
+        }
           
           switch (elementType) {
-            case 'headline':
+            case 'heading':
               newElement = {
                 ...newElement,
                 content: 'Your Heading Here',
@@ -430,22 +438,18 @@ function ElementorEditorContent() {
                 },
                 settings: {
                   autoplay: true,
-                  autoplaySpeed: 3000,
-                  showDots: true,
-                  showArrows: true,
-                  slidesToShow: 1
+                  autoplaySpeed: 3000
                 }
               }
               break
           }
-          
-          addElement(newElement)
-          moveElement(newElementId, overId)
-        }
+        
+        // Add the new element to the editor
+        addElement(newElement)
       }
     }
   }
-
+  
   const DeleteButton = ({ elementId, elementType }: { elementId: string, elementType: string }) => {
     const handleDelete = (e: React.MouseEvent) => {
       e.stopPropagation()
@@ -466,7 +470,7 @@ function ElementorEditorContent() {
     )
   }
 
-  const renderElement = (element: any) => {
+  const renderElement = (element: ElementorElement): React.ReactNode => {
     const isSelected = !isPreview && selectedElement === element.id
     const isParentOfSelected = !isPreview && !isSelected && selectedElement && elements.find(el => el.id === selectedElement)?.parentId === element.id
     const children = getElementChildren(element.id)
@@ -507,7 +511,7 @@ function ElementorEditorContent() {
           />
         )
 
-      case 'headline':
+      case 'heading':
         return (
           <div
             key={element.id}
@@ -928,7 +932,17 @@ function ElementorEditorContent() {
               </>
             )}
             <EditableTestimonial
-              element={element}
+              element={{
+                ...element,
+                testimonials: element.testimonials || [{
+                  id: `testimonial_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+                  name: 'Sample Name',
+                  position: 'Sample Position',
+                  company: 'Sample Company',
+                  content: 'Sample testimonial content goes here.',
+                  rating: 5
+                }]
+              } as TestimonialElement}
               isSelected={isSelected}
               updateElement={updateElement}
               isPreview={isPreview}
@@ -953,7 +967,7 @@ function ElementorEditorContent() {
   }
 
   // Get root elements - now these are columns directly
-  const rootElements = elements.filter(el => !el.parentId)
+  const topLevelElements = elements.filter((el: ElementorElement) => !el.parentId)
 
   return (
     <DndContext
@@ -966,47 +980,36 @@ function ElementorEditorContent() {
         {/* Side Panel - Hidden in Preview Mode */}
         {!isPreview && (
           <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          {/* Side Panel Header */}
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Elements</h2>
-            <p className="text-sm text-gray-500 mt-1">Drag elements to the canvas</p>
-          </div>
-
-          {/* Elements List */}
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="space-y-2">
-              {AVAILABLE_ELEMENTS.map((element) => {
-                const IconComponent = element.icon
-                return (
-                  <Card 
-                    key={element.id}
-                    className="cursor-grab hover:shadow-md transition-shadow duration-200 hover:border-blue-300"
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('text/plain', element.id)
-                      setActiveId(element.id)
-                    }}
-                    onDragEnd={() => {
-                      setActiveId(null)
-                    }}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-50 rounded-lg">
-                          <IconComponent className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{element.name}</h3>
-                          <p className="text-sm text-gray-500">{element.description}</p>
-                        </div>
+            {/* Side Panel Header */}
+            <div className="p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Elements</h2>
+              <p className="text-sm text-gray-500 mt-1">Drag elements to the canvas</p>
+            </div>
+            
+            {/* Structure Selector */}
+            <div className="p-4 border-b border-gray-200">
+              <SidePanelStructureSelector onStructureSelect={handleStructureSelect} />
+            </div>
+            
+            {/* Elements List */}
+            <div className="flex-1 overflow-auto p-4">
+              <div className="space-y-4">
+                {AVAILABLE_ELEMENTS.map((element) => (
+                  <Card key={element.id} className="cursor-move hover:shadow-md transition-shadow">
+                    <CardContent className="p-3 flex items-center space-x-3">
+                      <div className="bg-blue-100 text-blue-700 p-2 rounded">
+                        <element.icon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">{element.name}</h3>
+                        <p className="text-xs text-gray-500">{element.description}</p>
                       </div>
                     </CardContent>
                   </Card>
-                )
-              })}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* Main Content Area */}
@@ -1080,80 +1083,56 @@ function ElementorEditorContent() {
             </div>
           </div>
 
-          {/* Main Canvas */}
-          <div className="flex-1 overflow-auto bg-gray-100 p-8">
-            <div className="flex justify-center">
-              <div
-                className="bg-white shadow-lg rounded-lg transition-all duration-300 min-h-[600px] relative"
-                style={{ 
-                  width: getViewportWidth(), 
-                  maxWidth: "100%",
-                  minHeight: "600px",
-                  position: "relative",
-                  overflow: "hidden"
-                }}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  const elementType = e.dataTransfer.getData('text/plain')
-                  if (elementType.startsWith('column-')) {
-                    // Directly create columns
-                    const columnCount = parseInt(elementType.split('-')[1])
+          {/* Main Editor Canvas */}
+          <div className="flex-1 p-8 overflow-auto bg-gray-100">
+            <div 
+              className="editor-canvas min-h-[500px] bg-white rounded-lg shadow-sm border border-gray-200"
+              style={{ width: getViewportWidth(), margin: '0 auto' }}
+            >
+              {topLevelElements.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full p-8">
+                  <h3 className="text-2xl font-semibold text-gray-700 mb-2 text-center">
+                    Start Building Your Page
+                  </h3>
+                  <p className="text-gray-500 mb-6 text-center">
+                    Select a column structure below to begin
+                  </p>
+                  
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h2 className="text-xl font-semibold mb-4 text-center">Select your structure</h2>
                     
-                    // Create columns
-                    for (let i = 0; i < columnCount; i++) {
-                      const columnId = generateId()
-                      const columnWidth = `${100 / columnCount}%`
-                      
-                      addElement({
-                        id: columnId,
-                        type: 'column',
-                        children: [],
-                        styles: {
-                          width: columnWidth,
-                          padding: '10px',
-                          float: 'left',
-                          boxSizing: 'border-box'
-                        },
-                        settings: {
-                          alignment: 'left'
-                        }
-                      })
-                    }
-                  }
-                }}
-                onDragOver={(e) => e.preventDefault()}
-              >
-                {rootElements.length === 0 ? (
-                  /* Empty Canvas with Prompt */
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center p-8">
-                      <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Plus className="w-8 h-8 text-blue-600" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                        Start Building Your Page
-                      </h3>
-                      <p className="text-gray-500 mb-4 max-w-md">
-                        Drag Columns from the left panel to start creating your page.
-                      </p>
-                      <div className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
-                        <Columns className="w-4 h-4 mr-2" />
-                        Drag Columns here
-                      </div>
+                    <div className="grid grid-cols-6 gap-4 mb-4">
+                      {/* First row - single columns and simple splits */}
+                      <StructureOption columns={[100]} onClick={() => handleStructureSelect({ id: 'col-100', columns: [100] })} />
+                      <StructureOption columns={[50, 50]} onClick={() => handleStructureSelect({ id: 'col-50-50', columns: [50, 50] })} />
+                      <StructureOption columns={[33.33, 33.33, 33.33]} onClick={() => handleStructureSelect({ id: 'col-33-33-33', columns: [33.33, 33.33, 33.33] })} />
+                      <StructureOption columns={[25, 25, 25, 25]} onClick={() => handleStructureSelect({ id: 'col-25-25-25-25', columns: [25, 25, 25, 25] })} />
+                      <StructureOption columns={[20, 20, 20, 20, 20]} onClick={() => handleStructureSelect({ id: 'col-20-20-20-20-20', columns: [20, 20, 20, 20, 20] })} />
+                      <StructureOption columns={[16.66, 16.66, 16.66, 16.66, 16.66, 16.66]} onClick={() => handleStructureSelect({ id: 'col-16-16-16-16-16-16', columns: [16.66, 16.66, 16.66, 16.66, 16.66, 16.66] })} />
+                    </div>
+                    
+                    <div className="grid grid-cols-6 gap-4">
+                      {/* Second row - asymmetric layouts */}
+                      <StructureOption columns={[33.33, 66.66]} onClick={() => handleStructureSelect({ id: 'col-33-66', columns: [33.33, 66.66] })} />
+                      <StructureOption columns={[66.66, 33.33]} onClick={() => handleStructureSelect({ id: 'col-66-33', columns: [66.66, 33.33] })} />
+                      <StructureOption columns={[25, 75]} onClick={() => handleStructureSelect({ id: 'col-25-75', columns: [25, 75] })} />
+                      <StructureOption columns={[75, 25]} onClick={() => handleStructureSelect({ id: 'col-75-25', columns: [75, 25] })} />
+                      <StructureOption columns={[25, 50, 25]} onClick={() => handleStructureSelect({ id: 'col-25-50-25', columns: [25, 50, 25] })} />
+                      <StructureOption columns={[20, 60, 20]} onClick={() => handleStructureSelect({ id: 'col-20-60-20', columns: [20, 60, 20] })} />
                     </div>
                   </div>
-                ) : (
-                  /* Render Elements */
-                  <div className="editor-row clearfix">
-                    {/* Render all columns directly */}
-                    {elements.filter(el => el.type === 'column').map(element => (
-                      <React.Fragment key={element.id}>
-                        {renderElement(element)}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                /* Render Elements */
+                <div className="editor-row clearfix">
+                  {/* Render all columns directly */}
+                  {topLevelElements.map(element => (
+                    <React.Fragment key={element.id}>
+                      {renderElement(element)}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

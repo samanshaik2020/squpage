@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 
-interface TestimonialItem {
+export interface TestimonialItem {
   id: string
   name: string
   position: string
@@ -17,7 +17,7 @@ interface TestimonialItem {
   image?: string
 }
 
-interface TestimonialElement {
+export interface TestimonialElement {
   id: string
   type: string
   testimonials: TestimonialItem[]
@@ -42,11 +42,22 @@ export function EditableTestimonial({
 }: EditableTestimonialProps) {
   const [activeTestimonial, setActiveTestimonial] = useState(0)
   
-  if (!element.testimonials || !Array.isArray(element.testimonials)) {
+  if (!element.testimonials || !Array.isArray(element.testimonials) || element.testimonials.length === 0) {
     return <div>Invalid testimonial data</div>
   }
   
-  const testimonials = element.testimonials
+  // Ensure all testimonial fields have default values
+  const normalizedTestimonials = element.testimonials.map(testimonial => ({
+    id: testimonial.id || `testimonial_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    name: testimonial.name || '',
+    position: testimonial.position || '',
+    company: testimonial.company || '',
+    content: testimonial.content || '',
+    rating: testimonial.rating || 5,
+    image: testimonial.image || ''
+  }))
+  
+  const testimonials = normalizedTestimonials
   const currentTestimonial = testimonials[activeTestimonial]
   
   const handleRatingChange = (newRating: number) => {

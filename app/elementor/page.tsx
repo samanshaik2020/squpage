@@ -1,7 +1,12 @@
 "use client"
 
-import { ElementorEditor } from "@/components/editor/elementor-editor"
+import { ElementorProvider } from "@/lib/elementor-context"
+import { SimplifiedElementorEditor } from "@/components/editor/simplified-elementor-editor"
 
 export default function ElementorPage() {
-  return <ElementorEditor />
+  return (
+    <ElementorProvider>
+      <SimplifiedElementorEditor />
+    </ElementorProvider>
+  )
 }
