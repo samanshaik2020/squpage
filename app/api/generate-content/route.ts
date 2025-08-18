@@ -1,8 +1,8 @@
 // API route for generating content using Gemini API
 export async function POST(req: Request) {
   try {
-    const { productName, topic, portfolioInfo, blogInfo } = await req.json()
-    const inputContent = productName || topic || portfolioInfo || blogInfo
+    const { productName, topic, portfolioInfo, blogInfo, healthProductName } = await req.json()
+    const inputContent = productName || topic || portfolioInfo || blogInfo || healthProductName
 
     if (!inputContent) {
       return new Response(JSON.stringify({ error: "Input content is required" }), {
@@ -73,6 +73,23 @@ FEATURED_POST_EXCERPT: A compelling excerpt for the featured article
 FEATURED_POST_AUTHOR: Author name for the featured post
 RECENT_POSTS: List 6 recent blog post titles with brief descriptions in the format "Title: Description" (one per line)
 CATEGORIES: List 8 blog categories (one per line)
+
+Do not add any additional text, commentary, or sections. Keep your response structured exactly as requested with these section headers.`
+    } else if (healthProductName) {
+      // Health product landing page prompt
+      prompt = `Generate a comprehensive health product landing page for "${healthProductName}". Create content that matches the style of successful health product marketing pages.
+
+You MUST format your response EXACTLY with the following sections, each starting with the exact label followed by a colon:
+
+HERO_TITLE: A compelling title about the health habit or benefit this product provides (make it specific to the product, not just dental)
+HERO_SUBTITLE: A subtitle describing the science-backed approach or natural solution this product offers
+PROBLEM_TITLE: A title highlighting the health issue this product addresses (make it relevant to the specific product)
+PROBLEM_SUBTITLE: A subtitle about how this product supports health from the inside out or addresses the root cause
+BENEFITS: List 4 key benefits of this specific product (one per line, make them relevant to the product type)
+TESTIMONIALS: 3 customer testimonials with names and locations in the format "Quote - Name, Location" (one per line, make them realistic for this product)
+FINAL_CTA_TITLE: A compelling title for the final call-to-action section (like "Ready to See the Results for Yourself?")
+FINAL_CTA_SUBTITLE: A persuasive subtitle about availability and urgency (like "Now available while supplies last")
+HEALTH_FACT: An interesting fact related to this specific health product or the health issue it addresses (make it relevant, not just about teeth)
 
 Do not add any additional text, commentary, or sections. Keep your response structured exactly as requested with these section headers.`
     } else {
@@ -264,6 +281,30 @@ CONCLUSION: [Write a conclusion paragraph that summarizes the main points]`
           if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
           currentKey = "categories"
           currentContent = [line.substring("CATEGORIES:".length).trim()]
+        } else if (line.startsWith("HERO_TITLE:")) {
+          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
+          currentKey = "hero-title"
+          currentContent = [line.substring("HERO_TITLE:".length).trim()]
+        } else if (line.startsWith("HERO_SUBTITLE:")) {
+          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
+          currentKey = "hero-subtitle"
+          currentContent = [line.substring("HERO_SUBTITLE:".length).trim()]
+        } else if (line.startsWith("PROBLEM_TITLE:")) {
+          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
+          currentKey = "problem-title"
+          currentContent = [line.substring("PROBLEM_TITLE:".length).trim()]
+        } else if (line.startsWith("PROBLEM_SUBTITLE:")) {
+          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
+          currentKey = "problem-subtitle"
+          currentContent = [line.substring("PROBLEM_SUBTITLE:".length).trim()]
+        } else if (line.startsWith("BENEFITS:")) {
+          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
+          currentKey = "benefits"
+          currentContent = [line.substring("BENEFITS:".length).trim()]
+        } else if (line.startsWith("HEALTH_FACT:")) {
+          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
+          currentKey = "health-fact"
+          currentContent = [line.substring("HEALTH_FACT:".length).trim()]
         } else if (currentKey) {
           currentContent.push(line.trim())
         }

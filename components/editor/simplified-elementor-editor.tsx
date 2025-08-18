@@ -5,15 +5,8 @@ import { Type, Image, MousePointer, Video, Square, FileText, DollarSign, Message
 import { useElementor } from '@/lib/elementor-context'
 import { ElementPropertiesPanel } from './element-properties-panel'
 import { EditableText } from './editable-text'
-import { StructureOption } from './structure-option'
-import { SidePanelStructureSelector } from './side-panel-structure-selector'
 import { AddStructureButton } from './add-structure-button'
 
-interface ColumnStructureOption {
-  id: string
-  columns: number[]
-  label?: string
-}
 
 export function SimplifiedElementorEditor() {
   const { elements, addElement, updateElement, moveElement } = useElementor()
@@ -243,29 +236,6 @@ export function SimplifiedElementorEditor() {
   // Filter root elements (columns)
   const rootElements = elements.filter(el => el.type === 'column')
   
-  // Handle structure selection
-  const handleStructureSelect = (structure: ColumnStructureOption) => {
-    // Create columns based on the selected structure
-    structure.columns.forEach((width) => {
-      const columnId = `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      
-      addElement({
-        id: columnId,
-        type: 'column',
-        children: [],
-        styles: {
-          width: `${width}%`,
-          padding: '10px',
-          float: 'left',
-          boxSizing: 'border-box'
-        },
-        settings: {
-          alignment: 'left'
-        }
-      })
-    })
-  }
-  
   // Define the available elements for the side panel
   const AVAILABLE_ELEMENTS = [
     {
@@ -330,8 +300,6 @@ export function SimplifiedElementorEditor() {
       <div className="w-64 border-r border-gray-200 overflow-y-auto p-4">
         <h2 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-500">Elements</h2>
         <div className="grid grid-cols-2 gap-2">
-          {/* Structure Selector */}
-          <SidePanelStructureSelector />
           
           {/* Other Elements */}
           {AVAILABLE_ELEMENTS.map((element) => (
@@ -364,6 +332,9 @@ export function SimplifiedElementorEditor() {
         <div className="flex-1 overflow-y-auto p-4 bg-gray-100">
           <div 
             className="min-h-[calc(100vh-8rem)] bg-white rounded-lg shadow-sm border border-gray-200 relative"
+            style={{ 
+              minHeight: rootElements.length > 0 ? `${Math.max(600, rootElements.length * 100)}px` : 'calc(100vh - 8rem)'
+            }}
             id="editor-canvas"
             onDragOver={(e) => e.preventDefault()}
           >
@@ -402,11 +373,12 @@ export function SimplifiedElementorEditor() {
                       className="relative border-2 border-transparent hover:border-purple-300 transition-all duration-200 min-h-[100px]"
                       style={{
                         width: element.styles?.width || '100%',
-                        padding: element.styles?.padding || '10px',
+                        padding: element.styles?.padding || '20px',
                         float: element.styles?.float || 'left',
                         boxSizing: 'border-box',
-                        minHeight: '100px',
-                        marginBottom: '20px'
+                        minHeight: columnChildren.length > 0 ? 'auto' : '200px',
+                        marginBottom: '20px',
+                        border: columnChildren.length === 0 ? '2px dashed #e2e8f0' : '1px solid #e2e8f0'
                       }}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => {
@@ -604,7 +576,7 @@ export function SimplifiedElementorEditor() {
                     >
                       {/* Render column children */}
                       {columnChildren.length === 0 ? (
-                        <div className="flex items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg">
+                        <div className="flex items-center justify-center h-32">
                           <p className="text-gray-500 text-sm">Drop elements here</p>
                         </div>
                       ) : (
@@ -618,6 +590,13 @@ export function SimplifiedElementorEditor() {
                     </div>
                   );
                 })}
+                
+                {/* Add Structure Button in Editor Panel */}
+                <div className="clear-both mt-8 flex justify-center">
+                  <div className="w-64">
+                    <AddStructureButton />
+                  </div>
+                </div>
               </div>
             )}
           </div>

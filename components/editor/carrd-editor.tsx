@@ -13,6 +13,8 @@ import { AIGeneratedBlogPostTemplate } from "./templates/ai-generated-blog-post"
 import { ProductLandingPageTemplate } from "./templates/product-landing-page" // Import product landing page template
 import { AIPortfolioTemplate } from "./templates/ai-portfolio"
 import { AIBlogPageTemplate } from "./templates/ai-blog-page"
+import { DentalHealthLandingTemplate } from "./templates/dental-health-landing"
+import { AIDentalHealthLandingTemplate } from "./templates/ai-dental-health-landing"
 import { EditingPanel } from "./editing-panel"
 import { EditorProvider, useEditor } from "@/lib/editor-context"
 import { Sparkles } from "lucide-react" // Import Sparkles icon
@@ -132,6 +134,10 @@ function CarrdEditorContent({
         return "AI Portfolio"
       case "ai-blog-page":
         return "AI Blog Page"
+      case "dental-health-landing":
+        return "Dental Health Landing"
+      case "ai-dental-health-landing":
+        return "AI Dental Health Landing"
       default:
         return "Template"
     }
@@ -150,6 +156,9 @@ function CarrdEditorContent({
     } else if (templateId === "ai-blog-page") {
       promptText = "Enter your blog name and niche to generate a blog page:"
       requestParam = "blogInfo"
+    } else if (templateId === "ai-dental-health-landing") {
+      promptText = "Enter a health product name to generate a dental health landing page:"
+      requestParam = "healthProductName"
     } else {
       promptText = "Enter a topic for your blog post:"
       requestParam = "topic"
@@ -414,6 +423,63 @@ function CarrdEditorContent({
             updateElement(`category-${categoryNumber}-name`, { content: category.trim() })
           })
         }
+      } else if (templateId === "ai-dental-health-landing") {
+        console.log("Attempting to update dental health landing elements with:", data);
+        
+        // Update hero section
+        if (data["hero-title"]) {
+          updateElement("hero-title", { content: data["hero-title"] });
+        }
+        
+        if (data["hero-subtitle"]) {
+          updateElement("hero-subtitle", { content: data["hero-subtitle"] });
+        }
+        
+        // Update problem section
+        if (data["problem-title"]) {
+          updateElement("problem-title", { content: data["problem-title"] });
+        }
+        
+        if (data["problem-subtitle"]) {
+          updateElement("problem-subtitle", { content: data["problem-subtitle"] });
+        }
+        
+        // Update benefits
+        if (data["benefits"]) {
+          const benefits = data["benefits"].split('\n').filter((b: string) => b.trim() !== '').slice(0, 4)
+          benefits.forEach((benefit: string, index: number) => {
+            const benefitNumber = index + 1
+            updateElement(`benefit-${benefitNumber}`, { content: benefit.trim() })
+          })
+        }
+        
+        // Update testimonials
+        if (data["testimonials"]) {
+          const testimonials = data["testimonials"].split('\n').filter((t: string) => t.trim() !== '').slice(0, 3)
+          testimonials.forEach((testimonial: string, index: number) => {
+            const testimonialNumber = index + 1
+            const testimonialParts = testimonial.split(' - ')
+            
+            if (testimonialParts.length > 1) {
+              updateElement(`testimonial-${testimonialNumber}-text`, { content: `"${testimonialParts[0].trim()}" ${testimonialParts[1].trim()}` })
+            } else {
+              updateElement(`testimonial-${testimonialNumber}-text`, { content: `"${testimonial.trim()}"` })
+            }
+          })
+        }
+        
+        // Update final CTA
+        if (data["final-cta-title"]) {
+          updateElement("final-cta-title", { content: data["final-cta-title"] });
+        }
+        
+        if (data["final-cta-subtitle"]) {
+          updateElement("final-cta-subtitle", { content: data["final-cta-subtitle"] });
+        }
+        
+        if (data["health-fact"]) {
+          updateElement("bacteria-fact", { content: data["health-fact"] });
+        }
       } else {
         // Update blog post elements
         if (data["blog-title"]) updateElement("blog-title", { content: data["blog-title"] })
@@ -455,6 +521,10 @@ function CarrdEditorContent({
         return <AIPortfolioTemplate {...commonProps} />
       case "ai-blog-page":
         return <AIBlogPageTemplate {...commonProps} />
+      case "dental-health-landing":
+        return <DentalHealthLandingTemplate {...commonProps} />
+      case "ai-dental-health-landing":
+        return <AIDentalHealthLandingTemplate {...commonProps} />
       default:
         return <SaasLandingTemplate {...commonProps} />
     }
@@ -511,7 +581,7 @@ function CarrdEditorContent({
             </Button>
           </div>
 
-          {(templateId === "ai-generated-blog-post" || templateId === "product-landing-page" || templateId === "ai-portfolio" || templateId === "ai-blog-page") && (
+          {(templateId === "ai-generated-blog-post" || templateId === "product-landing-page" || templateId === "ai-portfolio" || templateId === "ai-blog-page" || templateId === "ai-dental-health-landing") && (
             <Button size="sm" onClick={handleGenerateAIContent} disabled={isGenerating}>
               <Sparkles className="w-4 h-4 mr-2" />
               {isGenerating ? "Generating..." : "Generate with AI"}
