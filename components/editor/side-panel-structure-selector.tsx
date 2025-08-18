@@ -46,6 +46,7 @@ export function SidePanelStructureSelector({ onStructureSelect }: SidePanelStruc
   const handlePreSelectStructure = (structure: ColumnStructure) => {
     setSelectedStructure(structure)
     
+    // Always allow adding new columns, but show a warning if columns already exist
     if (hasExistingColumns) {
       setShowWarning(true)
     } else {

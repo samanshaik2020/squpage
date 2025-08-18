@@ -11,6 +11,8 @@ import { SeptiCleanTemplate } from "./templates/septiclean"
 import { EbookLandingTemplate } from "./templates/ebook-landing"
 import { AIGeneratedBlogPostTemplate } from "./templates/ai-generated-blog-post"
 import { ProductLandingPageTemplate } from "./templates/product-landing-page" // Import product landing page template
+import { AIPortfolioTemplate } from "./templates/ai-portfolio"
+import { AIBlogPageTemplate } from "./templates/ai-blog-page"
 import { EditingPanel } from "./editing-panel"
 import { EditorProvider, useEditor } from "@/lib/editor-context"
 import { Sparkles } from "lucide-react" // Import Sparkles icon
@@ -50,7 +52,7 @@ function CarrdEditorContent({
   // Initialize template elements when component mounts (only once)
   useEffect(() => {
     // Only initialize if not already done
-    if (!elementsInitialized && templateId === "product-landing-page") {
+    if (!elementsInitialized && (templateId === "product-landing-page" || templateId === "ai-portfolio" || templateId === "ai-blog-page")) {
       console.log("Initializing template elements for:", templateId);
       
       // Initialize product landing page elements with default content
@@ -126,6 +128,10 @@ function CarrdEditorContent({
         return "AI Blog Post"
       case "product-landing-page":
         return "Product Landing Page"
+      case "ai-portfolio":
+        return "AI Portfolio"
+      case "ai-blog-page":
+        return "AI Blog Page"
       default:
         return "Template"
     }
@@ -138,6 +144,12 @@ function CarrdEditorContent({
     if (templateId === "product-landing-page") {
       promptText = "Enter a product name to generate a landing page:"
       requestParam = "productName"
+    } else if (templateId === "ai-portfolio") {
+      promptText = "Enter your name and profession to generate a portfolio:"
+      requestParam = "portfolioInfo"
+    } else if (templateId === "ai-blog-page") {
+      promptText = "Enter your blog name and niche to generate a blog page:"
+      requestParam = "blogInfo"
     } else {
       promptText = "Enter a topic for your blog post:"
       requestParam = "topic"
@@ -175,7 +187,13 @@ function CarrdEditorContent({
       if (templateId === "product-landing-page") {
         console.log("Attempting to update product landing page elements with:", data);
         
-        // Update product landing page elements
+        // Update navigation and branding
+        if (data["product-name"]) {
+          updateElement("nav-logo", { content: data["product-name"] });
+          updateElement("footer-logo", { content: data["product-name"] });
+        }
+        
+        // Update hero section
         if (data["product-title"]) {
           console.log("Updating product-title with:", data["product-title"]);
           updateElement("product-title", { content: data["product-title"] });
@@ -186,14 +204,19 @@ function CarrdEditorContent({
           updateElement("product-tagline", { content: data["product-tagline"] });
         }
         
+        // Update about section
         if (data["product-description"]) {
-          console.log("Updating product-description with:", data["product-description"]);
-          updateElement("product-description", { content: data["product-description"] });
+          console.log("Updating about-description with:", data["product-description"]);
+          updateElement("about-description", { content: data["product-description"] });
         }
         
-        // Handle features - parse and distribute to feature elements
+        if (data["about-title"]) {
+          updateElement("about-title", { content: data["about-title"] });
+        }
+        
+        // Handle features - parse and distribute to 6 feature elements
         if (data["product-features"]) {
-          const features = data["product-features"].split('\n').filter((f: string) => f.trim() !== '').slice(0, 4)
+          const features = data["product-features"].split('\n').filter((f: string) => f.trim() !== '').slice(0, 6)
           
           features.forEach((feature: string, index: number) => {
             const featureNumber = index + 1
@@ -201,18 +224,195 @@ function CarrdEditorContent({
             
             if (featureParts.length > 1) {
               // If feature is in "Feature: Description" format
-              updateElement(`product-feature-${featureNumber}`, { content: featureParts[0].trim() })
-              updateElement(`product-feature-${featureNumber}-desc`, { content: featureParts[1].trim() })
+              updateElement(`feature-${featureNumber}-title`, { content: featureParts[0].trim() })
+              updateElement(`feature-${featureNumber}-description`, { content: featureParts[1].trim() })
             } else {
-              // If feature is just text
-              updateElement(`product-feature-${featureNumber}-desc`, { content: feature.trim() })
+              // If feature is just text, use generic title
+              updateElement(`feature-${featureNumber}-title`, { content: `Feature ${featureNumber}` })
+              updateElement(`feature-${featureNumber}-description`, { content: feature.trim() })
             }
           })
         }
         
+        // Update how it works section
+        if (data["how-it-works"]) {
+          const steps = data["how-it-works"].split('\n').filter((s: string) => s.trim() !== '').slice(0, 3)
+          steps.forEach((step: string, index: number) => {
+            const stepNumber = index + 1
+            const stepParts = step.split(': ')
+            
+            if (stepParts.length > 1) {
+              updateElement(`step-${stepNumber}-title`, { content: stepParts[0].trim() })
+              updateElement(`step-${stepNumber}-description`, { content: stepParts[1].trim() })
+            } else {
+              updateElement(`step-${stepNumber}-title`, { content: `Step ${stepNumber}` })
+              updateElement(`step-${stepNumber}-description`, { content: step.trim() })
+            }
+          })
+        }
+        
+        // Update testimonials
+        if (data["testimonials"]) {
+          const testimonials = data["testimonials"].split('\n').filter((t: string) => t.trim() !== '').slice(0, 3)
+          testimonials.forEach((testimonial: string, index: number) => {
+            const testimonialNumber = index + 1
+            updateElement(`testimonial-${testimonialNumber}-quote`, { content: testimonial.trim() })
+          })
+        }
+        
+        // Update FAQ section
+        if (data["faqs"]) {
+          const faqs = data["faqs"].split('\n').filter((f: string) => f.trim() !== '').slice(0, 5)
+          faqs.forEach((faq: string, index: number) => {
+            const faqNumber = index + 1
+            const faqParts = faq.split('?')
+            
+            if (faqParts.length > 1) {
+              updateElement(`faq-${faqNumber}-question`, { content: faqParts[0].trim() + '?' })
+              updateElement(`faq-${faqNumber}-answer`, { content: faqParts[1].trim() })
+            } else {
+              updateElement(`faq-${faqNumber}-question`, { content: faq.trim() })
+            }
+          })
+        }
+        
+        // Update CTAs
         if (data["product-cta"]) {
-          updateElement("product-cta", { content: data["product-cta"] })
-          updateElement("product-cta-button", { content: data["product-cta"] })
+          updateElement("product-cta-primary", { content: data["product-cta"] })
+          updateElement("final-cta-primary", { content: data["product-cta"] })
+        }
+        
+        // Update final CTA section
+        if (data["final-cta-title"]) {
+          updateElement("final-cta-title", { content: data["final-cta-title"] })
+        }
+        
+        if (data["final-cta-description"]) {
+          updateElement("final-cta-description", { content: data["final-cta-description"] })
+        }
+      } else if (templateId === "ai-portfolio") {
+        console.log("Attempting to update portfolio elements with:", data);
+        
+        // Update portfolio branding
+        if (data["portfolio-name"]) {
+          updateElement("portfolio-name", { content: data["portfolio-name"] });
+          updateElement("hero-name", { content: data["portfolio-name"] });
+        }
+        
+        // Update hero section
+        if (data["hero-title"]) {
+          updateElement("hero-title", { content: data["hero-title"] });
+        }
+        
+        if (data["hero-description"]) {
+          updateElement("hero-description", { content: data["hero-description"] });
+        }
+        
+        // Update about section
+        if (data["about-description"]) {
+          updateElement("about-description", { content: data["about-description"] });
+        }
+        
+        // Update skills
+        if (data["skills"]) {
+          const skills = data["skills"].split('\n').filter((s: string) => s.trim() !== '').slice(0, 8)
+          skills.forEach((skill: string, index: number) => {
+            const skillNumber = index + 1
+            updateElement(`skill-${skillNumber}-name`, { content: skill.trim() })
+          })
+        }
+        
+        // Update projects
+        if (data["projects"]) {
+          const projects = data["projects"].split('\n').filter((p: string) => p.trim() !== '').slice(0, 6)
+          projects.forEach((project: string, index: number) => {
+            const projectNumber = index + 1
+            const projectParts = project.split(': ')
+            
+            if (projectParts.length > 1) {
+              updateElement(`project-${projectNumber}-title`, { content: projectParts[0].trim() })
+              updateElement(`project-${projectNumber}-description`, { content: projectParts[1].trim() })
+            } else {
+              updateElement(`project-${projectNumber}-title`, { content: project.trim() })
+            }
+          })
+        }
+        
+        // Update experience
+        if (data["experience"]) {
+          const experiences = data["experience"].split('\n').filter((e: string) => e.trim() !== '').slice(0, 3)
+          experiences.forEach((experience: string, index: number) => {
+            const expNumber = index + 1
+            const expParts = experience.split(' at ')
+            
+            if (expParts.length > 1) {
+              updateElement(`experience-${expNumber}-title`, { content: expParts[0].trim() })
+              updateElement(`experience-${expNumber}-company`, { content: expParts[1].trim() })
+            } else {
+              updateElement(`experience-${expNumber}-title`, { content: experience.trim() })
+            }
+          })
+        }
+        
+        // Update contact info
+        if (data["contact-email"]) {
+          updateElement("contact-email", { content: data["contact-email"] });
+        }
+        
+      } else if (templateId === "ai-blog-page") {
+        console.log("Attempting to update blog page elements with:", data);
+        
+        // Update blog branding
+        if (data["blog-name"]) {
+          updateElement("blog-logo", { content: data["blog-name"] });
+          updateElement("footer-logo", { content: data["blog-name"] });
+        }
+        
+        // Update hero section
+        if (data["blog-title"]) {
+          updateElement("blog-title", { content: data["blog-title"] });
+        }
+        
+        if (data["blog-subtitle"]) {
+          updateElement("blog-subtitle", { content: data["blog-subtitle"] });
+        }
+        
+        // Update featured post
+        if (data["featured-post-title"]) {
+          updateElement("featured-post-title", { content: data["featured-post-title"] });
+        }
+        
+        if (data["featured-post-excerpt"]) {
+          updateElement("featured-post-excerpt", { content: data["featured-post-excerpt"] });
+        }
+        
+        if (data["featured-post-author"]) {
+          updateElement("featured-post-author", { content: data["featured-post-author"] });
+        }
+        
+        // Update recent posts
+        if (data["recent-posts"]) {
+          const posts = data["recent-posts"].split('\n').filter((p: string) => p.trim() !== '').slice(0, 6)
+          posts.forEach((post: string, index: number) => {
+            const postNumber = index + 1
+            const postParts = post.split(': ')
+            
+            if (postParts.length > 1) {
+              updateElement(`post-${postNumber}-title`, { content: postParts[0].trim() })
+              updateElement(`post-${postNumber}-excerpt`, { content: postParts[1].trim() })
+            } else {
+              updateElement(`post-${postNumber}-title`, { content: post.trim() })
+            }
+          })
+        }
+        
+        // Update categories
+        if (data["categories"]) {
+          const categories = data["categories"].split('\n').filter((c: string) => c.trim() !== '').slice(0, 8)
+          categories.forEach((category: string, index: number) => {
+            const categoryNumber = index + 1
+            updateElement(`category-${categoryNumber}-name`, { content: category.trim() })
+          })
         }
       } else {
         // Update blog post elements
@@ -251,6 +451,10 @@ function CarrdEditorContent({
         return <AIGeneratedBlogPostTemplate {...commonProps} />
       case "product-landing-page":
         return <ProductLandingPageTemplate {...commonProps} />
+      case "ai-portfolio":
+        return <AIPortfolioTemplate {...commonProps} />
+      case "ai-blog-page":
+        return <AIBlogPageTemplate {...commonProps} />
       default:
         return <SaasLandingTemplate {...commonProps} />
     }
@@ -307,7 +511,7 @@ function CarrdEditorContent({
             </Button>
           </div>
 
-          {(templateId === "ai-generated-blog-post" || templateId === "product-landing-page") && (
+          {(templateId === "ai-generated-blog-post" || templateId === "product-landing-page" || templateId === "ai-portfolio" || templateId === "ai-blog-page") && (
             <Button size="sm" onClick={handleGenerateAIContent} disabled={isGenerating}>
               <Sparkles className="w-4 h-4 mr-2" />
               {isGenerating ? "Generating..." : "Generate with AI"}
