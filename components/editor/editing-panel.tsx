@@ -45,6 +45,8 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
       textAlign: "left",
       xPosition: 0,
       yPosition: 0,
+      width: 'auto',
+      height: 'auto',
     },
   )
 
@@ -61,6 +63,8 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
           textAlign: "left",
           xPosition: 0,
           yPosition: 0,
+          width: 'auto',
+          height: 'auto',
         },
       )
     }
@@ -128,6 +132,7 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
 
   const getElementType = () => {
     if (elementId.includes("image") || elementId.includes("avatar") || elementId.includes("logo")) return "image"
+    if (elementId.includes("video")) return "video"
     if (elementId.includes("button") || elementId.includes("cta")) return "button"
     if (elementId.includes("title") || elementId.includes("heading")) return "heading"
     if (elementId.includes("section")) return "section" // Identify sections
@@ -191,9 +196,11 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
                 <CardTitle className="text-sm">
                   {elementType === "image"
                     ? "Image Content"
-                    : elementType === "section"
-                      ? "Section Properties"
-                      : "Text Content"}
+                    : elementType === "video"
+                      ? "Video Content"
+                      : elementType === "section"
+                        ? "Section Properties"
+                        : "Text Content"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -248,6 +255,45 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
                               target.style.display = "none"
                             }}
                           />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : elementType === "video" ? (
+                  <>
+                    <div>
+                      <Label htmlFor="video-url">Video URL</Label>
+                      <Input
+                        id="video-url"
+                        value={content}
+                        onChange={(e) => handleContentChange(e.target.value)}
+                        className="mt-1"
+                        placeholder="https://example.com/video.mp4 or YouTube/Vimeo URL"
+                      />
+                    </div>
+                    {content && (
+                      <div className="mt-4">
+                        <Label>Preview</Label>
+                        <div className="mt-2 border rounded-lg overflow-hidden">
+                          {content.includes('youtube.com') || content.includes('youtu.be') ? (
+                            <div className="w-full h-32 bg-gray-100 flex items-center justify-center">
+                              <span className="text-gray-500">YouTube Video</span>
+                            </div>
+                          ) : content.includes('vimeo.com') ? (
+                            <div className="w-full h-32 bg-gray-100 flex items-center justify-center">
+                              <span className="text-gray-500">Vimeo Video</span>
+                            </div>
+                          ) : (
+                            <video
+                              src={content}
+                              className="w-full h-32 object-cover"
+                              controls
+                              onError={(e) => {
+                                const target = e.target as HTMLVideoElement
+                                target.style.display = "none"
+                              }}
+                            />
+                          )}
                         </div>
                       </div>
                     )}

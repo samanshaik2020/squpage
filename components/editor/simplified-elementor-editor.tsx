@@ -1,15 +1,37 @@
 "use client"
 
 import React, { useState } from 'react'
-import { Type, Image, MousePointer, Video, Square, FileText, DollarSign, MessageSquare, Plus, Trash2, Columns, Grip } from 'lucide-react'
+import Link from 'next/link'
+import { 
+  Type, 
+  Image, 
+  MousePointer, 
+  Square, 
+  FileText, 
+  DollarSign, 
+  MessageSquare, 
+  Video,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
+  Star,
+  Plus,
+  Columns,
+  Grip,
+  X 
+} from 'lucide-react'
 import { useElementor } from '@/lib/elementor-context'
 import { ElementPropertiesPanel } from './element-properties-panel'
 import { EditableText } from './editable-text'
 import { AddStructureButton } from './add-structure-button'
 
 
-export function SimplifiedElementorEditor() {
-  const { elements, addElement, updateElement, moveElement } = useElementor()
+interface SimplifiedElementorEditorProps {
+  isPremium?: boolean;
+}
+
+export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedElementorEditorProps) {
+  const { elements, addElement, updateElement, moveElement, deleteElement } = useElementor()
   const [selectedElement, setSelectedElement] = useState<any>(null)
   
   // Helper function to render elements based on type
@@ -19,10 +41,15 @@ export function SimplifiedElementorEditor() {
         return (
           <div 
             key={element.id} 
-            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer"
+            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer w-full"
             onClick={(e) => {
               e.stopPropagation();
               setSelectedElement(element);
+            }}
+            style={{
+              maxWidth: '100%', // Ensure it doesn't exceed column width
+              overflow: 'hidden', // Prevent content from overflowing
+              wordWrap: 'break-word' // Break long words to prevent overflow
             }}
           >
             <EditableText 
@@ -38,10 +65,15 @@ export function SimplifiedElementorEditor() {
         return (
           <div 
             key={element.id} 
-            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer"
+            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer w-full"
             onClick={(e) => {
               e.stopPropagation();
               setSelectedElement(element);
+            }}
+            style={{
+              maxWidth: '100%', // Ensure it doesn't exceed column width
+              overflow: 'hidden', // Prevent content from overflowing
+              wordWrap: 'break-word' // Break long words to prevent overflow
             }}
           >
             <EditableText 
@@ -57,10 +89,15 @@ export function SimplifiedElementorEditor() {
         return (
           <div 
             key={element.id} 
-            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer"
+            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer w-full"
             onClick={(e) => {
               e.stopPropagation();
               setSelectedElement(element);
+            }}
+            style={{
+              maxWidth: '100%', // Ensure it doesn't exceed column width
+              overflow: 'hidden', // Prevent content from overflowing
+              textAlign: 'center' // Center the button in the column
             }}
           >
             <EditableText 
@@ -76,28 +113,61 @@ export function SimplifiedElementorEditor() {
         return (
           <div 
             key={element.id} 
-            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedElement(element);
+            className={`${selectedElement?.id === element.id ? 'outline outline-2 outline-blue-500' : ''} w-full`}
+            onClick={() => setSelectedElement(element)}
+            style={{
+              ...element.styles,
+              maxWidth: '100%', // Ensure it doesn't exceed column width
+              width: '100%' // Always fill the column width
             }}
           >
-            <img 
-              src={element.settings?.imageUrl || '/placeholder-image.jpg'} 
-              alt={element.settings?.alt || 'Image'} 
-              className="max-w-full h-auto"
-              style={element.styles || {}}
-            />
+            {element.settings?.linkUrl ? (
+              <a 
+                href={element.settings.linkUrl} 
+                target={element.settings.linkTarget || '_self'}
+                style={{ display: 'block', width: '100%' }}
+              >
+                <img 
+                  src={element.settings?.imageUrl || '/placeholder-image.jpg'} 
+                  alt={element.settings?.alt || 'Image'} 
+                  className="max-w-full"
+                  style={{ 
+                    display: 'block',
+                    margin: '0 auto',
+                    objectFit: 'contain',
+                    height: element.styles?.height || 'auto',
+                    width: element.styles?.width || '100%'
+                  }}
+                />
+              </a>
+            ) : (
+              <img 
+                src={element.settings?.imageUrl || '/placeholder-image.jpg'} 
+                alt={element.settings?.alt || 'Image'} 
+                className="max-w-full"
+                style={{ 
+                  display: 'block',
+                  margin: '0 auto',
+                  objectFit: 'contain',
+                  height: element.styles?.height || 'auto',
+                  width: element.styles?.width || '100%'
+                }}
+              />
+            )}
           </div>
         )
       case 'form':
         return (
           <div 
             key={element.id} 
-            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer"
+            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer w-full"
             onClick={(e) => {
               e.stopPropagation();
               setSelectedElement(element);
+            }}
+            style={{
+              maxWidth: '100%', // Ensure it doesn't exceed column width
+              overflow: 'hidden' // Prevent content from overflowing
             }}
           >
             <div className="p-4 border rounded-md">
@@ -143,10 +213,14 @@ export function SimplifiedElementorEditor() {
         return (
           <div 
             key={element.id} 
-            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer"
+            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer w-full"
             onClick={(e) => {
               e.stopPropagation();
               setSelectedElement(element);
+            }}
+            style={{
+              maxWidth: '100%', // Ensure it doesn't exceed column width
+              overflow: 'hidden' // Prevent content from overflowing
             }}
           >
             <div className="p-4 border rounded-md relative">
@@ -183,19 +257,22 @@ export function SimplifiedElementorEditor() {
         return (
           <div 
             key={element.id} 
-            className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedElement(element);
+            className={`p-4 w-full ${selectedElement?.id === element.id ? 'outline outline-2 outline-blue-500' : ''}`}
+            onClick={() => setSelectedElement(element)}
+            style={{
+              ...element.styles,
+              maxWidth: '100%', // Ensure it doesn't exceed column width
+              overflow: 'hidden' // Prevent content from overflowing
             }}
           >
-            <div className="p-4 border rounded-md">
+            <div className="text-center">
+              <h3 className="text-xl font-bold mb-4">{element.content || 'Testimonial Carousel'}</h3>
               {element.testimonials && element.testimonials.length > 0 ? (
-                <div className="relative">
-                  <div className="p-4 border rounded-md bg-gray-50">
-                    <div className="mb-4">
-                      {Array(element.testimonials[0].rating || 5).fill(0).map((_, i) => (
-                        <span key={i} className="text-yellow-400">★</span>
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                  <div className="mb-4">
+                    <div className="flex justify-center mb-2">
+                      {Array.from({ length: element.testimonials[0].rating || 5 }).map((_, i) => (
+                        <Star key={i} className="h-5 w-5 text-yellow-400 fill-yellow-400" />
                       ))}
                     </div>
                     <p className="italic mb-4">"{element.testimonials[0].content}"</p>
@@ -224,6 +301,67 @@ export function SimplifiedElementorEditor() {
             </div>
           </div>
         )
+      case 'button':
+        return (
+          <div 
+            key={element.id} 
+            className={`${selectedElement?.id === element.id ? 'outline outline-2 outline-blue-500' : ''} w-full`}
+            onClick={() => setSelectedElement(element)}
+            style={{
+              ...element.styles,
+              maxWidth: '100%', // Ensure it doesn't exceed column width
+              overflow: 'hidden', // Prevent content from overflowing
+              textAlign: 'center' // Center the button in the column
+            }}
+          >
+            <EditableText 
+              element={element}
+              isSelected={selectedElement?.id === element.id}
+              elementType="button"
+              defaultTag="button"
+              placeholder="Button Text"
+            />
+          </div>
+        )
+      case 'video':
+        return (
+          <div 
+            key={element.id} 
+            className={`${selectedElement?.id === element.id ? 'outline outline-2 outline-blue-500' : ''} w-full`}
+            onClick={() => setSelectedElement(element)}
+            style={{
+              ...element.styles,
+              maxWidth: '100%', // Ensure it doesn't exceed column width
+              width: '100%' // Always fill the column width
+            }}
+          >
+            {element.settings?.videoId ? (
+              <div className="w-full" style={{ 
+                aspectRatio: element.styles?.aspectRatio || '16/9',
+                height: element.styles?.height || 'auto',
+                width: element.styles?.width || '100%'
+              }}>
+                <iframe 
+                  width="100%" 
+                  height="100%" 
+                  src={`https://www.youtube.com/embed/${element.settings.videoId}${element.settings?.autoplay ? '?autoplay=1&mute=1' : ''}`}
+                  title={element.settings?.videoTitle || 'YouTube video'}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  style={{ maxWidth: '100%' }}
+                ></iframe>
+              </div>
+            ) : (
+              <div className="bg-gray-100 w-full flex items-center justify-center text-gray-500" style={{ aspectRatio: '16/9' }}>
+                <div className="text-center">
+                  <Video className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Add a YouTube video URL in the properties panel</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )
       default:
         return (
           <div key={element.id} className="p-2 border border-gray-300 rounded">
@@ -233,8 +371,14 @@ export function SimplifiedElementorEditor() {
     }
   }
 
-  // Filter root elements (columns)
-  const rootElements = elements.filter(el => el.type === 'column')
+  // Get root elements (columns) and sort by order
+  const rootElements = elements
+    .filter(el => el.type === 'column')
+    .sort((a, b) => {
+      const orderA = a.styles?.order !== undefined ? Number(a.styles.order) : 999;
+      const orderB = b.styles?.order !== undefined ? Number(b.styles.order) : 999;
+      return orderA - orderB;
+    });
   
   // Define the available elements for the side panel
   const AVAILABLE_ELEMENTS = [
@@ -324,8 +468,11 @@ export function SimplifiedElementorEditor() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <div className="h-14 border-b border-gray-200 flex items-center px-4">
-          <h1 className="text-lg font-semibold">Elementor Editor</h1>
+        <div className="h-14 border-b border-gray-200 flex items-center justify-between px-4">
+          <h1 className="text-lg font-semibold">Elementor Editor {isPremium && <span className="ml-2 text-sm bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Pro</span>}</h1>
+          <Link href="/templates" className="text-sm text-gray-500 hover:text-gray-700">
+            Back to Templates
+          </Link>
         </div>
 
         {/* Editor Canvas */}
@@ -370,15 +517,20 @@ export function SimplifiedElementorEditor() {
                   return (
                     <div
                       key={element.id}
-                      className="relative border-2 border-transparent hover:border-purple-300 transition-all duration-200 min-h-[100px]"
+                      className="relative border-2 border-transparent hover:border-purple-300 transition-all duration-200 min-h-[100px] group"
                       style={{
                         width: element.styles?.width || '100%',
                         padding: element.styles?.padding || '20px',
                         float: element.styles?.float || 'left',
                         boxSizing: 'border-box',
                         minHeight: columnChildren.length > 0 ? 'auto' : '200px',
-                        marginBottom: '20px',
-                        border: columnChildren.length === 0 ? '2px dashed #e2e8f0' : '1px solid #e2e8f0'
+                        // No margin between columns
+                        backgroundColor: element.styles?.backgroundColor || 'transparent',
+                        borderRadius: element.styles?.borderRadius || '0px',
+                        borderWidth: columnChildren.length === 0 ? '2px' : (element.styles?.borderWidth || '1px'),
+                        borderStyle: columnChildren.length === 0 ? 'dashed' : (element.styles?.borderStyle || 'solid'),
+                        borderColor: columnChildren.length === 0 ? '#e2e8f0' : (element.styles?.borderColor || '#e2e8f0'),
+                        overflow: 'hidden' // Ensure content doesn't overflow column
                       }}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => {
@@ -434,9 +586,10 @@ export function SimplifiedElementorEditor() {
                                 alt: 'Placeholder image'
                               },
                               styles: {
-                                width: '100%',
-                                maxWidth: '300px',
-                                margin: '10px 0'
+                                width: '100%', // Always use 100% width to fit column
+                                maxWidth: '100%', // Limit to column width
+                                margin: '10px 0',
+                                objectFit: 'contain' // Maintain aspect ratio
                               }
                             });
                             
@@ -570,17 +723,114 @@ export function SimplifiedElementorEditor() {
                             if (!element.children) element.children = [];
                             element.children.push(newElementId);
                             break;
+                          case 'video':
+                            addElement({
+                              id: newElementId,
+                              type: 'video' as const,
+                              parentId: element.id,
+                              settings: {
+                                videoUrl: '',
+                                videoId: '',
+                                videoTitle: 'YouTube Video',
+                                autoplay: false
+                              },
+                              styles: {
+                                width: '100%', // Always use 100% width to fit column
+                                height: 'auto', // Auto height based on aspect ratio
+                                margin: '10px 0',
+                                aspectRatio: '16/9' // Maintain video aspect ratio
+                              }
+                            });
+                            
+                            // Update the column's children array
+                            if (!element.children) element.children = [];
+                            element.children.push(newElementId);
+                            break;
                         }
                       }}
                       onClick={() => setSelectedElement(element)}
                     >
+                      {/* Column Controls */}
+                      <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-white shadow-md rounded-bl-md border border-gray-200 z-10 flex">
+                        <button 
+                          className="p-1 hover:bg-gray-100" 
+                          title="Move Up"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Find index of current column
+                            const currentIndex = rootElements.findIndex(col => col.id === element.id);
+                            if (currentIndex > 0) {
+                              // Swap with previous column
+                              const prevElement = rootElements[currentIndex - 1];
+                              const currentElement = rootElements[currentIndex];
+                              
+                              // Update the DOM order by updating styles
+                              const currentOrder = currentElement.styles?.order || currentIndex;
+                              const prevOrder = prevElement.styles?.order || (currentIndex - 1);
+                              
+                              updateElement(currentElement.id, {
+                                styles: { ...currentElement.styles, order: prevOrder }
+                              });
+                              updateElement(prevElement.id, {
+                                styles: { ...prevElement.styles, order: currentOrder }
+                              });
+                            }
+                          }}
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </button>
+                        <button 
+                          className="p-1 hover:bg-gray-100" 
+                          title="Move Down"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Find index of current column
+                            const currentIndex = rootElements.findIndex(col => col.id === element.id);
+                            if (currentIndex < rootElements.length - 1) {
+                              // Swap with next column
+                              const nextElement = rootElements[currentIndex + 1];
+                              const currentElement = rootElements[currentIndex];
+                              
+                              // Update the DOM order by updating styles
+                              const currentOrder = currentElement.styles?.order || currentIndex;
+                              const nextOrder = nextElement.styles?.order || (currentIndex + 1);
+                              
+                              updateElement(currentElement.id, {
+                                styles: { ...currentElement.styles, order: nextOrder }
+                              });
+                              updateElement(nextElement.id, {
+                                styles: { ...nextElement.styles, order: currentOrder }
+                              });
+                            }
+                          }}
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </button>
+                        <button 
+                          className="p-1 hover:bg-red-100 text-red-600" 
+                          title="Delete Column"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm('Are you sure you want to delete this column and all its contents?')) {
+                              // First delete all children
+                              columnChildren.forEach(child => {
+                                deleteElement(child.id);
+                              });
+                              // Then delete the column itself
+                              deleteElement(element.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                       {/* Render column children */}
                       {columnChildren.length === 0 ? (
                         <div className="flex items-center justify-center h-32">
                           <p className="text-gray-500 text-sm">Drop elements here</p>
                         </div>
                       ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-0 -my-1">
                           {columnChildren.map(child => {
                             // Render each child element based on its type
                             return renderElement(child);

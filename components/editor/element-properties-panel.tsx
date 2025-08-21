@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import { 
   Bold, 
   Italic, 
@@ -35,7 +36,8 @@ import {
   AlignLeft, 
   AlignCenter, 
   AlignRight, 
-  Palette
+  Palette,
+  Trash2
 } from 'lucide-react'
 
 interface ElementPropertiesPanelProps {
@@ -43,7 +45,7 @@ interface ElementPropertiesPanelProps {
 }
 
 export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps) {
-  const { updateElement } = useElementor()
+  const { updateElement, deleteElement } = useElementor()
   
   if (!element) return null
 
@@ -228,6 +230,29 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
   const renderImageOptions = () => (
     <div className="space-y-4">
       <div className="space-y-2">
+        <Label>Upload Image</Label>
+        <Input 
+          type="file" 
+          accept="image/*"
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              const file = e.target.files[0];
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                if (event.target?.result) {
+                  updateElement(element.id, { 
+                    settings: { ...element.settings, imageUrl: event.target.result as string } 
+                  });
+                }
+              };
+              reader.readAsDataURL(file);
+            }
+          }}
+          className="cursor-pointer"
+        />
+      </div>
+
+      <div className="space-y-2">
         <Label>Image URL</Label>
         <Input 
           type="text" 
@@ -250,6 +275,36 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
           placeholder="Image description"
         />
       </div>
+
+      <div className="space-y-2">
+        <Label>Link URL (optional)</Label>
+        <Input 
+          type="text" 
+          value={element.settings?.linkUrl || ''} 
+          onChange={(e) => updateElement(element.id, { 
+            settings: { ...element.settings, linkUrl: e.target.value } 
+          })}
+          placeholder="https://example.com"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Link Target</Label>
+        <Select
+          value={element.settings?.linkTarget || '_self'}
+          onValueChange={(value) => updateElement(element.id, {
+            settings: { ...element.settings, linkTarget: value as '_blank' | '_self' }
+          })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select link target" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_self">Same Window</SelectItem>
+            <SelectItem value="_blank">New Window</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       
       <div className="space-y-2">
         <div className="flex justify-between">
@@ -265,6 +320,19 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
       </div>
       
       <div className="space-y-2">
+        <div className="flex justify-between">
+          <Label>Height</Label>
+          <span className="text-sm">{element.styles?.height || 'auto'}</span>
+        </div>
+        <Input 
+          type="text" 
+          value={element.styles?.height || 'auto'} 
+          onChange={(e) => updateStyle('height', e.target.value)}
+          placeholder="e.g. auto or 300px"
+        />
+      </div>
+      
+      <div className="space-y-2">
         <Label>Border Radius</Label>
         <Input 
           type="text" 
@@ -273,6 +341,18 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
           placeholder="e.g. 8px or 50%"
         />
       </div>
+
+      {element.settings?.imageUrl && (
+        <div className="mt-4 border rounded p-2">
+          <p className="text-sm font-medium mb-2">Image Preview:</p>
+          <img 
+            src={element.settings.imageUrl} 
+            alt={element.settings?.alt || 'Preview'} 
+            className="max-w-full h-auto"
+            style={{ borderRadius: element.styles?.borderRadius || '0' }}
+          />
+        </div>
+      )}
     </div>
   )
   
@@ -571,127 +651,234 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
     </div>
   )
   
-  const renderTestimonialCarouselOptions = () => (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Testimonials</Label>
-        <div className="border rounded-md p-4 space-y-4">
-          {element.testimonials?.map((testimonial: any, index: number) => (
-            <div key={testimonial.id} className="space-y-2 border-b pb-2">
-              <div className="flex justify-between">
-                <span className="font-medium">{testimonial.name}</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => {
-                    const updatedTestimonials = [...element.testimonials]
-                    updatedTestimonials.splice(index, 1)
-                    updateElement(element.id, { testimonials: updatedTestimonials })
-                  }}
-                >
-                  Remove
-                </Button>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input 
-                  type="text" 
-                  value={testimonial.name || ''} 
-                  onChange={(e) => {
-                    const updatedTestimonials = [...element.testimonials]
-                    updatedTestimonials[index] = { ...testimonial, name: e.target.value }
-                    updateElement(element.id, { testimonials: updatedTestimonials })
-                  }}
-                  placeholder="John Doe"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Position</Label>
-                <Input 
-                  type="text" 
-                  value={testimonial.position || ''} 
-                  onChange={(e) => {
-                    const updatedTestimonials = [...element.testimonials]
-                    updatedTestimonials[index] = { ...testimonial, position: e.target.value }
-                    updateElement(element.id, { testimonials: updatedTestimonials })
-                  }}
-                  placeholder="CEO"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Company</Label>
-                <Input 
-                  type="text" 
-                  value={testimonial.company || ''} 
-                  onChange={(e) => {
-                    const updatedTestimonials = [...element.testimonials]
-                    updatedTestimonials[index] = { ...testimonial, company: e.target.value }
-                    updateElement(element.id, { testimonials: updatedTestimonials })
-                  }}
-                  placeholder="Company Inc."
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Content</Label>
-                <Input 
-                  type="text" 
-                  value={testimonial.content || ''} 
-                  onChange={(e) => {
-                    const updatedTestimonials = [...element.testimonials]
-                    updatedTestimonials[index] = { ...testimonial, content: e.target.value }
-                    updateElement(element.id, { testimonials: updatedTestimonials })
-                  }}
-                  placeholder="Testimonial content"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label>Rating</Label>
-                  <span className="text-sm">{testimonial.rating || 5}/5</span>
-                </div>
-                <Slider
-                  defaultValue={[testimonial.rating || 5]}
-                  max={5}
-                  min={1}
-                  step={1}
-                  onValueChange={(value) => {
-                    const updatedTestimonials = [...element.testimonials]
-                    updatedTestimonials[index] = { ...testimonial, rating: value[0] }
-                    updateElement(element.id, { testimonials: updatedTestimonials })
-                  }}
-                />
-              </div>
+  const renderTestimonialCarouselOptions = () => {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-500">Testimonial Carousel options will be available soon.</p>
+      </div>
+    )
+  }
+  
+  const renderColumnOptions = () => {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Background Color</Label>
+          <div className="flex items-center gap-2">
+            <Input 
+              type="color" 
+              value={element.styles?.backgroundColor || '#ffffff'} 
+              onChange={(e) => updateStyle('backgroundColor', e.target.value)}
+              className="w-12 h-8 p-1"
+            />
+            <Input 
+              type="text" 
+              value={element.styles?.backgroundColor || '#ffffff'} 
+              onChange={(e) => updateStyle('backgroundColor', e.target.value)}
+              className="flex-1"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Width</Label>
+          <div className="flex items-center gap-2">
+            <Input 
+              type="text" 
+              value={element.styles?.width || '100%'} 
+              onChange={(e) => updateStyle('width', e.target.value)}
+              placeholder="e.g. 50%, 300px"
+              className="flex-1"
+            />
+            <Select 
+              value={element.styles?.width?.toString().includes('%') ? 'percent' : 'pixel'}
+              onValueChange={(value) => {
+                const numValue = parseFloat(element.styles?.width) || 100;
+                if (value === 'percent') {
+                  updateStyle('width', `${numValue}%`);
+                } else {
+                  updateStyle('width', `${numValue}px`);
+                }
+              }}
+            >
+              <SelectTrigger className="w-24">
+                <SelectValue placeholder="Unit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="percent">%</SelectItem>
+                <SelectItem value="pixel">px</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Padding</Label>
+          <Input 
+            type="text" 
+            value={element.styles?.padding || '20px'} 
+            onChange={(e) => updateStyle('padding', e.target.value)}
+            placeholder="e.g. 20px or 10px 20px"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Border Radius</Label>
+          <Input 
+            type="text" 
+            value={element.styles?.borderRadius || '0px'} 
+            onChange={(e) => updateStyle('borderRadius', e.target.value)}
+            placeholder="e.g. 8px or 50%"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Border</Label>
+          <div className="grid grid-cols-3 gap-2">
+            <Input 
+              type="text" 
+              value={element.styles?.borderWidth || '1px'} 
+              onChange={(e) => updateStyle('borderWidth', e.target.value)}
+              placeholder="Width"
+            />
+            <Select 
+              value={element.styles?.borderStyle || 'solid'}
+              onValueChange={(value) => updateStyle('borderStyle', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="solid">Solid</SelectItem>
+                <SelectItem value="dashed">Dashed</SelectItem>
+                <SelectItem value="dotted">Dotted</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1">
+              <Input 
+                type="color" 
+                value={element.styles?.borderColor || '#e2e8f0'} 
+                onChange={(e) => updateStyle('borderColor', e.target.value)}
+                className="w-8 h-8 p-1"
+              />
+              <Input 
+                type="text" 
+                value={element.styles?.borderColor || '#e2e8f0'} 
+                onChange={(e) => updateStyle('borderColor', e.target.value)}
+                className="flex-1"
+                placeholder="Color"
+              />
             </div>
-          ))}
-          
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              const newTestimonial = {
-                id: `testimonial_${Date.now()}`,
-                name: 'New Testimonial',
-                position: 'Position',
-                company: 'Company',
-                content: 'Testimonial content goes here.',
-                rating: 5
-              }
-              updateElement(element.id, { 
-                testimonials: [...(element.testimonials || []), newTestimonial] 
-              })
-            }}
-          >
-            Add Testimonial
-          </Button>
+          </div>
         </div>
       </div>
+    )
+  }
+  
+  const renderVideoOptions = () => (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label>YouTube Video URL</Label>
+        <Input 
+          type="text" 
+          value={element.settings?.videoUrl || ''} 
+          onChange={(e) => {
+            const url = e.target.value;
+            // Extract video ID if it's a YouTube URL
+            let videoId = url;
+            if (url.includes('youtube.com/watch?v=')) {
+              const urlParams = new URLSearchParams(url.split('?')[1]);
+              videoId = urlParams.get('v') || '';
+            } else if (url.includes('youtu.be/')) {
+              videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+            }
+            
+            updateElement(element.id, { 
+              settings: { 
+                ...element.settings, 
+                videoUrl: url,
+                videoId: videoId
+              } 
+            });
+          }}
+          placeholder="https://www.youtube.com/watch?v=VIDEO_ID"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Video Title</Label>
+        <Input 
+          type="text" 
+          value={element.settings?.videoTitle || ''} 
+          onChange={(e) => updateElement(element.id, { 
+            settings: { ...element.settings, videoTitle: e.target.value } 
+          })}
+          placeholder="Video title"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex justify-between">
+          <Label>Width</Label>
+          <span className="text-sm">{element.styles?.width || '100%'}</span>
+        </div>
+        <Input 
+          type="text" 
+          value={element.styles?.width || '100%'} 
+          onChange={(e) => updateStyle('width', e.target.value)}
+          placeholder="e.g. 100% or 560px"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex justify-between">
+          <Label>Height</Label>
+          <span className="text-sm">{element.styles?.height || '315px'}</span>
+        </div>
+        <Input 
+          type="text" 
+          value={element.styles?.height || '315px'} 
+          onChange={(e) => updateStyle('height', e.target.value)}
+          placeholder="e.g. 315px"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Autoplay</Label>
+        <div className="flex items-center space-x-2">
+          <Checkbox 
+            id="autoplay" 
+            checked={element.settings?.autoplay || false}
+            onCheckedChange={(checked: boolean | 'indeterminate') => updateElement(element.id, { 
+              settings: { ...element.settings, autoplay: checked === true } 
+            })}
+          />
+          <label htmlFor="autoplay" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            Enable autoplay
+          </label>
+        </div>
+      </div>
+
+      {element.settings?.videoId && (
+        <div className="mt-4 border rounded p-2">
+          <p className="text-sm font-medium mb-2">Video Preview:</p>
+          <div className="aspect-video">
+            <iframe 
+              width="100%" 
+              height="100%" 
+              src={`https://www.youtube.com/embed/${element.settings.videoId}${element.settings?.autoplay ? '?autoplay=1&mute=1' : ''}`}
+              title={element.settings?.videoTitle || 'YouTube video'}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </div>
+      )}
     </div>
   )
-  
+
   const renderElementOptions = () => {
     switch (element.type) {
       case 'heading':
@@ -708,18 +895,41 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
         return renderPricingTableOptions()
       case 'testimonial-carousel':
         return renderTestimonialCarouselOptions()
+      case 'column':
+        return renderColumnOptions()
+      case 'video':
+        return renderVideoOptions()
       default:
         return <p className="text-sm text-gray-500">No properties available for this element type.</p>
     }
   }
   
+  const handleDeleteElement = () => {
+    if (confirm('Are you sure you want to delete this element?')) {
+      deleteElement(element.id)
+    }
+  }
+
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Element Properties</CardTitle>
-        <CardDescription>
-          Edit properties for {element.type} element
-        </CardDescription>
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle>Element Properties</CardTitle>
+            <CardDescription>
+              Edit properties for {element.type} element
+            </CardDescription>
+          </div>
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={handleDeleteElement}
+            className="flex items-center gap-1"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="style">

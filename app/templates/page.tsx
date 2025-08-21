@@ -1,11 +1,36 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import Image from "next/image"
-import { Lock } from "lucide-react" // Import Lock icon
+import { Lock, Wand2 } from "lucide-react" // Import Lock and Wand2 icons
+import React from "react"
 
 const templates = [
+  {
+    id: "elementor-basic",
+    name: "Elementor Basic",
+    category: "Elementor",
+    description: "Create your own page from scratch with our drag-and-drop Elementor editor",
+    image: "/placeholder.svg?height=300&width=400&text=Elementor+Basic",
+    tags: ["Elementor", "Drag & Drop", "Free"],
+    isPremium: false,
+    isLocked: false,
+    isElementor: true
+  },
+  {
+    id: "elementor-pro",
+    name: "Elementor Pro",
+    category: "Elementor",
+    description: "Advanced drag-and-drop editor with premium elements and features",
+    image: "/placeholder.svg?height=300&width=400&text=Elementor+Pro",
+    tags: ["Elementor", "Drag & Drop", "Premium"],
+    isPremium: true,
+    isLocked: false,
+    isElementor: true
+  },
   {
     id: "saas-landing",
     name: "SaaS Landing Page",
@@ -118,11 +143,18 @@ const templates = [
   },
 ]
 
-const categories = ["All", "Business", "Portfolio", "Agency", "Blog", "Service", "Marketing", "Content", "Pro"]
+const categories = ["All", "Elementor", "Free", "Paid"]
 
 export default function TemplatesPage() {
-  const normalTemplates = templates.filter((t) => !t.isPremium)
-  const proTemplates = templates.filter((t) => t.isPremium)
+  const [selectedCategory, setSelectedCategory] = React.useState("All")
+  
+  // Filter templates based on selected category
+  const filteredTemplates = templates.filter(template => 
+    selectedCategory === "All" || 
+    selectedCategory === "Elementor" && template.isElementor ||
+    selectedCategory === "Free" && !template.isPremium ||
+    selectedCategory === "Paid" && template.isPremium
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -160,22 +192,25 @@ export default function TemplatesPage() {
           {categories.map((category) => (
             <Button
               key={category}
-              variant={category === "All" ? "default" : "outline"}
+              variant={category === selectedCategory ? "default" : "outline"}
               size="sm"
               className="rounded-full"
+              onClick={() => setSelectedCategory(category)}
             >
               {category}
             </Button>
           ))}
         </div>
 
-        {/* Normal Templates Section */}
-        <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Standard Templates</h2>
+        {/* All Templates Section */}
+        <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+          {selectedCategory === "All" ? "All Templates" : `${selectedCategory} Templates`}
+        </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          {normalTemplates.map((template) => (
+          {filteredTemplates.map((template) => (
             <Card
               key={template.id}
-              className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden"
+              className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden relative ${template.isPremium ? 'bg-gradient-to-r from-purple-50 to-blue-50' : ''} ${template.isElementor ? 'border-l-4 border-blue-500' : ''}`}
             >
               <div className="relative">
                 <Image
@@ -239,114 +274,13 @@ export default function TemplatesPage() {
                   ))}
                 </div>
 
-                <Link href={`/editor/${template.id}`} className="w-full">
-                  <Button className="w-full">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
-                    Start Editing
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Pro Templates Section */}
-        <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Pro Templates</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {proTemplates.map((template) => (
-            <Card
-              key={template.id}
-              className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden relative ${
-                template.isLocked ? "opacity-70 cursor-not-allowed" : ""
-              }`}
-            >
-              {template.isLocked && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-30">
-                  <Lock className="w-12 h-12 text-white opacity-80" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 opacity-20 rounded-lg z-10 pointer-events-none"></div>
-              <div className="relative z-20">
-                <Image
-                  src={template.image || "/placeholder.svg"}
-                  alt={template.name}
-                  width={400}
-                  height={300}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-4">
-                  <Link href={`/preview/${template.id}`}>
-                    <Button size="sm" variant="secondary">
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                      Preview
+                {template.isElementor ? (
+                  <Link href={template.isPremium ? `/simplified-elementor?premium=true` : `/simplified-elementor`} className="w-full">
+                    <Button className="w-full">
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      {template.isPremium ? 'Start Pro Editor' : 'Start Free Editor'}
                     </Button>
                   </Link>
-                  {template.isLocked ? (
-                    <Button size="sm" disabled>
-                      <Lock className="w-4 h-4 mr-2" />
-                      Locked
-                    </Button>
-                  ) : (
-                    <Link href={`/editor/${template.id}`}>
-                      <Button size="sm">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
-                        Edit
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </div>
-
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900">{template.name}</h3>
-                  <Badge variant="secondary" className="text-xs bg-purple-200 text-purple-800">
-                    Pro
-                  </Badge>
-                </div>
-
-                <p className="text-gray-600 mb-4 text-sm">{template.description}</p>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {template.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-
-                {template.isLocked ? (
-                  <Button className="w-full" disabled>
-                    <Lock className="w-4 h-4 mr-2" />
-                    Locked
-                  </Button>
                 ) : (
                   <Link href={`/editor/${template.id}`} className="w-full">
                     <Button className="w-full">

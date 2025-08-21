@@ -9,7 +9,7 @@ import { EditorContext } from "@/lib/editor-context"
 
 interface EditableElementProps {
   id: string
-  type: "text" | "heading" | "button" | "badge" | "image" | "section" // Added "section" type
+  type: "text" | "heading" | "button" | "badge" | "image" | "video" | "section" // Added "video" and "section" types
   className?: string
   isSelected: boolean
   onSelect: (id: string) => void
@@ -83,6 +83,8 @@ export function EditableElement({
           position: styles.position || "relative",
           left: styles.xPosition ? `${styles.xPosition}px` : undefined,
           top: styles.yPosition ? `${styles.yPosition}px` : undefined,
+          width: styles.width || undefined,
+          height: styles.height || undefined,
           ...styles,
         }
       : defaultStyle, // Use defaultStyle in preview mode
@@ -124,18 +126,30 @@ export function EditableElement({
       )
 
     case "image":
+      const imageStyle = isEditable ? {
+        width: styles.width || '100%',
+        height: styles.height || 'auto',
+        objectFit: styles.objectFit || 'cover',
+      } : {};
+      
       return (
         <div {...commonProps}>
-          {content.startsWith("/placeholder") || content.startsWith("http") ? (
-            <Image
+          {content.startsWith("/placeholder") || content.startsWith("http") || content.startsWith("data:") ? (
+            <img
               src={content || "/placeholder.svg"}
               alt="Editable image"
-              width={480}
-              height={320}
-              className="w-full h-full object-cover rounded"
+              className="rounded"
+              style={imageStyle}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = "/placeholder.svg";
+              }}
             />
           ) : (
-            <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-gray-500">
+            <div 
+              className="bg-gray-200 rounded flex items-center justify-center text-gray-500"
+              style={imageStyle}
+            >
               {content || "Click to add image"}
             </div>
           )}
