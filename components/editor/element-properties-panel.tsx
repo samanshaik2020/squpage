@@ -132,13 +132,13 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
               />
               <Input 
                 type="color" 
-                value={element.styles?.color || '#000000'} 
+                value={(element.styles?.color) || '#000000'} 
                 onChange={(e) => updateStyle('color', e.target.value)}
                 className="w-12 h-8 p-0"
               />
               <Input 
                 type="text" 
-                value={element.styles?.color || '#000000'} 
+                value={(element.styles?.color) || '#000000'} 
                 onChange={(e) => updateStyle('color', e.target.value)}
                 className="flex-1"
               />
@@ -152,7 +152,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
               <span className="text-sm">{element.styles?.fontSize || '16px'}</span>
             </div>
             <Slider
-              defaultValue={[parseInt(element.styles?.fontSize) || 16]}
+              value={[parseInt(element.styles?.fontSize) || 16]}
               max={72}
               min={8}
               step={1}
@@ -167,7 +167,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
         <Label>Margin</Label>
         <Input 
           type="text" 
-          value={element.styles?.margin || '0'} 
+          value={(element.styles?.margin) || '0'} 
           onChange={(e) => updateStyle('margin', e.target.value)}
           placeholder="e.g. 10px or 10px 20px"
         />
@@ -177,7 +177,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
         <Label>Padding</Label>
         <Input 
           type="text" 
-          value={element.styles?.padding || '0'} 
+          value={(element.styles?.padding) || '0'} 
           onChange={(e) => updateStyle('padding', e.target.value)}
           placeholder="e.g. 10px or 10px 20px"
         />
@@ -196,11 +196,11 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
           <span className="text-sm">{element.styles?.lineHeight || '1.2'}</span>
         </div>
         <Slider
-          defaultValue={[parseFloat(element.styles?.lineHeight) || 1.2]}
+          value={[parseFloat(element.styles?.lineHeight) || 1.2]}
           max={3}
           min={1}
           step={0.1}
-          onValueChange={(value) => updateStyle('lineHeight', value[0])}
+          onValueChange={(value) => updateStyle('lineHeight', value[0].toString())}
         />
       </div>
     </div>
@@ -217,20 +217,21 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
           <span className="text-sm">{element.styles?.lineHeight || '1.5'}</span>
         </div>
         <Slider
-          defaultValue={[parseFloat(element.styles?.lineHeight) || 1.5]}
+          value={[parseFloat(element.styles?.lineHeight) || 1.5]}
           max={3}
           min={1}
           step={0.1}
-          onValueChange={(value) => updateStyle('lineHeight', value[0])}
+          onValueChange={(value) => updateStyle('lineHeight', value[0].toString())}
         />
       </div>
     </div>
   )
   
   const renderImageOptions = () => (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Image Upload */}
       <div className="space-y-2">
-        <Label>Upload Image</Label>
+        <Label className="text-sm font-medium">Upload Image</Label>
         <Input 
           type="file" 
           accept="image/*"
@@ -248,111 +249,47 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
               reader.readAsDataURL(file);
             }
           }}
-          className="cursor-pointer"
+          className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
         />
       </div>
 
+      {/* Image URL */}
       <div className="space-y-2">
-        <Label>Image URL</Label>
+        <Label className="text-sm font-medium">Image URL</Label>
         <Input 
           type="text" 
-          value={element.settings?.imageUrl || ''} 
+          value={(element.settings?.imageUrl) || ''} 
           onChange={(e) => updateElement(element.id, { 
-            settings: { ...element.settings, imageUrl: e.target.value } 
+            settings: { ...(element.settings || {}), imageUrl: e.target.value } 
           })}
           placeholder="https://example.com/image.jpg"
+          className="w-full"
         />
       </div>
       
+      {/* Width */}
       <div className="space-y-2">
-        <Label>Alt Text</Label>
+        <Label className="text-sm font-medium">Width</Label>
         <Input 
           type="text" 
-          value={element.settings?.alt || ''} 
-          onChange={(e) => updateElement(element.id, { 
-            settings: { ...element.settings, alt: e.target.value } 
-          })}
-          placeholder="Image description"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Link URL (optional)</Label>
-        <Input 
-          type="text" 
-          value={element.settings?.linkUrl || ''} 
-          onChange={(e) => updateElement(element.id, { 
-            settings: { ...element.settings, linkUrl: e.target.value } 
-          })}
-          placeholder="https://example.com"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Link Target</Label>
-        <Select
-          value={element.settings?.linkTarget || '_self'}
-          onValueChange={(value) => updateElement(element.id, {
-            settings: { ...element.settings, linkTarget: value as '_blank' | '_self' }
-          })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select link target" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="_self">Same Window</SelectItem>
-            <SelectItem value="_blank">New Window</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <Label>Width</Label>
-          <span className="text-sm">{element.styles?.width || 'auto'}</span>
-        </div>
-        <Input 
-          type="text" 
-          value={element.styles?.width || 'auto'} 
+          value={(element.styles?.width) || '100%'} 
           onChange={(e) => updateStyle('width', e.target.value)}
-          placeholder="e.g. 100% or 300px"
+          placeholder="e.g. 100%, 300px, auto"
+          className="w-full"
         />
       </div>
       
+      {/* Height */}
       <div className="space-y-2">
-        <div className="flex justify-between">
-          <Label>Height</Label>
-          <span className="text-sm">{element.styles?.height || 'auto'}</span>
-        </div>
+        <Label className="text-sm font-medium">Height</Label>
         <Input 
           type="text" 
-          value={element.styles?.height || 'auto'} 
+          value={(element.styles?.height) || 'auto'} 
           onChange={(e) => updateStyle('height', e.target.value)}
-          placeholder="e.g. auto or 300px"
+          placeholder="e.g. auto, 300px, 50vh"
+          className="w-full"
         />
       </div>
-      
-      <div className="space-y-2">
-        <Label>Border Radius</Label>
-        <Input 
-          type="text" 
-          value={element.styles?.borderRadius || '0'} 
-          onChange={(e) => updateStyle('borderRadius', e.target.value)}
-          placeholder="e.g. 8px or 50%"
-        />
-      </div>
-
-      {element.settings?.imageUrl && (
-        <div className="mt-4 border rounded p-2">
-          <p className="text-sm font-medium mb-2">Image Preview:</p>
-          <img 
-            src={element.settings.imageUrl} 
-            alt={element.settings?.alt || 'Preview'} 
-            className="max-w-full h-auto"
-            style={{ borderRadius: element.styles?.borderRadius || '0' }}
-          />
-        </div>
-      )}
     </div>
   )
   
@@ -364,7 +301,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
         <Label>Button Text</Label>
         <Input 
           type="text" 
-          value={element.content || ''} 
+          value={(element.content) || ''} 
           onChange={(e) => updateContent(e.target.value)}
           placeholder="Button Text"
         />
@@ -379,13 +316,13 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
           />
           <Input 
             type="color" 
-            value={element.styles?.backgroundColor || '#4F46E5'} 
+            value={(element.styles?.backgroundColor) || '#4F46E5'} 
             onChange={(e) => updateStyle('backgroundColor', e.target.value)}
             className="w-12 h-8 p-0"
           />
           <Input 
             type="text" 
-            value={element.styles?.backgroundColor || '#4F46E5'} 
+            value={(element.styles?.backgroundColor) || '#4F46E5'} 
             onChange={(e) => updateStyle('backgroundColor', e.target.value)}
             className="flex-1"
           />
@@ -396,7 +333,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
         <Label>Border Radius</Label>
         <Input 
           type="text" 
-          value={element.styles?.borderRadius || '4px'} 
+          value={(element.styles?.borderRadius) || '4px'} 
           onChange={(e) => updateStyle('borderRadius', e.target.value)}
           placeholder="e.g. 4px or 50%"
         />
@@ -406,9 +343,9 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
         <Label>URL (optional)</Label>
         <Input 
           type="text" 
-          value={element.settings?.url || ''} 
+          value={(element.settings?.url) || ''} 
           onChange={(e) => updateElement(element.id, { 
-            settings: { ...element.settings, url: e.target.value } 
+            settings: { ...(element.settings || {}), url: e.target.value } 
           })}
           placeholder="https://example.com"
         />
@@ -432,9 +369,9 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
         <Label>Submit Button Text</Label>
         <Input 
           type="text" 
-          value={element.settings?.submitButtonText || 'Submit'} 
+          value={(element.settings?.submitButtonText) || 'Submit'} 
           onChange={(e) => updateElement(element.id, { 
-            settings: { ...element.settings, submitButtonText: e.target.value } 
+            settings: { ...(element.settings || {}), submitButtonText: e.target.value } 
           })}
           placeholder="Submit"
         />
@@ -541,9 +478,9 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
         <Label>Price</Label>
         <Input 
           type="text" 
-          value={element.settings?.price || '$0'} 
+          value={(element.settings?.price) || '$0'} 
           onChange={(e) => updateElement(element.id, { 
-            settings: { ...element.settings, price: e.target.value } 
+            settings: { ...(element.settings || {}), price: e.target.value } 
           })}
           placeholder="$9.99"
         />
@@ -553,9 +490,9 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
         <Label>Price Period</Label>
         <Input 
           type="text" 
-          value={element.settings?.period || '/month'} 
+          value={(element.settings?.period) || '/month'} 
           onChange={(e) => updateElement(element.id, { 
-            settings: { ...element.settings, period: e.target.value } 
+            settings: { ...(element.settings || {}), period: e.target.value } 
           })}
           placeholder="/month"
         />
@@ -782,7 +719,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
         <Label>YouTube Video URL</Label>
         <Input 
           type="text" 
-          value={element.settings?.videoUrl || ''} 
+          value={(element.settings?.videoUrl) || ''} 
           onChange={(e) => {
             const url = e.target.value;
             // Extract video ID if it's a YouTube URL
@@ -810,9 +747,9 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
         <Label>Video Title</Label>
         <Input 
           type="text" 
-          value={element.settings?.videoTitle || ''} 
+          value={(element.settings?.videoTitle) || ''} 
           onChange={(e) => updateElement(element.id, { 
-            settings: { ...element.settings, videoTitle: e.target.value } 
+            settings: { ...(element.settings || {}), videoTitle: e.target.value } 
           })}
           placeholder="Video title"
         />
@@ -951,9 +888,9 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
                 <Label>CSS Classes</Label>
                 <Input 
                   type="text" 
-                  value={element.settings?.cssClasses || ''} 
+                  value={(element.settings?.cssClasses) || ''} 
                   onChange={(e) => updateElement(element.id, { 
-                    settings: { ...element.settings, cssClasses: e.target.value } 
+                    settings: { ...(element.settings || {}), cssClasses: e.target.value } 
                   })}
                   placeholder="e.g. my-custom-class another-class"
                 />

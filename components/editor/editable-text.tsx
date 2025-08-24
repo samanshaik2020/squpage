@@ -126,6 +126,7 @@ export function EditableText({
   const [selection, setSelection] = useState<SlateRange | null>(null)
   const [toolbarPosition, setToolbarPosition] = useState<{ top: number; left: number } | null>(null)
   const [showToolbar, setShowToolbar] = useState(false)
+  const [styleVersion, setStyleVersion] = useState(0)
   
   // Calculate toolbar position relative to the editable element (viewport coords)
   const updateToolbarPosition = useCallback(() => {
@@ -195,6 +196,11 @@ export function EditableText({
       window.removeEventListener('resize', handler)
     }
   }, [isSelected, updateToolbarPosition])
+
+  // Force re-render when element styles change
+  useEffect(() => {
+    setStyleVersion(prev => prev + 1)
+  }, [element.styles])
   
   // Format text with the toolbar actions
   const formatText = useCallback((format: string, value: any = true) => {
@@ -251,13 +257,14 @@ export function EditableText({
   }, [editor, selection])
 
   // Get default styles based on element type
-  const getDefaultStyles = () => {
+  const getDefaultStyles = useMemo(() => {
     if (elementType === 'headline') {
       return {
         fontSize: element.styles?.fontSize || '32px',
         fontWeight: element.styles?.fontWeight || 'bold',
         color: element.styles?.color || '#000000',
         textAlign: (element.styles?.textAlign as any) || 'left',
+        lineHeight: element.styles?.lineHeight || '1.2',
         margin: element.styles?.margin || '0 0 16px 0',
       }
     } else if (elementType === 'button') {
@@ -284,14 +291,14 @@ export function EditableText({
         margin: element.styles?.margin || '0 0 16px 0'
       }
     }
-  }
+  }, [elementType, element.styles, styleVersion])
   
   return (
     <div className="relative" ref={containerRef}>
       <Slate editor={editor} initialValue={initialValue} onChange={handleChange}>
         <Editable
           className={`outline-none ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
-          style={getDefaultStyles()}
+          style={getDefaultStyles}
           readOnly={!isSelected}
           placeholder={placeholder}
           renderElement={(props) => {

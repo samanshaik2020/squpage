@@ -31,8 +31,10 @@ interface SimplifiedElementorEditorProps {
 }
 
 export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedElementorEditorProps) {
-  const { elements, addElement, updateElement, moveElement, deleteElement } = useElementor()
-  const [selectedElement, setSelectedElement] = useState<any>(null)
+  const { elements, addElement, updateElement, moveElement, deleteElement, selectedElement, selectElement, getElementById } = useElementor()
+  
+  // Get the selected element object from the ID
+  const selectedElementObj = selectedElement ? getElementById(selectedElement) : null
   
   // Helper function to render elements based on type
   const renderElement = (element: any) => {
@@ -44,7 +46,7 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
             className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer w-full"
             onClick={(e) => {
               e.stopPropagation();
-              setSelectedElement(element);
+              selectElement(element.id);
             }}
             style={{
               maxWidth: '100%', // Ensure it doesn't exceed column width
@@ -54,7 +56,7 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
           >
             <EditableText 
               element={element}
-              isSelected={selectedElement?.id === element.id}
+              isSelected={selectedElement === element.id}
               elementType="headline"
               defaultTag="h2"
               placeholder="Enter heading text"
@@ -68,7 +70,7 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
             className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer w-full"
             onClick={(e) => {
               e.stopPropagation();
-              setSelectedElement(element);
+              selectElement(element.id);
             }}
             style={{
               maxWidth: '100%', // Ensure it doesn't exceed column width
@@ -78,7 +80,7 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
           >
             <EditableText 
               element={element}
-              isSelected={selectedElement?.id === element.id}
+              isSelected={selectedElement === element.id}
               elementType="text"
               defaultTag="p"
               placeholder="Enter paragraph text"
@@ -92,7 +94,7 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
             className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer w-full"
             onClick={(e) => {
               e.stopPropagation();
-              setSelectedElement(element);
+              selectElement(element.id);
             }}
             style={{
               maxWidth: '100%', // Ensure it doesn't exceed column width
@@ -102,7 +104,7 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
           >
             <EditableText 
               element={element}
-              isSelected={selectedElement?.id === element.id}
+              isSelected={selectedElement === element.id}
               elementType="button"
               defaultTag="button"
               placeholder="Button Text"
@@ -113,8 +115,11 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
         return (
           <div 
             key={element.id} 
-            className={`${selectedElement?.id === element.id ? 'outline outline-2 outline-blue-500' : ''} w-full`}
-            onClick={() => setSelectedElement(element)}
+            className={`${selectedElement === element.id ? 'outline outline-2 outline-blue-500' : ''} w-full`}
+            onClick={(e) => {
+              e.stopPropagation();
+              selectElement(element.id);
+            }}
             style={{
               ...element.styles,
               maxWidth: '100%', // Ensure it doesn't exceed column width
@@ -163,7 +168,7 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
             className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer w-full"
             onClick={(e) => {
               e.stopPropagation();
-              setSelectedElement(element);
+              selectElement(element.id);
             }}
             style={{
               maxWidth: '100%', // Ensure it doesn't exceed column width
@@ -216,7 +221,7 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
             className="p-2 border border-transparent hover:border-blue-300 rounded cursor-pointer w-full"
             onClick={(e) => {
               e.stopPropagation();
-              setSelectedElement(element);
+              selectElement(element.id);
             }}
             style={{
               maxWidth: '100%', // Ensure it doesn't exceed column width
@@ -257,8 +262,8 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
         return (
           <div 
             key={element.id} 
-            className={`p-4 w-full ${selectedElement?.id === element.id ? 'outline outline-2 outline-blue-500' : ''}`}
-            onClick={() => setSelectedElement(element)}
+            className={`p-4 w-full ${selectedElement === element.id ? 'outline outline-2 outline-blue-500' : ''}`}
+            onClick={() => selectElement(element.id)}
             style={{
               ...element.styles,
               maxWidth: '100%', // Ensure it doesn't exceed column width
@@ -301,34 +306,15 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
             </div>
           </div>
         )
-      case 'button':
-        return (
-          <div 
-            key={element.id} 
-            className={`${selectedElement?.id === element.id ? 'outline outline-2 outline-blue-500' : ''} w-full`}
-            onClick={() => setSelectedElement(element)}
-            style={{
-              ...element.styles,
-              maxWidth: '100%', // Ensure it doesn't exceed column width
-              overflow: 'hidden', // Prevent content from overflowing
-              textAlign: 'center' // Center the button in the column
-            }}
-          >
-            <EditableText 
-              element={element}
-              isSelected={selectedElement?.id === element.id}
-              elementType="button"
-              defaultTag="button"
-              placeholder="Button Text"
-            />
-          </div>
-        )
       case 'video':
         return (
           <div 
             key={element.id} 
-            className={`${selectedElement?.id === element.id ? 'outline outline-2 outline-blue-500' : ''} w-full`}
-            onClick={() => setSelectedElement(element)}
+            className={`${selectedElement === element.id ? 'outline outline-2 outline-blue-500' : ''} w-full`}
+            onClick={(e) => {
+              e.stopPropagation();
+              selectElement(element.id);
+            }}
             style={{
               ...element.styles,
               maxWidth: '100%', // Ensure it doesn't exceed column width
@@ -483,6 +469,12 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
               minHeight: rootElements.length > 0 ? `${Math.max(600, rootElements.length * 100)}px` : 'calc(100vh - 8rem)'
             }}
             id="editor-canvas"
+            onClick={(e) => {
+              // Only deselect if clicking on the canvas background (not on elements)
+              if (e.target === e.currentTarget) {
+                selectElement(null);
+              }
+            }}
             onDragOver={(e) => e.preventDefault()}
           >
             {rootElements.length === 0 ? (
@@ -517,7 +509,11 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
                   return (
                     <div
                       key={element.id}
-                      className="relative border-2 border-transparent hover:border-purple-300 transition-all duration-200 min-h-[100px] group"
+                      className={`relative border-2 transition-all duration-200 min-h-[100px] group ${
+                        selectedElement === element.id 
+                          ? 'border-blue-500' 
+                          : 'border-transparent hover:border-purple-300'
+                      }`}
                       style={{
                         width: element.styles?.width || '100%',
                         padding: element.styles?.padding || '20px',
@@ -531,6 +527,13 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
                         borderStyle: columnChildren.length === 0 ? 'dashed' : (element.styles?.borderStyle || 'solid'),
                         borderColor: columnChildren.length === 0 ? '#e2e8f0' : (element.styles?.borderColor || '#e2e8f0'),
                         overflow: 'hidden' // Ensure content doesn't overflow column
+                      }}
+                      onClick={(e) => {
+                        // Only select column if clicking on empty space (not on child elements)
+                        if (e.target === e.currentTarget) {
+                          e.stopPropagation();
+                          selectElement(element.id);
+                        }
                       }}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => {
@@ -559,6 +562,9 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
                             // Update the column's children array
                             if (!element.children) element.children = [];
                             element.children.push(newElementId);
+                            
+                            // Auto-select the newly created heading element
+                            selectElement(newElementId);
                             break;
                           case 'text':
                             addElement({
@@ -574,6 +580,9 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
                             // Update the column's children array
                             if (!element.children) element.children = [];
                             element.children.push(newElementId);
+                            
+                            // Auto-select the newly created text element
+                            selectElement(newElementId);
                             break;
                           case 'image':
                             addElement({
@@ -596,6 +605,9 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
                             // Update the column's children array
                             if (!element.children) element.children = [];
                             element.children.push(newElementId);
+                            
+                            // Auto-select the newly created image element
+                            selectElement(newElementId);
                             break;
                           case 'button':
                             addElement({
@@ -622,6 +634,9 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
                             // Update the column's children array
                             if (!element.children) element.children = [];
                             element.children.push(newElementId);
+                            
+                            // Auto-select the newly created button element
+                            selectElement(newElementId);
                             break;
                           case 'form':
                             addElement({
@@ -748,7 +763,6 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
                             break;
                         }
                       }}
-                      onClick={() => setSelectedElement(element)}
                     >
                       {/* Column Controls */}
                       <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-white shadow-md rounded-bl-md border border-gray-200 z-10 flex">
@@ -830,7 +844,10 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
                           <p className="text-gray-500 text-sm">Drop elements here</p>
                         </div>
                       ) : (
-                        <div className="space-y-0 -my-1">
+                        <div 
+                          className="space-y-0 -my-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {columnChildren.map(child => {
                             // Render each child element based on its type
                             return renderElement(child);
@@ -855,9 +872,9 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
       
       {/* Properties Panel */}
       <div className="w-72 border-l border-gray-200 overflow-y-auto p-4">
-        {selectedElement && (
+        {selectedElementObj && (
           <ElementPropertiesPanel 
-            element={selectedElement} 
+            element={selectedElementObj} 
           />
         )}
       </div>
