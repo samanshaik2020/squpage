@@ -37,7 +37,8 @@ import {
   AlignCenter, 
   AlignRight, 
   Palette,
-  Trash2
+  Trash2,
+  Plus
 } from 'lucide-react'
 
 interface ElementPropertiesPanelProps {
@@ -591,7 +592,189 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
   const renderTestimonialCarouselOptions = () => {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-gray-500">Testimonial Carousel options will be available soon.</p>
+        <div className="space-y-2">
+          <Label>Carousel Title</Label>
+          <Input 
+            type="text" 
+            value={element.content || ''} 
+            onChange={(e) => updateContent(e.target.value)}
+            placeholder="Testimonials"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label>Testimonials</Label>
+          <div className="border rounded-md p-4 space-y-4 max-h-96 overflow-y-auto">
+            {element.testimonials?.map((testimonial: any, index: number) => (
+              <div key={testimonial.id} className="space-y-3 border-b pb-4 last:border-b-0">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-sm">Testimonial {index + 1}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      const updatedTestimonials = [...element.testimonials]
+                      updatedTestimonials.splice(index, 1)
+                      updateElement(element.id, { testimonials: updatedTestimonials })
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Name</Label>
+                    <Input 
+                      type="text" 
+                      value={testimonial.name || ''} 
+                      onChange={(e) => {
+                        const updatedTestimonials = [...element.testimonials]
+                        updatedTestimonials[index] = { ...testimonial, name: e.target.value }
+                        updateElement(element.id, { testimonials: updatedTestimonials })
+                      }}
+                      placeholder="John Doe"
+                      className="text-sm"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label className="text-xs">Position</Label>
+                    <Input 
+                      type="text" 
+                      value={testimonial.position || ''} 
+                      onChange={(e) => {
+                        const updatedTestimonials = [...element.testimonials]
+                        updatedTestimonials[index] = { ...testimonial, position: e.target.value }
+                        updateElement(element.id, { testimonials: updatedTestimonials })
+                      }}
+                      placeholder="CEO"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <Label className="text-xs">Company</Label>
+                  <Input 
+                    type="text" 
+                    value={testimonial.company || ''} 
+                    onChange={(e) => {
+                      const updatedTestimonials = [...element.testimonials]
+                      updatedTestimonials[index] = { ...testimonial, company: e.target.value }
+                      updateElement(element.id, { testimonials: updatedTestimonials })
+                    }}
+                    placeholder="Company Name"
+                    className="text-sm"
+                  />
+                </div>
+                
+                <div className="space-y-1">
+                  <Label className="text-xs">Testimonial Content</Label>
+                  <textarea 
+                    value={testimonial.content || ''} 
+                    onChange={(e) => {
+                      const updatedTestimonials = [...element.testimonials]
+                      updatedTestimonials[index] = { ...testimonial, content: e.target.value }
+                      updateElement(element.id, { testimonials: updatedTestimonials })
+                    }}
+                    placeholder="This product changed my life..."
+                    className="w-full p-2 border rounded-md text-sm resize-none"
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="space-y-1">
+                  <Label className="text-xs">Rating (1-5 stars)</Label>
+                  <div className="flex items-center space-x-2">
+                    <Slider
+                      value={[testimonial.rating || 5]}
+                      max={5}
+                      min={1}
+                      step={1}
+                      onValueChange={(value) => {
+                        const updatedTestimonials = [...element.testimonials]
+                        updatedTestimonials[index] = { ...testimonial, rating: value[0] }
+                        updateElement(element.id, { testimonials: updatedTestimonials })
+                      }}
+                      className="flex-1"
+                    />
+                    <span className="text-sm font-medium w-8">{testimonial.rating || 5}</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <Label className="text-xs">Avatar URL (optional)</Label>
+                  <Input 
+                    type="text" 
+                    value={testimonial.avatar || ''} 
+                    onChange={(e) => {
+                      const updatedTestimonials = [...element.testimonials]
+                      updatedTestimonials[index] = { ...testimonial, avatar: e.target.value }
+                      updateElement(element.id, { testimonials: updatedTestimonials })
+                    }}
+                    placeholder="https://example.com/avatar.jpg"
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+            ))}
+            
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                const newTestimonial = {
+                  id: `testimonial_${Date.now()}`,
+                  name: 'New Customer',
+                  position: 'Customer',
+                  company: 'Company',
+                  content: 'Great product! Highly recommend.',
+                  rating: 5,
+                  avatar: ''
+                }
+                updateElement(element.id, { 
+                  testimonials: [...(element.testimonials || []), newTestimonial] 
+                })
+              }}
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Testimonial
+            </Button>
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label>Background Color</Label>
+          <div className="flex items-center space-x-2">
+            <div 
+              className="w-8 h-8 rounded-full border"
+              style={{ backgroundColor: element.styles?.backgroundColor || '#ffffff' }}
+            />
+            <Input 
+              type="color" 
+              value={(element.styles?.backgroundColor) || '#ffffff'} 
+              onChange={(e) => updateStyle('backgroundColor', e.target.value)}
+              className="w-12 h-8 p-0"
+            />
+            <Input 
+              type="text" 
+              value={(element.styles?.backgroundColor) || '#ffffff'} 
+              onChange={(e) => updateStyle('backgroundColor', e.target.value)}
+              className="flex-1"
+            />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label>Border Radius</Label>
+          <Input 
+            type="text" 
+            value={(element.styles?.borderRadius) || '8px'} 
+            onChange={(e) => updateStyle('borderRadius', e.target.value)}
+            placeholder="e.g. 8px or 50%"
+          />
+        </div>
       </div>
     )
   }

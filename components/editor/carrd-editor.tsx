@@ -17,6 +17,8 @@ import { DentalHealthLandingTemplate } from "./templates/dental-health-landing"
 import { AIDentalHealthLandingTemplate } from "./templates/ai-dental-health-landing"
 import { EditingPanel } from "./editing-panel"
 import { EditorProvider, useEditor } from "@/lib/editor-context"
+import { AIGenerationModal } from "./ai-generation-modal"
+import { AIGenerationLoading } from "./ai-generation-loading"
 import { Sparkles } from "lucide-react" // Import Sparkles icon
 
 interface CarrdEditorProps {
@@ -47,9 +49,28 @@ function CarrdEditorContent({
 }) {
   const { selectedElement, selectElement, canUndo, canRedo, undo, redo, updateElement } = useEditor()
   const [isGenerating, setIsGenerating] = useState(false)
+  const [showAIModal, setShowAIModal] = useState(false)
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false)
+  const [templateGenerated, setTemplateGenerated] = useState(false)
 
   // State to track if elements have been initialized
-  const [elementsInitialized, setElementsInitialized] = useState(false);
+  const [elementsInitialized, setElementsInitialized] = useState(false)
+
+  // Check if this is a paid AI template
+  const isPaidAITemplate = [
+    "ai-generated-blog-post",
+    "product-landing-page", 
+    "ai-portfolio",
+    "ai-blog-page",
+    "ai-dental-health-landing"
+  ].includes(templateId)
+
+  // Show AI modal on mount for paid templates
+  useEffect(() => {
+    if (isPaidAITemplate && !templateGenerated) {
+      setShowAIModal(true)
+    }
+  }, [isPaidAITemplate, templateGenerated])
   
   // Initialize template elements when component mounts (only once)
   useEffect(() => {
@@ -143,30 +164,23 @@ function CarrdEditorContent({
     }
   }
 
-  const handleGenerateAIContent = async () => {
-    let promptText = "Enter a topic for your blog post:"
+  const handleGenerateAIContent = async (userInput: string) => {
     let requestParam = "topic"
     
     if (templateId === "product-landing-page") {
-      promptText = "Enter a product name to generate a landing page:"
       requestParam = "productName"
     } else if (templateId === "ai-portfolio") {
-      promptText = "Enter your name and profession to generate a portfolio:"
       requestParam = "portfolioInfo"
     } else if (templateId === "ai-blog-page") {
-      promptText = "Enter your blog name and niche to generate a blog page:"
       requestParam = "blogInfo"
     } else if (templateId === "ai-dental-health-landing") {
-      promptText = "Enter a health product name to generate a dental health landing page:"
       requestParam = "healthProductName"
     } else {
-      promptText = "Enter a topic for your blog post:"
       requestParam = "topic"
     }
-    
-    const userInput = prompt(promptText)
-    if (!userInput) return
 
+    setShowAIModal(false)
+    setShowLoadingScreen(true)
     setIsGenerating(true)
     try {
       const response = await fetch("/api/generate-content", {
@@ -492,8 +506,20 @@ function CarrdEditorContent({
     } catch (error) {
       console.error("Failed to generate AI content:", error)
       alert("Failed to generate AI content. Check console for details.")
+      setShowLoadingScreen(false)
+      setShowAIModal(true) // Show modal again on error
     } finally {
       setIsGenerating(false)
+      setShowLoadingScreen(false)
+      setTemplateGenerated(true)
+    }
+  }
+
+  const handleCloseAIModal = () => {
+    setShowAIModal(false)
+    // If user closes modal without generating, redirect back to templates
+    if (!templateGenerated) {
+      window.history.back()
     }
   }
 
@@ -528,6 +554,34 @@ function CarrdEditorContent({
       default:
         return <SaasLandingTemplate {...commonProps} />
     }
+  }
+
+  // Show loading screen during AI generation
+  if (showLoadingScreen) {
+    return <AIGenerationLoading templateId={templateId} />
+  }
+
+  // Show blank page with modal for paid templates that haven't been generated yet
+  if (isPaidAITemplate && !templateGenerated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">AI-Powered Template</h2>
+          <p className="text-gray-600">This template will be generated with AI based on your requirements.</p>
+        </div>
+        
+        <AIGenerationModal
+          isOpen={showAIModal}
+          onClose={handleCloseAIModal}
+          onGenerate={handleGenerateAIContent}
+          templateId={templateId}
+          isGenerating={isGenerating}
+        />
+      </div>
+    )
   }
 
   return (
@@ -581,10 +635,10 @@ function CarrdEditorContent({
             </Button>
           </div>
 
-          {(templateId === "ai-generated-blog-post" || templateId === "product-landing-page" || templateId === "ai-portfolio" || templateId === "ai-blog-page" || templateId === "ai-dental-health-landing") && (
-            <Button size="sm" onClick={handleGenerateAIContent} disabled={isGenerating}>
+          {isPaidAITemplate && templateGenerated && (
+            <Button size="sm" onClick={() => setShowAIModal(true)} disabled={isGenerating}>
               <Sparkles className="w-4 h-4 mr-2" />
-              {isGenerating ? "Generating..." : "Generate with AI"}
+              Regenerate with AI
             </Button>
           )}
 
@@ -655,6 +709,15 @@ function CarrdEditorContent({
 
         {selectedElement && <EditingPanel elementId={selectedElement} onClose={() => selectElement(null)} />}
       </div>
+
+      {/* AI Generation Modal */}
+      <AIGenerationModal
+        isOpen={showAIModal}
+        onClose={handleCloseAIModal}
+        onGenerate={handleGenerateAIContent}
+        templateId={templateId}
+        isGenerating={isGenerating}
+      />
     </div>
   )
 }

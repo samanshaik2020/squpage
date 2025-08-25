@@ -282,11 +282,23 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
                     </div>
                     <p className="italic mb-4">"{element.testimonials[0].content}"</p>
                     <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-300 mr-3"></div>
+                      {element.testimonials[0].avatar ? (
+                        <img 
+                          src={element.testimonials[0].avatar} 
+                          alt={element.testimonials[0].name}
+                          className="w-10 h-10 rounded-full mr-3 object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-300 mr-3 flex items-center justify-center">
+                          <span className="text-gray-600 text-sm font-medium">
+                            {element.testimonials[0].name?.charAt(0) || 'U'}
+                          </span>
+                        </div>
+                      )}
                       <div>
                         <p className="font-medium">{element.testimonials[0].name}</p>
                         <p className="text-sm text-gray-600">
-                          {element.testimonials[0].position}, {element.testimonials[0].company}
+                          {element.testimonials[0].position}{element.testimonials[0].company ? `, ${element.testimonials[0].company}` : ''}
                         </p>
                       </div>
                     </div>
