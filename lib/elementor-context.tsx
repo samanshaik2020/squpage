@@ -4,13 +4,16 @@ import React, { createContext, useContext, useState, useCallback } from "react"
 
 export interface ElementorElement {
   id: string
-  type: 'section' | 'row' | 'column' | 'text' | 'heading' | 'image' | 'button' | 'video' | 'spacer' | 'form' | 'pricing-table' | 'testimonial-carousel'
+  type: 'section' | 'row' | 'column' | 'text' | 'heading' | 'image' | 'button' | 'video' | 'spacer' | 'form' | 'pricing-table' | 'testimonial-carousel' | 'lead-magnet-form' | 'newsletter-signup' | 'popup-form' | 'multi-step-form' | 'slides' | 'countdown' | 'call-to-action' | 'share-buttons' | 'blockquote' | 'posts' | 'animated-headline' | 'product-price' | 'product-images' | 'product-title' | 'product-rating'
   parentId?: string
   children?: string[]
   content?: string
   formFields?: FormField[]
   pricingFeatures?: PricingFeature[]
   testimonials?: Testimonial[]
+  slides?: Slide[]
+  posts?: BlogPost[]
+  product?: Product
   styles?: {
     width?: string
     height?: string
@@ -63,11 +66,147 @@ export interface ElementorElement {
       hideOnMobile?: boolean
     }
     // Form settings
-    submitAction?: 'email' | 'webhook' | 'redirect'
+    submitAction?: 'email' | 'webhook' | 'redirect' | 'mailchimp' | 'hubspot' | 'salesforce'
     submitEmail?: string
     webhookUrl?: string
     redirectUrl?: string
     successMessage?: string
+    errorMessage?: string
+    // Lead Generation settings
+    leadMagnet?: {
+      enabled: boolean
+      title: string
+      description: string
+      downloadUrl: string
+      fileType: 'pdf' | 'ebook' | 'whitepaper' | 'template'
+    }
+    // Email Marketing Integration
+    emailIntegration?: {
+      provider: 'mailchimp' | 'hubspot' | 'salesforce' | 'activecampaign' | 'convertkit'
+      apiKey?: string
+      listId?: string
+      tags?: string[]
+      doubleOptIn?: boolean
+    }
+    // Analytics & Tracking
+    tracking?: {
+      googleAnalytics?: boolean
+      facebookPixel?: boolean
+      conversionGoal?: string
+      eventName?: string
+    }
+    // Anti-spam
+    antiSpam?: {
+      recaptcha?: boolean
+      honeypot?: boolean
+      timeLimit?: number
+    }
+    // Form Styling
+    formStyling?: {
+      theme: 'default' | 'modern' | 'minimal' | 'bold'
+      buttonStyle: 'solid' | 'outline' | 'ghost'
+      fieldStyle: 'default' | 'floating' | 'underline'
+    }
+    // Multi-step Form
+    multiStep?: {
+      enabled: boolean
+      totalSteps: number
+      currentStep: number
+      showProgress: boolean
+      stepTitles?: string[]
+    }
+    // Slides/Carousel
+    slider?: {
+      autoplay: boolean
+      autoplaySpeed: number
+      showDots: boolean
+      showArrows: boolean
+      infinite: boolean
+      slidesToShow: number
+      slidesToScroll: number
+      fade: boolean
+      pauseOnHover: boolean
+    }
+    // Countdown Timer
+    countdown?: {
+      targetDate: string
+      timezone?: string
+      format: 'dhms' | 'hms' | 'ms' | 'custom'
+      showLabels: boolean
+      expiredMessage: string
+      expiredAction: 'hide' | 'message' | 'redirect'
+      redirectUrl?: string
+      style: 'default' | 'circle' | 'square' | 'minimal'
+    }
+    // Call to Action
+    callToAction?: {
+      layout: 'horizontal' | 'vertical' | 'overlay'
+      imagePosition: 'left' | 'right' | 'top' | 'background'
+      showImage: boolean
+      imageUrl?: string
+      title: string
+      description: string
+      buttonText: string
+      buttonUrl: string
+      buttonStyle: 'solid' | 'outline' | 'ghost'
+    }
+    // Share Buttons
+    shareButtons?: {
+      platforms: ('facebook' | 'twitter' | 'linkedin' | 'pinterest' | 'whatsapp' | 'email' | 'copy')[]
+      style: 'default' | 'minimal' | 'rounded' | 'square'
+      size: 'small' | 'medium' | 'large'
+      showLabels: boolean
+      showCounts: boolean
+      layout: 'horizontal' | 'vertical'
+    }
+    // Blockquote
+    blockquote?: {
+      style: 'default' | 'modern' | 'minimal' | 'bordered'
+      showAuthor: boolean
+      authorName?: string
+      authorTitle?: string
+      authorImage?: string
+      quoteIcon: boolean
+      alignment: 'left' | 'center' | 'right'
+    }
+    // Posts
+    posts?: {
+      layout: 'grid' | 'list' | 'masonry'
+      columns: number
+      postsPerPage: number
+      showExcerpt: boolean
+      showAuthor: boolean
+      showDate: boolean
+      showCategory: boolean
+      showFeaturedImage: boolean
+      excerptLength: number
+      orderBy: 'date' | 'title' | 'author'
+      order: 'asc' | 'desc'
+      category?: string
+      tags?: string[]
+    }
+    // Animated Headline
+    animatedHeadline?: {
+      beforeText: string
+      animatedText: string[]
+      afterText: string
+      animationType: 'typing' | 'fade' | 'slide' | 'rotate' | 'clip'
+      speed: number
+      loop: boolean
+      cursor: boolean
+    }
+    // Product
+    product?: {
+      productId?: string
+      showPrice: boolean
+      showSalePrice: boolean
+      showRating: boolean
+      showReviewCount: boolean
+      showSku: boolean
+      showStock: boolean
+      priceColor: string
+      salePriceColor: string
+    }
     // Pricing Table settings
     currency?: string
     period?: string
@@ -85,12 +224,23 @@ export interface ElementorElement {
 
 export interface FormField {
   id: string
-  type: 'text' | 'email' | 'textarea' | 'select' | 'checkbox' | 'radio'
+  type: 'text' | 'email' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'phone' | 'number' | 'date' | 'file' | 'url'
   label: string
   placeholder?: string
   required?: boolean
   width?: string
   options?: string[] // for select, radio, checkbox
+  validation?: {
+    minLength?: number
+    maxLength?: number
+    pattern?: string
+    customMessage?: string
+  }
+  conditional?: {
+    field: string
+    value: string
+    action: 'show' | 'hide'
+  }
 }
 
 export interface PricingFeature {
@@ -107,6 +257,47 @@ export interface Testimonial {
   content: string
   image?: string
   rating?: number
+}
+
+export interface Slide {
+  id: string
+  title: string
+  subtitle?: string
+  content: string
+  backgroundImage?: string
+  backgroundColor?: string
+  buttonText?: string
+  buttonUrl?: string
+  textAlign?: 'left' | 'center' | 'right'
+  overlayOpacity?: number
+}
+
+export interface BlogPost {
+  id: string
+  title: string
+  excerpt: string
+  content: string
+  author: string
+  date: string
+  category: string
+  tags: string[]
+  featuredImage?: string
+  slug: string
+}
+
+export interface Product {
+  id: string
+  title: string
+  price: number
+  salePrice?: number
+  currency: string
+  rating: number
+  reviewCount: number
+  images: string[]
+  description: string
+  shortDescription: string
+  sku: string
+  inStock: boolean
 }
 
 interface ElementorContextType {

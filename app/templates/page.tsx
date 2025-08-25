@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import Image from "next/image"
-import { Lock, Wand2 } from "lucide-react" // Import Lock and Wand2 icons
+import { Wand2 } from "lucide-react"
 import React from "react"
 
 const templates = [
@@ -141,9 +141,21 @@ const templates = [
     isPremium: true,
     isLocked: false,
   },
+  {
+    id: "marketing-lead-generation",
+    name: "Marketing & Lead Generation",
+    category: "Marketing",
+    description: "Showcase of powerful lead generation widgets including lead magnets, multi-step forms, and newsletter signups.",
+    image: "/placeholder.svg?height=300&width=400&text=Marketing+Lead+Gen",
+    tags: ["Marketing", "Lead Gen", "Forms", "Premium"],
+    isPremium: true,
+    isLocked: false,
+    isElementor: true,
+    isMarketing: true
+  },
 ]
 
-const categories = ["All", "Elementor", "Free", "Paid"]
+const categories = ["All", "Elementor", "Marketing", "Free", "Paid"]
 
 export default function TemplatesPage() {
   const [selectedCategory, setSelectedCategory] = React.useState("All")
@@ -152,6 +164,7 @@ export default function TemplatesPage() {
   const filteredTemplates = templates.filter(template => 
     selectedCategory === "All" || 
     selectedCategory === "Elementor" && template.isElementor ||
+    selectedCategory === "Marketing" && (template.category === "Marketing" || template.isMarketing) ||
     selectedCategory === "Free" && !template.isPremium ||
     selectedCategory === "Paid" && template.isPremium
   )
@@ -283,10 +296,16 @@ export default function TemplatesPage() {
                 </div>
 
                 {template.isElementor ? (
-                  <Link href={template.isPremium ? `/simplified-elementor?premium=true` : `/simplified-elementor`} className="w-full">
+                  <Link href={
+                    template.isMarketing 
+                      ? `/simplified-elementor?premium=true&marketing=true` 
+                      : template.isPremium 
+                        ? `/simplified-elementor?premium=true` 
+                        : `/simplified-elementor`
+                  } className="w-full">
                     <Button className="w-full">
                       <Wand2 className="w-4 h-4 mr-2" />
-                      {template.isPremium ? 'Start Pro Editor' : 'Start Free Editor'}
+                      {template.isMarketing ? 'Explore Marketing Features' : template.isPremium ? 'Start Pro Editor' : 'Start Free Editor'}
                     </Button>
                   </Link>
                 ) : (
