@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { useContext } from "react"
-import { EditorContext } from "@/lib/editor-context"
+import { TemplateEditorContext } from "@/lib/template-editor-context"
 
 interface EditableElementProps {
   id: string
@@ -40,7 +40,7 @@ export function EditableElement({
   let elementUrl = defaultUrl
   let styles: any = defaultStyle
 
-  const editorContext = useContext(EditorContext)
+  const editorContext = useContext(TemplateEditorContext)
 
   if (isEditable && editorContext) {
     const { elements } = editorContext

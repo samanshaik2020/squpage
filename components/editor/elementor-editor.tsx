@@ -56,7 +56,7 @@ import { AddStructureButton } from "./add-structure-button"
 import { StructureOption } from "./structure-option"
 
 interface ElementorEditorProps {
-  templateId?: string
+  // Removed templateId - Elementor editor is independent
 }
 
 // Define the available elements for the side panel
@@ -117,7 +117,7 @@ const AVAILABLE_ELEMENTS = [
   }
 ]
 
-export function ElementorEditor({ templateId }: ElementorEditorProps) {
+export function ElementorEditor(): React.ReactElement {
   return (
     <ElementorProvider>
       <ElementorEditorContent />
