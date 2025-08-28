@@ -15,11 +15,14 @@ export async function POST(req: Request) {
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
     if (!apiKey) {
       console.error("API key is not defined in environment variables");
+      console.error("Available env vars:", Object.keys(process.env).filter(key => key.includes('API') || key.includes('GEMINI')));
       return new Response(JSON.stringify({ error: "API key not configured" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
     }
+    
+    console.log("API key found, length:", apiKey.length);
 
     let prompt = ""
 
@@ -139,7 +142,9 @@ CONCLUSION: [Write a conclusion paragraph that summarizes the main points]`
       );
 
       if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+        const errorBody = await response.text();
+        console.error("Gemini API error response:", errorBody);
+        throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorBody}`);
       }
 
       const data = await response.json();

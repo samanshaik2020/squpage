@@ -44,6 +44,42 @@ export function TemplateEditorProvider({ children }: { children: React.ReactNode
   const [historyIndex, setHistoryIndex] = useState(0)
   const [templateId, setTemplateId] = useState<string | null>(null)
   
+  // Load elements from localStorage on mount
+  useEffect(() => {
+    const savedElements = localStorage.getItem('template-editor-elements')
+    const savedTemplateId = localStorage.getItem('template-editor-templateId')
+    
+    if (savedElements) {
+      try {
+        const parsedElements = JSON.parse(savedElements)
+        console.log("Loading elements from localStorage:", parsedElements);
+        setElements(parsedElements)
+        setHistory([parsedElements])
+      } catch (error) {
+        console.error("Error parsing saved elements:", error)
+      }
+    }
+    
+    if (savedTemplateId) {
+      setTemplateId(savedTemplateId)
+    }
+  }, [])
+  
+  // Save elements to localStorage whenever they change
+  useEffect(() => {
+    if (elements.length > 0) {
+      console.log("Saving elements to localStorage:", elements);
+      localStorage.setItem('template-editor-elements', JSON.stringify(elements))
+    }
+  }, [elements])
+  
+  // Save templateId to localStorage whenever it changes
+  useEffect(() => {
+    if (templateId) {
+      localStorage.setItem('template-editor-templateId', templateId)
+    }
+  }, [templateId])
+  
   // Debug log when elements change
   useEffect(() => {
     console.log("Template editor elements updated:", elements);
@@ -79,9 +115,11 @@ export function TemplateEditorProvider({ children }: { children: React.ReactNode
 
   const updateElement = useCallback(
     (id: string, updates: Partial<TemplateElement>) => {
-      console.log(`Template editor: Updating element with id: ${id}`, updates);
+      console.log(`Template editor context: Updating element with id: ${id}`, updates);
       
       setElements((prevElements) => {
+        console.log(`Template editor context: Current elements before update:`, prevElements);
+        
         // Check if the element exists
         const elementExists = prevElements.some(el => el.id === id);
         
@@ -89,11 +127,11 @@ export function TemplateEditorProvider({ children }: { children: React.ReactNode
         
         if (elementExists) {
           // Update existing element
-          console.log(`Template editor: Element ${id} exists, updating it`);
+          console.log(`Template editor context: Element ${id} exists, updating it`);
           updatedElements = prevElements.map((el) => (el.id === id ? { ...el, ...updates } : el));
         } else {
           // Create new element with default values
-          console.log(`Template editor: Element ${id} doesn't exist, creating it`);
+          console.log(`Template editor context: Element ${id} doesn't exist, creating it`);
           const newElement: TemplateElement = {
             id,
             type: updates.type || 'text',
@@ -106,7 +144,7 @@ export function TemplateEditorProvider({ children }: { children: React.ReactNode
           updatedElements = [...prevElements, newElement];
         }
         
-        console.log('Template editor: Updated elements:', updatedElements);
+        console.log('Template editor context: Updated elements after change:', updatedElements);
         saveToHistory(updatedElements);
         return updatedElements;
       });
@@ -176,6 +214,9 @@ export function TemplateEditorProvider({ children }: { children: React.ReactNode
     setSelectedElement(null)
     setHistory([[]])
     setHistoryIndex(0)
+    // Clear localStorage as well
+    localStorage.removeItem('template-editor-elements')
+    localStorage.removeItem('template-editor-templateId')
   }, [])
 
   const value = useMemo(

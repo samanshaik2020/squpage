@@ -16,8 +16,8 @@ import { DentalHealthLandingTemplate } from "./dental-health-landing"
 import { AIDentalHealthLandingTemplate } from "./ai-dental-health-landing"
 import { TemplateEditingPanel } from "@/components/templates/template-editing-panel"
 import { TemplateEditorProvider, useTemplateEditor } from "@/lib/template-editor-context"
-import { AIGenerationModal } from "@/components/templates/ai-generation-modal"
-import { AIGenerationLoading } from "@/components/templates/ai-generation-loading"
+import { AIGenerationModal } from "@/components/editor/ai-generation-modal"
+import { AIGenerationLoading } from "@/components/editor/ai-generation-loading"
 import { Sparkles } from "lucide-react"
 
 interface TemplateEditorProps {
@@ -82,6 +82,7 @@ function TemplateEditorContent({
     if (!elementsInitialized && !(isPaidAITemplate && !templateGenerated)) {
       console.log("Template editor: Initializing template elements for:", templateId);
       
+      // Clear existing elements first to avoid conflicts
       // Initialize elements based on template type
       if (templateId === "ai-blog-page") {
         // Initialize AI blog page elements
@@ -273,6 +274,9 @@ function TemplateEditorContent({
     setShowAIModal(false)
     setShowLoadingScreen(true)
     setIsGenerating(true)
+    
+    // Clear existing elements before AI generation to ensure clean state
+    console.log("Template editor: Clearing elements before AI generation");
     try {
       const response = await fetch("/api/generate-content", {
         method: "POST",
@@ -289,19 +293,38 @@ function TemplateEditorContent({
       const data = await response.json()
       console.log("AI Generated Content:", data)
       
+      // Ensure we have valid data before proceeding
+      if (!data || typeof data !== 'object') {
+        throw new Error("Invalid response data from AI generation");
+      }
+      
+      console.log("Template editor: Starting to update elements with AI content");
+      
       // Update elements with AI-generated content based on template
       if (templateId === "product-landing-page") {
         console.log("Template editor: Updating product landing page elements with:", data);
         
         // Force element initialization and update with complete element objects
-        const updateElementWithForce = (id: string, content: string, type: string = "text") => {
+        const updateElementWithForce = (id: string, content: string, type: string = "text", url?: string) => {
           console.log(`Force updating element ${id} with content:`, content);
-          updateElement(id, {
+          
+          // Create a complete element object
+          const elementData = {
             type: type,
             content: content,
             styles: {},
-            position: { x: 0, y: 0 }
-          });
+            position: { x: 0, y: 0 },
+            ...(url && { url: url })
+          };
+          
+          console.log(`Element data for ${id}:`, elementData);
+          updateElement(id, elementData);
+          
+          // Force a re-render by triggering a small delay
+          setTimeout(() => {
+            console.log(`Re-updating element ${id} to ensure it's applied`);
+            updateElement(id, elementData);
+          }, 100);
         };
         
         // Update navigation and branding
@@ -390,8 +413,117 @@ function TemplateEditorContent({
         if (data["featured-post-author"]) {
           updateElementWithForce("featured-post-author", data["featured-post-author"], "text");
         }
+      } else if (templateId === "ai-portfolio") {
+        console.log("Template editor: Updating AI portfolio elements with:", data);
+        
+        const updateElementWithForce = (id: string, content: string, type: string = "text") => {
+          console.log(`Force updating portfolio element ${id} with content:`, content);
+          updateElement(id, {
+            type: type,
+            content: content,
+            styles: {},
+            position: { x: 0, y: 0 }
+          });
+        };
+        
+        // Update portfolio elements
+        if (data["portfolio-name"]) {
+          updateElementWithForce("portfolio-name", data["portfolio-name"], "text");
+          updateElementWithForce("hero-name", data["portfolio-name"], "heading");
+        }
+        
+        if (data["hero-title"]) {
+          updateElementWithForce("hero-title", data["hero-title"], "text");
+        }
+        
+        if (data["hero-description"]) {
+          updateElementWithForce("hero-description", data["hero-description"], "text");
+        }
+        
+        if (data["about-description"]) {
+          updateElementWithForce("about-description", data["about-description"], "text");
+        }
+        
+      } else if (templateId === "ai-dental-health-landing") {
+        console.log("Template editor: Updating AI dental health landing elements with:", data);
+        
+        const updateElementWithForce = (id: string, content: string, type: string = "text") => {
+          console.log(`Force updating dental element ${id} with content:`, content);
+          updateElement(id, {
+            type: type,
+            content: content,
+            styles: {},
+            position: { x: 0, y: 0 }
+          });
+        };
+        
+        // Update dental health elements
+        if (data["hero-title"]) {
+          updateElementWithForce("hero-title", data["hero-title"], "heading");
+        }
+        
+        if (data["hero-subtitle"]) {
+          updateElementWithForce("hero-subtitle", data["hero-subtitle"], "text");
+        }
+        
+        if (data["problem-title"]) {
+          updateElementWithForce("problem-title", data["problem-title"], "heading");
+        }
+        
+        if (data["problem-subtitle"]) {
+          updateElementWithForce("problem-subtitle", data["problem-subtitle"], "text");
+        }
+        
+      } else if (templateId === "ai-generated-blog-post") {
+        console.log("Template editor: Updating AI generated blog post elements with:", data);
+        
+        const updateElementWithForce = (id: string, content: string, type: string = "text") => {
+          console.log(`Force updating blog post element ${id} with content:`, content);
+          updateElement(id, {
+            type: type,
+            content: content,
+            styles: {},
+            position: { x: 0, y: 0 }
+          });
+        };
+        
+        // Update blog post elements
+        if (data["blog-title"]) {
+          updateElementWithForce("blog-title", data["blog-title"], "heading");
+        }
+        
+        if (data["blog-intro"]) {
+          updateElementWithForce("blog-intro", data["blog-intro"], "text");
+        }
+        
+        if (data["blog-paragraph-1"]) {
+          updateElementWithForce("blog-paragraph-1", data["blog-paragraph-1"], "text");
+        }
+        
+        if (data["blog-paragraph-2"]) {
+          updateElementWithForce("blog-paragraph-2", data["blog-paragraph-2"], "text");
+        }
+        
+        if (data["blog-paragraph-3"]) {
+          updateElementWithForce("blog-paragraph-3", data["blog-paragraph-3"], "text");
+        }
+        
+        if (data["blog-conclusion"]) {
+          updateElementWithForce("blog-conclusion", data["blog-conclusion"], "text");
+        }
       }
       // Add other template handling here...
+      
+      console.log("Template editor: AI content generation completed successfully");
+      
+      // Mark template as generated and force a re-render
+      setTemplateGenerated(true);
+      
+      // Force a final update to ensure all elements are properly rendered
+      setTimeout(() => {
+        console.log("Template editor: Final element check after AI generation");
+        setElementsInitialized(true);
+      }, 500);
       
     } catch (error) {
       console.error("Failed to generate AI content:", error)
@@ -401,7 +533,6 @@ function TemplateEditorContent({
     } finally {
       setIsGenerating(false)
       setShowLoadingScreen(false)
-      setTemplateGenerated(true)
     }
   }
 
