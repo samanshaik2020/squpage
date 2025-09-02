@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Zap, Github, Chrome } from "lucide-react"
+import { authService } from "@/lib/supabase-auth"
+import { useRouter } from "next/navigation"
+import { toast } from "@/components/ui/use-toast"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -17,6 +20,7 @@ export default function LoginPage() {
     rememberMe: false
   })
   const [errors, setErrors] = useState<{[key: string]: string}>({})
+  const router = useRouter()
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {}
@@ -44,16 +48,20 @@ export default function LoginPage() {
     
     setIsLoading(true)
     
-    // Simulate API call and redirect to dashboard
-    setTimeout(() => {
-      // Store user info for dashboard (optional)
-      localStorage.setItem('userEmail', formData.email)
-      localStorage.setItem('isLoggedIn', 'true')
+    try {
+      // Use Supabase auth service to sign in
+      await authService.signIn(formData.email, formData.password)
       
+      // Redirect to dashboard on success
+      router.push('/dashboard')
+    } catch (error: any) {
+      // Handle login errors
+      setErrors({
+        ...errors,
+        form: error.message || 'Failed to sign in. Please check your credentials.'
+      })
       setIsLoading(false)
-      // Redirect to dashboard
-      window.location.href = '/dashboard'
-    }, 1500)
+    }
   }
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -63,10 +71,23 @@ export default function LoginPage() {
     }
   }
 
-  const handleSocialLogin = (provider: string) => {
-    console.log(`Login with ${provider}`)
-    // Redirect to dashboard for social login
-    window.location.href = '/dashboard'
+  const handleSocialLogin = async (provider: string) => {
+    setIsLoading(true)
+    try {
+      if (provider === 'google') {
+        await authService.signInWithGoogle()
+      } else if (provider === 'github') {
+        await authService.signInWithGithub()
+      }
+      router.push('/dashboard')
+    } catch (error: any) {
+      toast({
+        title: "Authentication Error",
+        description: error.message || `Failed to sign in with ${provider}`,
+        variant: "destructive"
+      })
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -127,6 +148,11 @@ export default function LoginPage() {
 
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
+              {errors.form && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                  {errors.form}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                   Email Address

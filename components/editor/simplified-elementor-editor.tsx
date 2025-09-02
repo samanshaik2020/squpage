@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
   Type, 
@@ -18,23 +18,464 @@ import {
   Plus,
   Columns,
   Grip,
-  X 
+  X,
+  Save,
+  Eye,
+  Settings,
+  Smartphone,
+  Tablet,
+  Monitor,
+  Undo,
+  Redo,
+  Download,
+  Upload,
+  ChevronDown,
+  ChevronUp,
+  Share2,
+  Copy,
+  Trash,
+  Globe,
+  Loader2
 } from 'lucide-react'
 import { useElementor } from '@/lib/elementor-context'
+import { useProject } from '@/lib/project-context'
+import { useToast } from '@/hooks/use-toast'
 import { ElementPropertiesPanel } from './element-properties-panel'
 import { EditableText } from './editable-text'
 import { AddStructureButton } from './add-structure-button'
-
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useRouter } from 'next/navigation'
 
 interface SimplifiedElementorEditorProps {
   isPremium?: boolean;
+  projectId?: string;
 }
 
-export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedElementorEditorProps) {
+export function SimplifiedElementorEditor({ isPremium = false, projectId }: SimplifiedElementorEditorProps) {
   const { elements, addElement, updateElement, moveElement, deleteElement, selectedElement, selectElement, getElementById } = useElementor()
+  const projectContext = useProject()
+  
+  // Destructure with fallbacks to prevent errors
+  const {
+    currentProject = null,
+    saveProject = async () => {},
+    publishProject = async () => {},
+    createProject = async () => ({ id: '', name: '', type: 'Elementor' as const, status: 'draft' as const, createdAt: '', updatedAt: '', thumbnail: '', elements: [], settings: { title: '', description: '', favicon: '', customCSS: '', customJS: '' } }),
+    loadProject = async () => {},
+    isSaving = false,
+    enableAutoSave = () => {},
+    disableAutoSave = () => {},
+    updateProjectThumbnail = async () => {}
+  } = projectContext || {}
+  
+  const router = useRouter()
   
   // Get the selected element object from the ID
   const selectedElementObj = selectedElement ? getElementById(selectedElement) : null
+  
+  // Editor state
+  const [viewMode, setViewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
+  const [isPreviewMode, setIsPreviewMode] = useState(false)
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false)
+  const [showPublishDialog, setShowPublishDialog] = useState(false)
+  const [projectName, setProjectName] = useState('')
+  const [projectSettings, setProjectSettings] = useState({
+    title: '',
+    description: '',
+    seoTitle: '',
+    seoDescription: '',
+    customCSS: '',
+    customJS: ''
+  })
+  
+  // Share management state
+  const [shareData, setShareData] = useState<any>(null)
+  const [customShareName, setCustomShareName] = useState('')
+  const [shareExpiry, setShareExpiry] = useState<string>('')
+  const [isGeneratingShare, setIsGeneratingShare] = useState(false)
+  const [isUpdatingShare, setIsUpdatingShare] = useState(false)
+  const { toast } = useToast()
+  
+  // Load share data when project changes
+  useEffect(() => {
+    if (currentProject?.shareToken) {
+      setShareData({
+        token: currentProject.shareToken,
+        slug: currentProject.shareSlug,
+        customName: currentProject.shareName,
+        expiryDate: currentProject.shareExpiryDate
+      })
+      setCustomShareName(currentProject.shareName || '')
+    } else {
+      setShareData(null)
+      setCustomShareName('')
+    }
+  }, [currentProject])
+  
+  // Generate share token
+  const generateShareToken = async () => {
+    if (!currentProject || !customShareName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a custom name for the share link",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    setIsGeneratingShare(true)
+    
+    try {
+      const response = await fetch(`/api/projects/${currentProject.id}/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customName: customShareName,
+          expiryDays: shareExpiry ? parseInt(shareExpiry) : undefined
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        setShareData(data.shareData)
+        toast({
+          title: "Success",
+          description: "Share link generated successfully"
+        })
+      } else {
+        throw new Error(data.error || 'Failed to generate share link')
+      }
+    } catch (error) {
+      console.error('Error generating share token:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate share link",
+        variant: "destructive"
+      })
+    } finally {
+      setIsGeneratingShare(false)
+    }
+  }
+  
+  // Update share settings
+  const updateShareSettings = async () => {
+    if (!currentProject || !customShareName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a custom name for the share link",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    setIsUpdatingShare(true)
+    
+    try {
+      const response = await fetch(`/api/projects/${currentProject.id}/share`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customName: customShareName,
+          expiryDays: shareExpiry ? parseInt(shareExpiry) : undefined
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        setShareData(data.shareData)
+        toast({
+          title: "Success",
+          description: "Share settings updated successfully"
+        })
+      } else {
+        throw new Error(data.error || 'Failed to update share settings')
+      }
+    } catch (error) {
+      console.error('Error updating share settings:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update share settings",
+        variant: "destructive"
+      })
+    } finally {
+      setIsUpdatingShare(false)
+    }
+  }
+  
+  // Revoke share token
+  const revokeShareToken = async () => {
+    if (!currentProject) return
+    
+    try {
+      const response = await fetch(`/api/projects/${currentProject.id}/share`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        setShareData(null)
+        setCustomShareName('')
+        setShareExpiry('')
+        toast({
+          title: "Success",
+          description: "Share link revoked successfully"
+        })
+      } else {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to revoke share link')
+      }
+    } catch (error) {
+      console.error('Error revoking share token:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to revoke share link",
+        variant: "destructive"
+      })
+    }
+  }
+  
+  // Copy share URL to clipboard
+  const copyShareUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url)
+      toast({
+        title: "Success",
+        description: "Share URL copied to clipboard"
+      })
+    } catch (error) {
+      console.error('Error copying to clipboard:', error)
+      toast({
+        title: "Error",
+        description: "Failed to copy URL to clipboard",
+        variant: "destructive"
+      })
+    }
+  }
+  
+  // Load project on mount if projectId is provided
+  useEffect(() => {
+    if (projectId && !currentProject && projectContext) {
+      loadProject(projectId).catch(console.error)
+    }
+  }, [projectId, currentProject, loadProject, projectContext])
+  
+  // Update project settings when current project changes
+  useEffect(() => {
+    if (currentProject && projectContext) {
+      setProjectName(currentProject.name)
+      setProjectSettings({
+        title: currentProject.settings?.title || '',
+        description: currentProject.settings?.description || '',
+        seoTitle: currentProject.settings?.seoTitle || '',
+        seoDescription: currentProject.settings?.seoDescription || '',
+        customCSS: currentProject.settings?.customCSS || '',
+        customJS: currentProject.settings?.customJS || ''
+      })
+      
+      // Enable auto-save
+      if (enableAutoSave && elements) {
+        enableAutoSave(elements)
+      }
+    }
+    
+    return () => {
+      if (disableAutoSave) {
+        disableAutoSave()
+      }
+    }
+  }, [currentProject, elements, enableAutoSave, disableAutoSave, projectContext])
+  
+  // Handle save project
+  const handleSave = async () => {
+    if (!projectContext) {
+      toast({
+        title: "Error",
+        description: "Project context not available",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    try {
+      if (!currentProject) {
+        // Create new project
+        const nameToUse = projectName.trim() || `Untitled Project ${Date.now()}`
+        
+        const newProject = await createProject(nameToUse, 'Elementor')
+        if (newProject && newProject.id) {
+          // Update the project name state if we used a default name
+          if (!projectName.trim()) {
+            setProjectName(nameToUse)
+          }
+          
+          // Save the project with elements and settings using the newly created project
+          const response = await fetch(`/api/projects/${newProject.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              elements,
+              settings: projectSettings,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to save project elements')
+          }
+
+          toast({
+            title: "Success",
+            description: "Project created and saved successfully!"
+          })
+          setShowSaveDialog(false)
+          
+          // Update URL to include project ID without navigation
+          window.history.replaceState(null, '', `/elementor?projectId=${newProject.id}`)
+        }
+      } else {
+        // Save existing project
+        await saveProject(elements, projectSettings)
+        toast({
+          title: "Success",
+          description: "Project saved successfully!"
+        })
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('Error saving project:', errorMessage, error)
+      toast({
+        title: "Error",
+        description: `Failed to save project: ${errorMessage}`,
+        variant: "destructive"
+      })
+    }
+  }
+  
+  // Handle publish project
+  const handlePublish = async () => {
+    if (!projectContext) {
+      toast({
+        title: "Error",
+        description: "Project context not available",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    try {
+      if (!currentProject) {
+        toast({
+          title: "Error",
+          description: "Please save the project first",
+          variant: "destructive"
+        })
+        return
+      }
+      
+      await publishProject()
+      toast({
+        title: "Success",
+        description: "Project published successfully!"
+      })
+      setShowPublishDialog(false)
+    } catch (error) {
+      console.error('Error publishing project:', error)
+      toast({
+        title: "Error",
+        description: "Failed to publish project",
+        variant: "destructive"
+      })
+    }
+  }
+  
+  // Handle preview
+  const handlePreview = async () => {
+    if (currentProject) {
+      // Save current changes before preview
+      try {
+        await saveProject(elements, projectSettings)
+        // Open preview in new tab
+        window.open(`/preview/elementor/${currentProject.id}`, '_blank')
+      } catch (error) {
+        console.error('Error saving before preview:', error)
+        toast({
+          title: "Error",
+          description: "Failed to save project before preview",
+          variant: "destructive"
+        })
+      }
+    } else {
+      // No project exists, need to save first
+      const nameToUse = projectName.trim() || `Untitled Project ${Date.now()}`
+      
+      try {
+        // Create and save project first
+        const newProject = await createProject(nameToUse, 'Elementor')
+        if (newProject && newProject.id) {
+          // Update the project name state if we used a default name
+          if (!projectName.trim()) {
+            setProjectName(nameToUse)
+          }
+          // Save the project with elements and settings
+          const response = await fetch(`/api/projects/${newProject.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              elements,
+              settings: projectSettings,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to save project elements')
+          }
+
+          // Open preview in new tab
+          window.open(`/preview/elementor/${newProject.id}`, '_blank')
+          
+          // Update URL to include project ID without navigation
+          window.history.replaceState(null, '', `/elementor?projectId=${newProject.id}`)
+        }
+      } catch (error) {
+        console.error('Error creating project for preview:', error)
+        toast({
+          title: "Error",
+          description: "Failed to create project for preview",
+          variant: "destructive"
+        })
+      }
+    }
+  }
+  
+  // Get viewport width for responsive design
+  const getViewportWidth = () => {
+    switch (viewMode) {
+      case 'desktop': return '100%'
+      case 'tablet': return '768px'
+      case 'mobile': return '375px'
+      default: return '100%'
+    }
+  }
   
   // Helper function to render elements based on type
   const renderElement = (element: any) => {
@@ -1071,9 +1512,427 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
     }
   ]
 
+  // Show loading if project context is not available
+  if (!projectContext) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading editor...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex h-screen bg-white">
-      {/* Side Panel */}
+    <div className="flex flex-col h-screen bg-white">
+      {/* Top Toolbar */}
+      <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex items-center space-x-4">
+          <Link href="/dashboard" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
+            <ArrowUp className="w-4 h-4 rotate-[-90deg]" />
+            <span>Back to Dashboard</span>
+          </Link>
+          <div className="h-6 w-px bg-gray-300" />
+          <div className="flex items-center space-x-2">
+            <h1 className="text-lg font-semibold text-gray-900">
+              {currentProject ? currentProject.name : 'New Project'}
+            </h1>
+            {currentProject && (
+              <Badge variant={currentProject.status === 'published' ? 'default' : 'secondary'}>
+                {currentProject.status}
+              </Badge>
+            )}
+            {isSaving && (
+              <div className="flex items-center space-x-1 text-sm text-gray-500">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Saving...</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          {/* Responsive Controls */}
+          <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'desktop' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('desktop')}
+              className="px-3"
+            >
+              <Monitor className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'tablet' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('tablet')}
+              className="px-3"
+            >
+              <Tablet className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'mobile' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('mobile')}
+              className="px-3"
+            >
+              <Smartphone className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="h-6 w-px bg-gray-300" />
+
+          {/* Action Buttons */}
+          <Button variant="ghost" size="sm" disabled>
+            <Undo className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="sm" disabled>
+            <Redo className="w-4 h-4" />
+          </Button>
+
+          <div className="h-6 w-px bg-gray-300" />
+
+          <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <Settings className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Project Settings</DialogTitle>
+                <DialogDescription>
+                  Configure your project settings, SEO options, and share settings.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <Tabs defaultValue="general" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="general">General</TabsTrigger>
+                  <TabsTrigger value="sharing">Sharing</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="general" className="space-y-4">
+                  <div>
+                    <Label htmlFor="project-title">Project Title</Label>
+                    <Input
+                      id="project-title"
+                      value={projectSettings.title}
+                      onChange={(e) => setProjectSettings(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Enter project title"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="project-description">Description</Label>
+                    <Textarea
+                      id="project-description"
+                      value={projectSettings.description}
+                      onChange={(e) => setProjectSettings(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Enter project description"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="seo-title">SEO Title</Label>
+                    <Input
+                      id="seo-title"
+                      value={projectSettings.seoTitle}
+                      onChange={(e) => setProjectSettings(prev => ({ ...prev, seoTitle: e.target.value }))}
+                      placeholder="Enter SEO title"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="seo-description">SEO Description</Label>
+                    <Textarea
+                      id="seo-description"
+                      value={projectSettings.seoDescription}
+                      onChange={(e) => setProjectSettings(prev => ({ ...prev, seoDescription: e.target.value }))}
+                      placeholder="Enter SEO description"
+                      rows={2}
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="sharing" className="space-y-4">
+                  {!currentProject ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>Save your project first to enable sharing</p>
+                    </div>
+                  ) : !shareData ? (
+                    <div className="space-y-4">
+                      <div className="text-center py-4">
+                        <Globe className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                        <h3 className="text-lg font-semibold mb-2">Share Your Project</h3>
+                        <p className="text-gray-600 mb-4">Create a shareable link for your project</p>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="share-name">Custom Share Name</Label>
+                        <Input
+                          id="share-name"
+                          value={customShareName}
+                          onChange={(e) => setCustomShareName(e.target.value)}
+                          placeholder="Enter a custom name for your share link"
+                        />
+                        <p className="text-sm text-gray-500 mt-1">
+                          This will be used in the URL: squpage.com/share/{customShareName.toLowerCase().replace(/\s+/g, '-')}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="share-expiry">Link Expiry (Optional)</Label>
+                        <Select value={shareExpiry} onValueChange={setShareExpiry}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select expiry period" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Never expires</SelectItem>
+                            <SelectItem value="7">7 days</SelectItem>
+                            <SelectItem value="30">30 days</SelectItem>
+                            <SelectItem value="90">90 days</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <Button 
+                        onClick={generateShareToken}
+                        disabled={isGeneratingShare || !customShareName.trim()}
+                        className="w-full"
+                      >
+                        {isGeneratingShare ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Share2 className="w-4 h-4 mr-2" />
+                            Generate Share Link
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="text-center py-4">
+                        <Globe className="w-12 h-12 mx-auto mb-4 text-green-500" />
+                        <h3 className="text-lg font-semibold mb-2">Project is Shared</h3>
+                        <p className="text-gray-600">Your project is publicly accessible</p>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <Label>Share URL</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              value={`${window.location.origin}/share/${shareData.slug}`}
+                              readOnly
+                              className="flex-1"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => copyShareUrl(`${window.location.origin}/share/${shareData.slug}`)}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="update-share-name">Custom Share Name</Label>
+                          <Input
+                            id="update-share-name"
+                            value={customShareName}
+                            onChange={(e) => setCustomShareName(e.target.value)}
+                            placeholder="Enter a custom name for your share link"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="update-share-expiry">Link Expiry</Label>
+                          <Select value={shareExpiry} onValueChange={setShareExpiry}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select expiry period" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Never expires</SelectItem>
+                              <SelectItem value="7">7 days</SelectItem>
+                              <SelectItem value="30">30 days</SelectItem>
+                              <SelectItem value="90">90 days</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {shareData.expiryDate && (
+                          <div className="text-sm text-gray-600">
+                            Expires: {new Date(shareData.expiryDate).toLocaleDateString()}
+                          </div>
+                        )}
+                        
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={updateShareSettings}
+                            disabled={isUpdatingShare || !customShareName.trim()}
+                            className="flex-1"
+                          >
+                            {isUpdatingShare ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Updating...
+                              </>
+                            ) : (
+                              'Update Settings'
+                            )}
+                          </Button>
+                          <Button 
+                            variant="destructive"
+                            onClick={revokeShareToken}
+                          >
+                            <Trash className="w-4 h-4 mr-2" />
+                            Revoke
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowSettingsDialog(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  handleSave()
+                  setShowSettingsDialog(false)
+                }}>
+                  Save Settings
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Button variant="outline" size="sm" onClick={handlePreview}>
+            <Eye className="w-4 h-4 mr-2" />
+            Preview
+          </Button>
+
+          {!currentProject ? (
+            <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Save className="w-4 h-4 mr-2" />
+                  Save
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Save Project</DialogTitle>
+                  <DialogDescription>
+                    Give your project a name to save it.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="project-name">Project Name</Label>
+                    <Input
+                      id="project-name"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      placeholder="Enter project name"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSave} disabled={!projectName.trim() || isSaving}>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Project
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <Button size="sm" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save
+                </>
+              )}
+            </Button>
+          )}
+
+          {currentProject && currentProject.status === 'draft' && (
+            <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                  <Globe className="w-4 h-4 mr-2" />
+                  Publish
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Publish Project</DialogTitle>
+                  <DialogDescription>
+                    Make your project live and accessible to visitors.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h4 className="font-medium text-green-900 mb-2">Ready to publish?</h4>
+                    <p className="text-sm text-green-700">
+                      Your project will be made live and accessible at a public URL. You can unpublish it at any time.
+                    </p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowPublishDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handlePublish} disabled={isSaving} className="bg-green-600 hover:bg-green-700">
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Publishing...
+                      </>
+                    ) : (
+                      <>
+                        <Globe className="w-4 h-4 mr-2" />
+                        Publish Now
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      </div>
+
+      {/* Main Editor Area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Side Panel */}
       <div className="w-64 border-r border-gray-200 overflow-y-auto p-4">
         <h2 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-500">Elements</h2>
         <div className="space-y-4">
@@ -1158,10 +2017,12 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
         </div>
 
         {/* Editor Canvas */}
-        <div className="flex-1 overflow-y-auto p-4 bg-gray-100">
+        <div className="flex-1 overflow-y-auto p-4 bg-gray-100 flex justify-center">
           <div 
-            className="min-h-[calc(100vh-8rem)] bg-white rounded-lg shadow-sm border border-gray-200 relative"
+            className="min-h-[calc(100vh-8rem)] bg-white rounded-lg shadow-sm border border-gray-200 relative transition-all duration-300"
             style={{ 
+              width: getViewportWidth(),
+              maxWidth: viewMode === 'desktop' ? '100%' : getViewportWidth(),
               minHeight: rootElements.length > 0 ? `${Math.max(600, rootElements.length * 100)}px` : 'calc(100vh - 8rem)'
             }}
             id="editor-canvas"
@@ -2078,7 +2939,7 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
           </div>
         </div>
       </div>
-      
+
       {/* Properties Panel */}
       <div className="w-72 border-l border-gray-200 overflow-y-auto p-4">
         {selectedElementObj && (
@@ -2088,5 +2949,6 @@ export function SimplifiedElementorEditor({ isPremium = false }: SimplifiedEleme
         )}
       </div>
     </div>
+  </div>
   )
 }

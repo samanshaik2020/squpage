@@ -1,12 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ProjectProvider } from "@/lib/project-context"
+import { authService } from "@/lib/supabase-auth"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import Image from "next/image"
+import { ShareDialog } from "@/components/share-dialog"
 import { 
   Plus, 
   Zap, 
@@ -48,91 +52,21 @@ import {
   Palette,
   LogOut,
   HelpCircle,
-  CreditCard
+  CreditCard,
+  Mail,
+  BarChart
 } from "lucide-react"
 
-const recentProjects = [
-  {
-    id: 1,
-    name: "E-commerce Store",
-    type: "AI Generated",
-    status: "Published",
-    lastModified: "2 hours ago",
-    views: "1.2k",
-    clicks: "89",
-    conversionRate: "3.2%",
-    thumbnail: "/placeholder.svg?height=120&width=200&text=E-commerce",
-    url: "https://mystore.com",
-    category: "E-commerce"
-  },
-  {
-    id: 2,
-    name: "Portfolio Website",
-    type: "Template",
-    status: "Draft",
-    lastModified: "1 day ago",
-    views: "0",
-    clicks: "0",
-    conversionRate: "0%",
-    thumbnail: "/placeholder.svg?height=120&width=200&text=Portfolio",
-    url: "",
-    category: "Portfolio"
-  },
-  {
-    id: 3,
-    name: "Landing Page",
-    type: "From Scratch",
-    status: "Published",
-    lastModified: "3 days ago",
-    views: "856",
-    clicks: "42",
-    conversionRate: "4.9%",
-    thumbnail: "/placeholder.svg?height=120&width=200&text=Landing",
-    url: "https://mylanding.com",
-    category: "Marketing"
-  },
-  {
-    id: 4,
-    name: "Restaurant Menu",
-    type: "Template",
-    status: "Published",
-    lastModified: "5 days ago",
-    views: "234",
-    clicks: "18",
-    conversionRate: "7.7%",
-    thumbnail: "/placeholder.svg?height=120&width=200&text=Restaurant",
-    url: "https://restaurant.com",
-    category: "Business"
-  },
-  {
-    id: 5,
-    name: "Blog Website",
-    type: "AI Generated",
-    status: "Draft",
-    lastModified: "1 week ago",
-    views: "0",
-    clicks: "0",
-    conversionRate: "0%",
-    thumbnail: "/placeholder.svg?height=120&width=200&text=Blog",
-    url: "",
-    category: "Blog"
-  }
+// Projects will be loaded from API
+
+// Stats will be loaded from API
+const defaultStats = [
+  { label: "Total Websites", value: "0", change: "0", trend: "up", icon: Globe, color: "text-blue-600", bgColor: "bg-blue-50" },
+  { label: "Total Views", value: "0", change: "0", trend: "up", icon: Eye, color: "text-green-600", bgColor: "bg-green-50" },
+  { label: "Total Clicks", value: "0", change: "0", trend: "up", icon: MousePointer, color: "text-purple-600", bgColor: "bg-purple-50" },
+  { label: "Avg. Conversion", value: "0%", change: "0", trend: "up", icon: Target, color: "text-orange-600", bgColor: "bg-orange-50" }
 ]
 
-const stats = [
-  { label: "Total Websites", value: "12", change: "+2", trend: "up", icon: Globe, color: "text-blue-600", bgColor: "bg-blue-50" },
-  { label: "Total Views", value: "24.5k", change: "+12%", trend: "up", icon: Eye, color: "text-green-600", bgColor: "bg-green-50" },
-  { label: "Total Clicks", value: "1,847", change: "+8%", trend: "up", icon: MousePointer, color: "text-purple-600", bgColor: "bg-purple-50" },
-  { label: "Avg. Conversion", value: "4.2%", change: "+0.3%", trend: "up", icon: Target, color: "text-orange-600", bgColor: "bg-orange-50" }
-]
-
-const recentActivity = [
-  { action: "Published", item: "E-commerce Store", time: "2 hours ago", type: "publish" },
-  { action: "Edited", item: "Portfolio Website", time: "1 day ago", type: "edit" },
-  { action: "Created", item: "Landing Page Template", time: "3 days ago", type: "create" },
-  { action: "Shared", item: "Restaurant Menu", time: "5 days ago", type: "share" },
-  { action: "Deleted", item: "Old Blog Draft", time: "1 week ago", type: "delete" }
-]
 
 const quickActions = [
   { name: "Use Template", description: "Start with a professional design", icon: Layout, color: "from-blue-500 to-cyan-500", href: "/templates" },
@@ -141,18 +75,141 @@ const quickActions = [
   { name: "Import Design", description: "Upload your existing design", icon: Download, color: "from-orange-500 to-red-500", href: "/import" }
 ]
 
-export default function DashboardPage() {
+function DashboardContent() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedProject, setSelectedProject] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [filterStatus, setFilterStatus] = useState<"all" | "published" | "draft">("all")
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+  const [projects, setProjects] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [isLoadingUser, setIsLoadingUser] = useState(true)
+  const [dashboardStats, setDashboardStats] = useState<any>(null)
+  const [isLoadingStats, setIsLoadingStats] = useState(true)
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [selectedShareProject, setSelectedShareProject] = useState<any>(null)
+  const router = useRouter()
 
-  const filteredProjects = recentProjects.filter(project => {
+  // Load user data on mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        console.log('Fetching current user data...')
+        const userData = await authService.getCurrentUser()
+        console.log('User data received:', userData)
+        if (userData) {
+          setCurrentUser(userData)
+          console.log('User state updated with:', userData)
+        } else {
+          console.log('No user data returned from getCurrentUser')
+          // If not logged in, redirect to login page
+          router.push('/login')
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error)
+      } finally {
+        setIsLoadingUser(false)
+      }
+    }
+
+    loadUserData()
+  }, [])
+
+  // Load projects on mount
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const response = await fetch('/api/projects')
+        if (response.ok) {
+          const { projects } = await response.json()
+          setProjects(projects)
+        }
+      } catch (error) {
+        console.error('Error loading projects:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadProjects()
+  }, [])
+  
+  // Load dashboard stats
+  useEffect(() => {
+    const loadDashboardStats = async () => {
+      try {
+        setIsLoadingStats(true)
+        const response = await fetch('/api/dashboard-stats')
+        if (response.ok) {
+          const data = await response.json()
+          setDashboardStats(data.stats)
+        }
+      } catch (error) {
+        console.error('Error loading dashboard stats:', error)
+      } finally {
+        setIsLoadingStats(false)
+      }
+    }
+
+    loadDashboardStats()
+  }, [])
+
+  const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesFilter = filterStatus === "all" || project.status.toLowerCase() === filterStatus
     return matchesSearch && matchesFilter
   })
+
+  // Handle project actions
+  const handleEditProject = (project: any) => {
+    if (project.type === 'Template' && project.templateId) {
+      // For template projects, go back to template editor
+      window.location.href = `/editor/${project.templateId}`
+    } else {
+      // For Elementor projects, go to elementor editor
+      window.location.href = `/simplified-elementor?projectId=${project.id}`
+    }
+  }
+
+  const handlePreviewProject = (project: any) => {
+    if (project.type === 'Template') {
+      // For template projects, preview the saved template project
+      window.open(`/preview/template/${project.id}`, '_blank')
+    } else {
+      // For Elementor projects, preview the elementor project
+      window.open(`/preview/elementor/${project.id}`, '_blank')
+    }
+  }
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (confirm('Are you sure you want to delete this project?')) {
+      try {
+        const response = await fetch(`/api/projects/${projectId}`, {
+          method: 'DELETE'
+        })
+        
+        if (response.ok) {
+          setProjects(prev => prev.filter(p => p.id !== projectId))
+        }
+      } catch (error) {
+        console.error('Error deleting project:', error)
+      }
+    }
+  }
+
+  const handleViewAnalytics = (projectId: string) => {
+    window.location.href = `/analytics/${projectId}`
+  }
+
+  const handleViewLeads = (projectId: string) => {
+    window.location.href = `/leads/${projectId}`
+  }
+
+  const handleShareProject = (project: any) => {
+    setSelectedShareProject(project)
+    setShareDialogOpen(true)
+  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -216,8 +273,27 @@ export default function DashboardPage() {
                     <User className="w-5 h-5 text-white" />
                   </div>
                   <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium text-gray-900">John Doe</p>
-                    <p className="text-xs text-gray-500">john@example.com</p>
+                    {isLoadingUser ? (
+                      <div className="animate-pulse">
+                        <div className="h-3 w-20 bg-gray-200 rounded mb-1"></div>
+                        <div className="h-2 w-24 bg-gray-200 rounded"></div>
+                      </div>
+                    ) : currentUser?.user ? (
+                      <>
+                        <p className="text-sm font-medium text-gray-900">
+                          {currentUser.profile?.full_name || 
+                           currentUser.profile?.username || 
+                           currentUser.user.email?.split('@')[0] || 
+                           'User'}
+                        </p>
+                        <p className="text-xs text-gray-500">{currentUser.user.email}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm font-medium text-gray-900">Guest User</p>
+                        <p className="text-xs text-gray-500">Not signed in</p>
+                      </>
+                    )}
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-500" />
                 </button>
@@ -226,8 +302,27 @@ export default function DashboardPage() {
                 {isProfileMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
                     <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-900">John Doe</p>
-                      <p className="text-xs text-gray-500">john@example.com</p>
+                      {isLoadingUser ? (
+                        <div className="animate-pulse">
+                          <div className="h-3 w-20 bg-gray-200 rounded mb-1"></div>
+                          <div className="h-2 w-24 bg-gray-200 rounded"></div>
+                        </div>
+                      ) : currentUser?.user ? (
+                        <>
+                          <p className="text-sm font-medium text-gray-900">
+                            {currentUser.profile?.full_name || 
+                             currentUser.profile?.username || 
+                             currentUser.user.email?.split('@')[0] || 
+                             'User'}
+                          </p>
+                          <p className="text-xs text-gray-500">{currentUser.user.email}</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium text-gray-900">Guest User</p>
+                          <p className="text-xs text-gray-500">Not signed in</p>
+                        </>
+                      )}
                     </div>
                     <Link href="/profile" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       <User className="w-4 h-4 mr-3" />
@@ -242,7 +337,17 @@ export default function DashboardPage() {
                       Settings
                     </Link>
                     <hr className="my-2" />
-                    <button className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <button 
+                      onClick={async () => {
+                        try {
+                          await authService.signOut();
+                          router.push('/login');
+                        } catch (error) {
+                          console.error('Error signing out:', error);
+                        }
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
                       <LogOut className="w-4 h-4 mr-3" />
                       Sign Out
                     </button>
@@ -279,28 +384,112 @@ export default function DashboardPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index} className="bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.label}</p>
-                    <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
-                    <div className="flex items-center">
-                      <TrendingUp className={`w-4 h-4 mr-1 ${stat.trend === 'up' ? 'text-green-500' : 'text-red-500'}`} />
-                      <p className={`text-sm font-medium ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                        {stat.change}
-                      </p>
-                      <span className="text-sm text-gray-500 ml-1">vs last month</span>
+          {isLoadingStats ? (
+            // Loading skeleton for stats
+            <>
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i} className="bg-white border border-gray-200 shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="animate-pulse flex items-center justify-between">
+                      <div className="space-y-3 w-2/3">
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                        <div className="h-2 bg-gray-200 rounded w-3/4"></div>
+                      </div>
+                      <div className="w-14 h-14 rounded-2xl bg-gray-200"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          ) : (
+            // Real stats data
+            <>
+              <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Total Websites</p>
+                      <p className="text-3xl font-bold text-gray-900 mb-1">{dashboardStats?.totalWebsites || 0}</p>
+                      <div className="flex items-center">
+                        <TrendingUp className="w-4 h-4 mr-1 text-green-500" />
+                        <p className="text-sm font-medium text-green-600">
+                          {dashboardStats?.websitesThisMonth || 0}
+                        </p>
+                        <span className="text-sm text-gray-500 ml-1">this month</span>
+                      </div>
+                    </div>
+                    <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <Globe className="w-7 h-7 text-blue-600" />
                     </div>
                   </div>
-                  <div className={`w-14 h-14 rounded-2xl ${stat.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                    <stat.icon className={`w-7 h-7 ${stat.color}`} />
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Total Views</p>
+                      <p className="text-3xl font-bold text-gray-900 mb-1">{dashboardStats?.totalViews || 0}</p>
+                      <div className="flex items-center">
+                        <TrendingUp className="w-4 h-4 mr-1 text-green-500" />
+                        <p className="text-sm font-medium text-green-600">
+                          {dashboardStats?.viewsChangePercent || 0}%
+                        </p>
+                        <span className="text-sm text-gray-500 ml-1">vs last month</span>
+                      </div>
+                    </div>
+                    <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <Eye className="w-7 h-7 text-green-600" />
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Total Clicks</p>
+                      <p className="text-3xl font-bold text-gray-900 mb-1">{dashboardStats?.totalClicks || 0}</p>
+                      <div className="flex items-center">
+                        <TrendingUp className="w-4 h-4 mr-1 text-green-500" />
+                        <p className="text-sm font-medium text-green-600">
+                          {dashboardStats?.clicksChangePercent || 0}%
+                        </p>
+                        <span className="text-sm text-gray-500 ml-1">vs last month</span>
+                      </div>
+                    </div>
+                    <div className="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <MousePointer className="w-7 h-7 text-purple-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Avg. Conversion</p>
+                      <p className="text-3xl font-bold text-gray-900 mb-1">{dashboardStats?.conversionRate || 0}%</p>
+                      <div className="flex items-center">
+                        <TrendingUp className="w-4 h-4 mr-1 text-green-500" />
+                        <p className="text-sm font-medium text-green-600">
+                          {dashboardStats?.conversionChangePercent || 0}%
+                        </p>
+                        <span className="text-sm text-gray-500 ml-1">vs last month</span>
+                      </div>
+                    </div>
+                    <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <Target className="w-7 h-7 text-orange-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
         {/* Main Content */}
@@ -392,7 +581,27 @@ export default function DashboardPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                {viewMode === "grid" ? (
+                {isLoading ? (
+                  <div className="p-12 text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading projects...</p>
+                  </div>
+                ) : filteredProjects.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
+                    <p className="text-gray-600 mb-4">
+                      {searchQuery || filterStatus !== "all" 
+                        ? "Try adjusting your search or filter criteria." 
+                        : "Create your first project to get started."}
+                    </p>
+                    <Link href="/simplified-elementor">
+                      <Button>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create New Project
+                      </Button>
+                    </Link>
+                  </div>
+                ) : viewMode === "grid" ? (
                   <div className="grid md:grid-cols-2 gap-6 p-6">
                     {filteredProjects.map((project) => (
                       <Card key={project.id} className="border border-gray-200 hover:shadow-lg transition-all duration-300 group cursor-pointer">
@@ -413,37 +622,67 @@ export default function DashboardPage() {
                               {project.status}
                             </Badge>
                           </div>
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-lg flex items-center justify-center space-x-2">
-                            <Button size="sm" variant="secondary">
-                              <Eye className="w-4 h-4 mr-1" />
-                              View
-                            </Button>
-                            <Button size="sm" variant="secondary">
-                              <Edit className="w-4 h-4 mr-1" />
-                              Edit
-                            </Button>
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-lg flex flex-col items-center justify-center space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <Button size="sm" variant="secondary" onClick={() => handlePreviewProject(project)} className="text-xs px-2 py-1">
+                                <Eye className="w-3 h-3 mr-1" />
+                                Preview
+                              </Button>
+                              <Button size="sm" variant="secondary" onClick={() => handleEditProject(project)} className="text-xs px-2 py-1">
+                                <Edit className="w-3 h-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button size="sm" variant="secondary" onClick={(e) => {
+                                e.stopPropagation();
+                                handleShareProject(project);
+                              }} className="text-xs px-2 py-1">
+                                <Share2 className="w-3 h-3 mr-1" />
+                                Share
+                              </Button>
+                            </div>
+                            {project.status === 'published' && (
+                              <div className="flex items-center space-x-2">
+                                <Button size="sm" variant="secondary" onClick={() => handleViewAnalytics(project.id)} className="text-xs px-2 py-1">
+                                  <BarChart className="w-3 h-3 mr-1" />
+                                  Stats
+                                </Button>
+                                <Button size="sm" variant="secondary" onClick={() => handleViewLeads(project.id)} className="text-xs px-2 py-1">
+                                  <Mail className="w-3 h-3 mr-1" />
+                                  Leads
+                                </Button>
+                                <Button size="sm" variant="secondary" onClick={() => window.location.href = `/forms/${project.id}`} className="text-xs px-2 py-1">
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  Forms
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="font-semibold text-gray-900 truncate">{project.name}</h3>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="w-4 h-4" />
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteProject(project.id)}>
+                              <Trash2 className="w-4 h-4 text-red-500" />
                             </Button>
                           </div>
-                          <p className="text-sm text-gray-600 mb-3">{project.type} • {project.category}</p>
+                          <div className="flex items-center space-x-2 mb-3">
+                            <p className="text-sm text-gray-600">{project.type}</p>
+                            {project.type === 'Template' && (
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                Template
+                              </Badge>
+                            )}
+                          </div>
                           <div className="flex items-center justify-between text-sm text-gray-500">
                             <div className="flex items-center space-x-4">
                               <span className="flex items-center">
-                                <Eye className="w-4 h-4 mr-1" />
-                                {project.views}
-                              </span>
-                              <span className="flex items-center">
-                                <MousePointer className="w-4 h-4 mr-1" />
-                                {project.clicks}
+                                <Calendar className="w-4 h-4 mr-1" />
+                                {new Date(project.updatedAt).toLocaleDateString()}
                               </span>
                             </div>
-                            <span>{project.lastModified}</span>
+                            <Badge variant={project.status === 'published' ? 'default' : 'secondary'}>
+                              {project.status}
+                            </Badge>
                           </div>
                         </CardContent>
                       </Card>
@@ -475,38 +714,51 @@ export default function DashboardPage() {
                               </Badge>
                             </div>
                             <div className="flex items-center space-x-6 text-sm text-gray-500">
-                              <span>{project.type}</span>
+                              <div className="flex items-center space-x-2">
+                                <span>{project.type}</span>
+                                {project.type === 'Template' && (
+                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                    Template
+                                  </Badge>
+                                )}
+                              </div>
                               <span className="flex items-center">
-                                <Eye className="w-4 h-4 mr-1" />
-                                {project.views}
+                                <Calendar className="w-4 h-4 mr-1" />
+                                {new Date(project.updatedAt).toLocaleDateString()}
                               </span>
                               <span className="flex items-center">
-                                <MousePointer className="w-4 h-4 mr-1" />
-                                {project.clicks}
+                                <Clock className="w-4 h-4 mr-1" />
+                                {new Date(project.createdAt).toLocaleDateString()}
                               </span>
-                              <span className="flex items-center">
-                                <Target className="w-4 h-4 mr-1" />
-                                {project.conversionRate}
-                              </span>
-                              <span>{project.lastModified}</span>
                             </div>
                           </div>
                           <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {project.url && (
-                              <Button variant="ghost" size="sm">
-                                <ExternalLink className="w-4 h-4" />
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" onClick={() => handlePreviewProject(project)}>
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" onClick={() => handleEditProject(project)}>
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            {project.status === 'published' && (
+                              <>
+                                <Button variant="ghost" size="sm" onClick={() => handleViewAnalytics(project.id)} title="View Analytics">
+                                  <BarChart className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleViewLeads(project.id)} title="View Leads">
+                                  <Mail className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => window.location.href = `/forms/${project.id}`} title="Test Forms">
+                                  <FileText className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
+                            <Button variant="ghost" size="sm" onClick={(e) => {
+                              e.stopPropagation();
+                              handleShareProject(project);
+                            }}>
                               <Share2 className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDeleteProject(project.id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -528,63 +780,43 @@ export default function DashboardPage() {
 
           {/* Right Column - Activity & Analytics */}
           <div className="space-y-8">
-            {/* Recent Activity */}
+
+            {/* This Month */}
             <Card className="bg-white border border-gray-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg font-bold text-gray-900">Recent Activity</CardTitle>
+                <CardTitle className="text-xl font-bold text-gray-900">This Month</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-center space-x-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        activity.type === 'publish' ? 'bg-green-100' :
-                        activity.type === 'edit' ? 'bg-blue-100' :
-                        activity.type === 'create' ? 'bg-purple-100' :
-                        activity.type === 'share' ? 'bg-orange-100' : 'bg-red-100'
-                      }`}>
-                        {activity.type === 'publish' && <Globe className="w-4 h-4 text-green-600" />}
-                        {activity.type === 'edit' && <Edit className="w-4 h-4 text-blue-600" />}
-                        {activity.type === 'create' && <Plus className="w-4 h-4 text-purple-600" />}
-                        {activity.type === 'share' && <Share2 className="w-4 h-4 text-orange-600" />}
-                        {activity.type === 'delete' && <Trash2 className="w-4 h-4 text-red-600" />}
+              <CardContent className="p-6">
+                {isLoadingStats ? (
+                  // Loading skeleton
+                  <div className="grid grid-cols-2 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="space-y-2 animate-pulse">
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-6 bg-gray-200 rounded w-1/3"></div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900">
-                          <span className="font-medium">{activity.action}</span> {activity.item}
-                        </p>
-                        <p className="text-xs text-gray-500">{activity.time}</p>
-                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-600">Websites Created</p>
+                      <p className="text-2xl font-bold text-gray-900">{dashboardStats?.websitesThisMonth || 0}</p>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-bold text-gray-900">This Month</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Websites Created</span>
-                    <span className="text-lg font-bold text-gray-900">3</span>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-600">Total Visitors</p>
+                      <p className="text-2xl font-bold text-gray-900">{dashboardStats?.totalVisitors || 0}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-600">Conversion Rate</p>
+                      <p className="text-2xl font-bold text-gray-900">{dashboardStats?.conversionRate || 0}%</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-gray-600">Leads Generated</p>
+                      <p className="text-2xl font-bold text-gray-900">{dashboardStats?.submissionsThisMonth || 0}</p>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Total Visitors</span>
-                    <span className="text-lg font-bold text-gray-900">2,847</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Conversion Rate</span>
-                    <span className="text-lg font-bold text-green-600">4.2%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Revenue</span>
-                    <span className="text-lg font-bold text-gray-900">$1,234</span>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -612,6 +844,24 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      
+      {/* Share Dialog */}
+      {selectedShareProject && (
+        <ShareDialog
+          isOpen={shareDialogOpen}
+          onClose={() => setShareDialogOpen(false)}
+          projectId={selectedShareProject.id}
+          projectName={selectedShareProject.name}
+        />
+      )}
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <ProjectProvider>
+      <DashboardContent />
+    </ProjectProvider>
   )
 }

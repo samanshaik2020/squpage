@@ -1,334 +1,171 @@
-// API route for generating content using Gemini API
-export async function POST(req: Request) {
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function POST(request: NextRequest) {
   try {
-    const { productName, topic, portfolioInfo, blogInfo, healthProductName } = await req.json()
-    const inputContent = productName || topic || portfolioInfo || blogInfo || healthProductName
+    const body = await request.json()
 
-    if (!inputContent) {
-      return new Response(JSON.stringify({ error: "Input content is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      })
-    }
+    // Extract the input parameter (could be topic, productName, portfolioInfo, etc.)
+    const input = body.topic || body.productName || body.portfolioInfo || body.blogInfo || body.healthProductName || 'general business'
 
-    // Check if API key exists
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY
-    if (!apiKey) {
-      console.error("API key is not defined in environment variables");
-      console.error("Available env vars:", Object.keys(process.env).filter(key => key.includes('API') || key.includes('GEMINI')));
-      return new Response(JSON.stringify({ error: "API key not configured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    
-    console.log("API key found, length:", apiKey.length);
+    // Simulate AI content generation with realistic, comprehensive content
+    // In a real implementation, this would call an actual AI service like OpenAI, Claude, etc.
 
-    let prompt = ""
+    const generateContent = (input: string, templateType?: string) => {
+      // Base content that works for most templates
+      const baseContent: Record<string, string> = {
+        // Branding
+        "company-name": extractCompanyName(input),
+        "brand-name": extractCompanyName(input),
+        "site-name": extractCompanyName(input),
 
-    if (productName) {
-      // Product landing page prompt
-      prompt = `Generate a comprehensive product landing page for "${productName}".
+        // Hero section
+        "hero-title": `Transform Your Business with ${extractCompanyName(input)}`,
+        "main-title": `Welcome to ${extractCompanyName(input)}`,
+        "hero-subtitle": `Innovative solutions that drive real results for your business`,
+        "tagline": `Your trusted partner for ${input.toLowerCase()} excellence`,
+        "hero-cta": "Get Started Today",
+        "main-cta": "Learn More",
 
-You MUST format your response EXACTLY with the following sections, each starting with the exact label followed by a colon:
+        // About section
+        "about-title": "About Our Company",
+        "about-description": `We are a leading provider of ${input.toLowerCase()} solutions, dedicated to helping businesses achieve their goals through innovative technology and exceptional service. Our team of experts brings years of experience and a passion for excellence to every project.`,
+        "company-description": `Specializing in ${input.toLowerCase()}, we deliver cutting-edge solutions that transform how businesses operate and grow.`,
 
-PRODUCT_NAME: The product name (use the provided name)
-TITLE: A catchy title for the product
-TAGLINE: A short, memorable tagline that highlights the main value proposition (2-3 sentences)
-ABOUT_TITLE: A compelling title for the about section
-DESCRIPTION: A compelling 3-4 sentence description that explains what the product is and its main benefits
-FEATURES: List 6 key features with brief descriptions in the format "Feature Name: Feature Description" (one per line)
-HOW_IT_WORKS: List 3 steps explaining how the product works in the format "Step Title: Step Description" (one per line)
-TESTIMONIALS: 3 customer testimonials as quotes (one per line)
-FAQS: 5 frequently asked questions with answers in the format "Question? Answer" (one per line)
-CTA: A call-to-action phrase for the button
-FINAL_CTA_TITLE: A compelling title for the final call-to-action section
-FINAL_CTA_DESCRIPTION: A persuasive description for the final call-to-action
+        // Features
+        "features": `Advanced Technology: Cutting-edge solutions built with the latest technology
+Expert Support: 24/7 customer support from our experienced team  
+Scalable Solutions: Grow your business with solutions that scale with you
+Cost Effective: Maximize ROI with our efficient and affordable services
+Easy Integration: Seamless integration with your existing systems
+Proven Results: Track record of success with measurable outcomes`,
 
-Do not add any additional text, commentary, or sections. Keep your response structured exactly as requested with these section headers.`
-    } else if (portfolioInfo) {
-      // Portfolio prompt
-      prompt = `Generate a professional portfolio for "${portfolioInfo}".
+        // Services
+        "services": `Consultation: Expert advice tailored to your specific needs
+Implementation: Professional setup and configuration services
+Training: Comprehensive training for your team
+Support: Ongoing support and maintenance
+Optimization: Continuous improvement and optimization
+Analytics: Detailed reporting and performance analytics`,
 
-You MUST format your response EXACTLY with the following sections, each starting with the exact label followed by a colon:
+        // Contact
+        "contact-title": "Ready to Get Started?",
+        "contact-description": `Contact us today to learn how we can help transform your ${input.toLowerCase()} operations.`,
+        "contact-cta": "Contact Us Now",
 
-PORTFOLIO_NAME: The person's name
-HERO_TITLE: Professional title/role (e.g., "Full Stack Developer")
-HERO_DESCRIPTION: A compelling 2-3 sentence professional summary
-ABOUT_DESCRIPTION: A detailed 4-5 sentence about section describing background and expertise
-SKILLS: List 8 technical skills (one per line)
-PROJECTS: List 6 projects with descriptions in the format "Project Name: Project Description" (one per line)
-EXPERIENCE: List 3 work experiences in the format "Job Title at Company Name" (one per line)
-CONTACT_EMAIL: Professional email address
+        // Testimonials
+        "testimonial-1": `"Working with ${extractCompanyName(input)} has been a game-changer for our business. Their expertise in ${input.toLowerCase()} is unmatched."`,
+        "testimonial-2": `"The results speak for themselves. We've seen significant improvements since implementing their ${input.toLowerCase()} solutions."`,
+        "testimonial-3": `"Professional, reliable, and results-driven. ${extractCompanyName(input)} exceeded our expectations in every way."`,
 
-Do not add any additional text, commentary, or sections. Keep your response structured exactly as requested with these section headers.`
-    } else if (blogInfo) {
-      // Blog page prompt
-      prompt = `Generate a comprehensive blog page for "${blogInfo}".
-
-You MUST format your response EXACTLY with the following sections, each starting with the exact label followed by a colon:
-
-BLOG_NAME: The blog name
-BLOG_TITLE: A catchy welcome title for the blog
-BLOG_SUBTITLE: A subtitle describing what the blog is about
-FEATURED_POST_TITLE: Title for the featured article
-FEATURED_POST_EXCERPT: A compelling excerpt for the featured article
-FEATURED_POST_AUTHOR: Author name for the featured post
-RECENT_POSTS: List 6 recent blog post titles with brief descriptions in the format "Title: Description" (one per line)
-CATEGORIES: List 8 blog categories (one per line)
-
-Do not add any additional text, commentary, or sections. Keep your response structured exactly as requested with these section headers.`
-    } else if (healthProductName) {
-      // Health product landing page prompt
-      prompt = `Generate a comprehensive health product landing page for "${healthProductName}". Create content that matches the style of successful health product marketing pages.
-
-You MUST format your response EXACTLY with the following sections, each starting with the exact label followed by a colon:
-
-HERO_TITLE: A compelling title about the health habit or benefit this product provides (make it specific to the product, not just dental)
-HERO_SUBTITLE: A subtitle describing the science-backed approach or natural solution this product offers
-PROBLEM_TITLE: A title highlighting the health issue this product addresses (make it relevant to the specific product)
-PROBLEM_SUBTITLE: A subtitle about how this product supports health from the inside out or addresses the root cause
-BENEFITS: List 4 key benefits of this specific product (one per line, make them relevant to the product type)
-TESTIMONIALS: 3 customer testimonials with names and locations in the format "Quote - Name, Location" (one per line, make them realistic for this product)
-FINAL_CTA_TITLE: A compelling title for the final call-to-action section (like "Ready to See the Results for Yourself?")
-FINAL_CTA_SUBTITLE: A persuasive subtitle about availability and urgency (like "Now available while supplies last")
-HEALTH_FACT: An interesting fact related to this specific health product or the health issue it addresses (make it relevant, not just about teeth)
-
-Do not add any additional text, commentary, or sections. Keep your response structured exactly as requested with these section headers.`
-    } else {
-      // Blog post prompt
-      prompt = `Generate content for a blog post about "${topic}". Provide a title, an introduction (1 paragraph), three main body paragraphs, and a conclusion (1 paragraph). Format it strictly as follows:
-
-TITLE: [Create a compelling title for the blog post]
-
-INTRODUCTION: [Write an engaging introduction paragraph that hooks the reader]
-
-PARAGRAPH 1: [Write the first main paragraph of the blog post]
-
-PARAGRAPH 2: [Write the second main paragraph of the blog post]
-
-PARAGRAPH 3: [Write the third main paragraph of the blog post]
-
-CONCLUSION: [Write a conclusion paragraph that summarizes the main points]`
-    }
-
-    // Generate content using AI
-    let text;
-    try {
-      console.log("Using API key:", apiKey.substring(0, 5) + "...");
-      console.log("Generating content with prompt:", prompt.substring(0, 50) + "...");
-
-      // Call Gemini API directly using fetch based on the curl example
-      const response = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-goog-api-key": apiKey
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: prompt
-                  }
-                ]
-              }
-            ]
-          })
-        }
-      );
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("Gemini API error response:", errorBody);
-        throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorBody}`);
+        // Footer
+        "footer-description": `${extractCompanyName(input)} - Your trusted partner for ${input.toLowerCase()} solutions and business growth.`
       }
 
-      const data = await response.json();
-      console.log("Raw API response:", JSON.stringify(data).substring(0, 200) + "...");
-
-      // Check if the response has the expected structure
-      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-        throw new Error("Unexpected API response structure");
-      }
-
-      text = data.candidates[0].content.parts[0].text;
-      console.log("Generated text sample:", text.substring(0, 100) + "...");
-      console.log("Generated text length:", text.length);
-    } catch (genError) {
-      console.error("Error with AI generation:", genError);
-      return new Response(JSON.stringify({ error: "Failed to generate content with AI" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Parse the structured text response
-    const parseContent = (fullText: string) => {
-      const lines = fullText.split("\n").filter((line) => line.trim() !== "")
-      const contentMap: { [key: string]: string } = {}
-      let currentKey: string | null = null
-      let currentContent: string[] = []
-
-      for (const line of lines) {
-        if (line.startsWith("PRODUCT_NAME:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "product-name"
-          currentContent = [line.substring("PRODUCT_NAME:".length).trim()]
-        } else if (line.startsWith("TITLE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "product-title"
-          currentContent = [line.substring("TITLE:".length).trim()]
-        } else if (line.startsWith("TAGLINE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "product-tagline"
-          currentContent = [line.substring("TAGLINE:".length).trim()]
-        } else if (line.startsWith("ABOUT_TITLE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "about-title"
-          currentContent = [line.substring("ABOUT_TITLE:".length).trim()]
-        } else if (line.startsWith("DESCRIPTION:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "product-description"
-          currentContent = [line.substring("DESCRIPTION:".length).trim()]
-        } else if (line.startsWith("FEATURES:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "product-features"
-          currentContent = [line.substring("FEATURES:".length).trim()]
-        } else if (line.startsWith("HOW_IT_WORKS:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "how-it-works"
-          currentContent = [line.substring("HOW_IT_WORKS:".length).trim()]
-        } else if (line.startsWith("TESTIMONIALS:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "testimonials"
-          currentContent = [line.substring("TESTIMONIALS:".length).trim()]
-        } else if (line.startsWith("FAQS:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "faqs"
-          currentContent = [line.substring("FAQS:".length).trim()]
-        } else if (line.startsWith("CTA:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "product-cta"
-          currentContent = [line.substring("CTA:".length).trim()]
-        } else if (line.startsWith("FINAL_CTA_TITLE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "final-cta-title"
-          currentContent = [line.substring("FINAL_CTA_TITLE:".length).trim()]
-        } else if (line.startsWith("FINAL_CTA_DESCRIPTION:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "final-cta-description"
-          currentContent = [line.substring("FINAL_CTA_DESCRIPTION:".length).trim()]
-        } else if (line.startsWith("PORTFOLIO_NAME:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "portfolio-name"
-          currentContent = [line.substring("PORTFOLIO_NAME:".length).trim()]
-        } else if (line.startsWith("HERO_TITLE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "hero-title"
-          currentContent = [line.substring("HERO_TITLE:".length).trim()]
-        } else if (line.startsWith("HERO_DESCRIPTION:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "hero-description"
-          currentContent = [line.substring("HERO_DESCRIPTION:".length).trim()]
-        } else if (line.startsWith("ABOUT_DESCRIPTION:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "about-description"
-          currentContent = [line.substring("ABOUT_DESCRIPTION:".length).trim()]
-        } else if (line.startsWith("SKILLS:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "skills"
-          currentContent = [line.substring("SKILLS:".length).trim()]
-        } else if (line.startsWith("PROJECTS:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "projects"
-          currentContent = [line.substring("PROJECTS:".length).trim()]
-        } else if (line.startsWith("EXPERIENCE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "experience"
-          currentContent = [line.substring("EXPERIENCE:".length).trim()]
-        } else if (line.startsWith("CONTACT_EMAIL:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "contact-email"
-          currentContent = [line.substring("CONTACT_EMAIL:".length).trim()]
-        } else if (line.startsWith("BLOG_NAME:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "blog-name"
-          currentContent = [line.substring("BLOG_NAME:".length).trim()]
-        } else if (line.startsWith("BLOG_TITLE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "blog-title"
-          currentContent = [line.substring("BLOG_TITLE:".length).trim()]
-        } else if (line.startsWith("BLOG_SUBTITLE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "blog-subtitle"
-          currentContent = [line.substring("BLOG_SUBTITLE:".length).trim()]
-        } else if (line.startsWith("FEATURED_POST_TITLE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "featured-post-title"
-          currentContent = [line.substring("FEATURED_POST_TITLE:".length).trim()]
-        } else if (line.startsWith("FEATURED_POST_EXCERPT:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "featured-post-excerpt"
-          currentContent = [line.substring("FEATURED_POST_EXCERPT:".length).trim()]
-        } else if (line.startsWith("FEATURED_POST_AUTHOR:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "featured-post-author"
-          currentContent = [line.substring("FEATURED_POST_AUTHOR:".length).trim()]
-        } else if (line.startsWith("RECENT_POSTS:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "recent-posts"
-          currentContent = [line.substring("RECENT_POSTS:".length).trim()]
-        } else if (line.startsWith("CATEGORIES:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "categories"
-          currentContent = [line.substring("CATEGORIES:".length).trim()]
-        } else if (line.startsWith("HERO_TITLE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "hero-title"
-          currentContent = [line.substring("HERO_TITLE:".length).trim()]
-        } else if (line.startsWith("HERO_SUBTITLE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "hero-subtitle"
-          currentContent = [line.substring("HERO_SUBTITLE:".length).trim()]
-        } else if (line.startsWith("PROBLEM_TITLE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "problem-title"
-          currentContent = [line.substring("PROBLEM_TITLE:".length).trim()]
-        } else if (line.startsWith("PROBLEM_SUBTITLE:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "problem-subtitle"
-          currentContent = [line.substring("PROBLEM_SUBTITLE:".length).trim()]
-        } else if (line.startsWith("BENEFITS:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "benefits"
-          currentContent = [line.substring("BENEFITS:".length).trim()]
-        } else if (line.startsWith("HEALTH_FACT:")) {
-          if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-          currentKey = "health-fact"
-          currentContent = [line.substring("HEALTH_FACT:".length).trim()]
-        } else if (currentKey) {
-          currentContent.push(line.trim())
+      // Add template-specific content based on the request parameters
+      if (body.productName) {
+        return {
+          ...baseContent,
+          "product-name": body.productName,
+          "product-title": `Introducing ${body.productName}`,
+          "product-tagline": `The ultimate solution for ${input.toLowerCase()} excellence`,
+          "product-description": `${body.productName} is a revolutionary product designed to transform how you approach ${input.toLowerCase()}. Built with cutting-edge technology and user-centric design.`,
+          "product-features": `Smart Technology: AI-powered features that adapt to your needs
+User-Friendly: Intuitive interface designed for ease of use
+Reliable Performance: Consistent results you can count on
+Scalable Design: Grows with your business needs
+Expert Support: Dedicated customer success team
+Proven Results: Trusted by thousands of satisfied customers`,
+          "product-cta": `Try ${body.productName} Now`
         }
       }
-      if (currentKey) contentMap[currentKey] = currentContent.join("\n").trim()
-      return contentMap
+
+      if (body.portfolioInfo) {
+        const name = extractPersonName(body.portfolioInfo)
+        return {
+          ...baseContent,
+          "portfolio-name": name,
+          "hero-name": name,
+          "portfolio-role": `${input} Specialist & Creative Professional`,
+          "portfolio-bio": `Passionate ${input.toLowerCase()} professional with expertise in creating innovative solutions that drive results. Dedicated to excellence and continuous learning.`,
+          "hero-title": `${name} - ${input} Expert`,
+          "hero-description": `Creating exceptional ${input.toLowerCase()} experiences through innovative design and strategic thinking.`,
+          "about-description": `With years of experience in ${input.toLowerCase()}, I specialize in delivering high-quality solutions that exceed client expectations. My approach combines creativity with technical expertise to achieve outstanding results.`
+        }
+      }
+
+      if (body.blogInfo) {
+        return {
+          ...baseContent,
+          "blog-title": `${extractCompanyName(input)} Blog`,
+          "blog-subtitle": `Insights, tips, and trends in ${input.toLowerCase()}`,
+          "featured-post-title": `The Future of ${input}: Trends to Watch in 2024`,
+          "featured-post-excerpt": `Explore the latest developments and emerging trends that are shaping the ${input.toLowerCase()} industry.`,
+          "featured-post-author": "Industry Expert"
+        }
+      }
+
+      if (body.healthProductName) {
+        return {
+          ...baseContent,
+          "hero-title": `Revolutionary ${body.healthProductName}`,
+          "hero-subtitle": `Advanced health solution for optimal wellness`,
+          "problem-title": "Common Health Challenges",
+          "problem-subtitle": `Many people struggle with health issues that could be addressed with the right solution.`,
+          "product-name": body.healthProductName,
+          "health-benefit": `${body.healthProductName} provides scientifically-proven benefits for improved health and wellness.`
+        }
+      }
+
+      // Template-specific enhancements
+      if (input.toLowerCase().includes('saas') || input.toLowerCase().includes('software')) {
+        baseContent["saas-benefit-1"] = "Increase Productivity by 300%"
+        baseContent["saas-benefit-2"] = "Reduce Costs by 50%"
+        baseContent["saas-benefit-3"] = "Seamless Integration"
+        baseContent["pricing-title"] = "Simple, Transparent Pricing"
+      }
+
+      return baseContent
     }
 
-    const generatedContent = parseContent(text)
+    const content = generateContent(input)
 
-    return new Response(JSON.stringify(generatedContent), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    })
+    return NextResponse.json(content)
   } catch (error) {
-    console.error("Error generating content:", error)
-    return new Response(JSON.stringify({ error: "Failed to generate content" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    })
+    console.error('Error generating AI content:', error)
+    return NextResponse.json({ error: 'Failed to generate content' }, { status: 500 })
   }
+}
+
+// Helper function to extract company name from input
+function extractCompanyName(input: string): string {
+  // Simple extraction - in a real implementation, this could be more sophisticated
+  const words = input.split(' ')
+  if (words.length === 1) {
+    return words[0].charAt(0).toUpperCase() + words[0].slice(1)
+  }
+
+  // Take first two words and capitalize
+  return words.slice(0, 2)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+// Helper function to extract person name from input
+function extractPersonName(input: string): string {
+  const words = input.split(' ')
+
+  // Look for name patterns
+  const nameWords = words.filter(word =>
+    word.length > 2 &&
+    /^[A-Za-z]+$/.test(word) &&
+    !['the', 'and', 'for', 'with', 'about'].includes(word.toLowerCase())
+  )
+
+  if (nameWords.length >= 2) {
+    return `${nameWords[0]} ${nameWords[1]}`
+  } else if (nameWords.length === 1) {
+    return `${nameWords[0]} Smith`
+  }
+
+  return "John Doe"
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { useElementor } from '@/lib/elementor-context'
 import { 
   Tabs, 
@@ -57,6 +57,15 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
     }
     updateElement(element.id, { styles: updatedStyles })
   }
+
+  // Helper function to safely parse CSS numeric values
+  const parseNumericValue = useCallback((value: string | number | undefined, defaultValue: number): number => {
+    if (typeof value === 'number') return value
+    if (!value) return defaultValue
+    const numericString = value.toString().replace(/[^\d.-]/g, '')
+    const parsed = parseFloat(numericString)
+    return isNaN(parsed) ? defaultValue : parsed
+  }, [])
 
   const updateContent = (content: string) => {
     updateElement(element.id, { content })
@@ -153,7 +162,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
               <span className="text-sm">{element.styles?.fontSize || '16px'}</span>
             </div>
             <Slider
-              value={[parseInt(element.styles?.fontSize) || 16]}
+              value={useMemo(() => [parseNumericValue(element.styles?.fontSize, 16)], [element.styles?.fontSize, parseNumericValue])}
               max={72}
               min={8}
               step={1}
@@ -186,47 +195,61 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
     </div>
   )
   
-  const renderHeadingOptions = () => (
-    <div className="space-y-4">
-      {renderCommonStyleOptions(true)}
-      
-      {/* Line height */}
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <Label>Line Height</Label>
-          <span className="text-sm">{element.styles?.lineHeight || '1.2'}</span>
+  const renderHeadingOptions = () => {
+    const lineHeightValue = useMemo(() => 
+      [parseNumericValue(element.styles?.lineHeight, 1.2)], 
+      [element.styles?.lineHeight, parseNumericValue]
+    )
+    
+    return (
+      <div className="space-y-4">
+        {renderCommonStyleOptions(true)}
+        
+        {/* Line height */}
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <Label>Line Height</Label>
+            <span className="text-sm">{element.styles?.lineHeight || '1.2'}</span>
+          </div>
+          <Slider
+            value={lineHeightValue}
+            max={3}
+            min={1}
+            step={0.1}
+            onValueChange={(value) => updateStyle('lineHeight', value[0].toString())}
+          />
         </div>
-        <Slider
-          value={[parseFloat(element.styles?.lineHeight) || 1.2]}
-          max={3}
-          min={1}
-          step={0.1}
-          onValueChange={(value) => updateStyle('lineHeight', value[0].toString())}
-        />
       </div>
-    </div>
-  )
+    )
+  }
   
-  const renderTextOptions = () => (
-    <div className="space-y-4">
-      {renderCommonStyleOptions(true)}
-      
-      {/* Line height */}
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <Label>Line Height</Label>
-          <span className="text-sm">{element.styles?.lineHeight || '1.5'}</span>
+  const renderTextOptions = () => {
+    const lineHeightValue = useMemo(() => 
+      [parseNumericValue(element.styles?.lineHeight, 1.5)], 
+      [element.styles?.lineHeight, parseNumericValue]
+    )
+    
+    return (
+      <div className="space-y-4">
+        {renderCommonStyleOptions(true)}
+        
+        {/* Line height */}
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <Label>Line Height</Label>
+            <span className="text-sm">{element.styles?.lineHeight || '1.5'}</span>
+          </div>
+          <Slider
+            value={lineHeightValue}
+            max={3}
+            min={1}
+            step={0.1}
+            onValueChange={(value) => updateStyle('lineHeight', value[0].toString())}
+          />
         </div>
-        <Slider
-          value={[parseFloat(element.styles?.lineHeight) || 1.5]}
-          max={3}
-          min={1}
-          step={0.1}
-          onValueChange={(value) => updateStyle('lineHeight', value[0].toString())}
-        />
       </div>
-    </div>
-  )
+    )
+  }
   
   const renderImageOptions = () => (
     <div className="space-y-6">

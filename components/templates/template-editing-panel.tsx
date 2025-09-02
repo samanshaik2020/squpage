@@ -97,7 +97,7 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
         // Get background image for sections
         const computedStyle = window.getComputedStyle(domElement);
         if (computedStyle.backgroundImage && computedStyle.backgroundImage !== 'none') {
-          originalUrl = computedStyle.backgroundImage.replace(/url\(['"]?(.*?)['"]?\)/, '$1');
+          originalUrl = computedStyle.backgroundImage.replace(/url\(['"']?(.*?)['"']?\)/, '$1');
         }
       }
       
@@ -117,7 +117,7 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
       
       // Don't create the element immediately - let it be created when user actually makes changes
     }
-  }, [element, elementId, updateElement])
+  }, [element, elementId])
 
   // Always show the panel, even if element doesn't exist yet
   const currentElement = element || {
@@ -142,7 +142,10 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
   const handleStyleChange = (styleKey: string, value: any) => {
     const newStyles = { ...styles, [styleKey]: value }
     setStyles(newStyles)
-    updateElement(elementId, { styles: newStyles })
+    // Debounce the update to prevent infinite loops
+    setTimeout(() => {
+      updateElement(elementId, { styles: newStyles })
+    }, 0)
   }
 
   const handlePositionChange = (axis: 'x' | 'y', value: number) => {
@@ -194,9 +197,10 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
         </CardHeader>
         <CardContent className="flex-1 overflow-auto">
           <Tabs defaultValue="content" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="style">Style</TabsTrigger>
+              <TabsTrigger value="preview">Preview</TabsTrigger>
               <TabsTrigger value="advanced">Advanced</TabsTrigger>
             </TabsList>
 
@@ -270,6 +274,132 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
               )}
             </TabsContent>
 
+            <TabsContent value="preview" className="space-y-4">
+              {/* Live Preview */}
+              <div className="border rounded-lg p-4 bg-white min-h-[200px]">
+                <Label className="text-sm font-medium mb-2 block">Live Preview</Label>
+                <div className="preview-container" style={{ 
+                  fontFamily: 'inherit',
+                  lineHeight: '1.5'
+                }}>
+                  {currentElement.type === 'text' && (
+                    <p style={{
+                      color: styles.color,
+                      backgroundColor: styles.backgroundColor,
+                      fontSize: `${styles.fontSize}px`,
+                      fontWeight: styles.fontWeight,
+                      textAlign: styles.textAlign as any,
+                      width: styles.width,
+                      height: styles.height,
+                      padding: '8px',
+                      margin: '0',
+                      borderRadius: '4px'
+                    }}>
+                      {content || 'Enter your text content...'}
+                    </p>
+                  )}
+                  {currentElement.type === 'heading' && (
+                    <h2 style={{
+                      color: styles.color,
+                      backgroundColor: styles.backgroundColor,
+                      fontSize: `${styles.fontSize}px`,
+                      fontWeight: styles.fontWeight,
+                      textAlign: styles.textAlign as any,
+                      width: styles.width,
+                      height: styles.height,
+                      padding: '8px',
+                      margin: '0',
+                      borderRadius: '4px'
+                    }}>
+                      {content || 'Enter heading...'}
+                    </h2>
+                  )}
+                  {currentElement.type === 'button' && (
+                    <button style={{
+                      color: styles.color,
+                      backgroundColor: styles.backgroundColor,
+                      fontSize: `${styles.fontSize}px`,
+                      fontWeight: styles.fontWeight,
+                      textAlign: styles.textAlign as any,
+                      width: styles.width,
+                      height: styles.height,
+                      padding: '12px 24px',
+                      margin: '0',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer'
+                    }}>
+                      {content || 'Button text...'}
+                    </button>
+                  )}
+                  {currentElement.type === 'image' && (
+                    <div style={{
+                      backgroundColor: styles.backgroundColor,
+                      width: styles.width,
+                      height: styles.height,
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {url ? (
+                        <img 
+                          src={url} 
+                          alt="Preview" 
+                          style={{
+                            maxWidth: '100%',
+                            maxHeight: '100%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          color: '#666',
+                          textAlign: 'center',
+                          padding: '20px'
+                        }}>
+                          No image selected
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Share Options */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Share Preview</Label>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const previewData = {
+                        element: currentElement,
+                        styles,
+                        content,
+                        url
+                      }
+                      navigator.clipboard.writeText(JSON.stringify(previewData, null, 2))
+                    }}
+                  >
+                    Copy Data
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const shareUrl = `${window.location.origin}/preview?element=${encodeURIComponent(JSON.stringify({ element: currentElement, styles, content, url }))}`
+                      navigator.clipboard.writeText(shareUrl)
+                    }}
+                  >
+                    Copy Link
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+
             <TabsContent value="style" className="space-y-4">
               {/* Typography */}
               {(currentElement.type === "text" || currentElement.type === "heading" || currentElement.type === "button") && (
@@ -277,8 +407,15 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
                   <div>
                     <Label>Font Size: {styles.fontSize}px</Label>
                     <Slider
-                      value={[styles.fontSize || 16]}
-                      onValueChange={([value]) => handleStyleChange("fontSize", value)}
+                      value={[Number(styles.fontSize) || 16]}
+                      onValueChange={([value]) => {
+                        // Update local state immediately for smooth UI
+                        setStyles(prev => ({ ...prev, fontSize: value }))
+                        // Debounce context update
+                        setTimeout(() => {
+                          updateElement(elementId, { styles: { ...styles, fontSize: value } })
+                        }, 100)
+                      }}
                       max={72}
                       min={8}
                       step={1}

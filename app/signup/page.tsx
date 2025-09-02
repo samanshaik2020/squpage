@@ -7,6 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Zap, Github, Chrome, CheckCircle } from "lucide-react"
+import { authService } from "@/lib/supabase-auth"
+import { useRouter } from "next/navigation"
+import { toast } from "@/components/ui/use-toast"
+import { TermsModal } from "@/components/ui/terms-modal"
+import { PrivacyModal } from "@/components/ui/privacy-modal"
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -23,6 +28,9 @@ export default function SignupPage() {
     subscribeNewsletter: true
   })
   const [errors, setErrors] = useState<{[key: string]: string}>({})
+  const [showTermsModal, setShowTermsModal] = useState(false)
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false)
+  const router = useRouter()
 
   const validateStep1 = () => {
     const newErrors: {[key: string]: string} = {}
@@ -86,17 +94,35 @@ export default function SignupPage() {
     
     setIsLoading(true)
     
-    // Simulate API call and redirect to dashboard
-    setTimeout(() => {
-      // Store user info for dashboard (optional)
-      localStorage.setItem('userEmail', formData.email)
-      localStorage.setItem('userName', `${formData.firstName} ${formData.lastName}`)
-      localStorage.setItem('isLoggedIn', 'true')
+    try {
+      // Create username from first name and last name
+      const username = `${formData.firstName.toLowerCase()}${formData.lastName.toLowerCase()}`
+      const fullName = `${formData.firstName} ${formData.lastName}`
       
+      // Use Supabase auth service to sign up
+      await authService.signUp(
+        formData.email,
+        formData.password,
+        username,
+        fullName
+      )
+      
+      toast({
+        title: "Account created successfully",
+        description: "You can now sign in with your credentials",
+        variant: "default"
+      })
+      
+      // Redirect to login page
+      router.push('/login')
+    } catch (error: any) {
+      // Handle signup errors
+      setErrors({
+        ...errors,
+        form: error.message || 'Failed to create account. Please try again.'
+      })
       setIsLoading(false)
-      // Redirect to dashboard
-      window.location.href = '/dashboard'
-    }, 1500)
+    }
   }
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -106,10 +132,22 @@ export default function SignupPage() {
     }
   }
 
-  const handleSocialSignup = (provider: string) => {
-    console.log(`Signup with ${provider}`)
-    // Redirect to dashboard for social signup
-    window.location.href = '/dashboard'
+  const handleSocialSignup = async (provider: string) => {
+    setIsLoading(true)
+    try {
+      if (provider === 'google') {
+        await authService.signInWithGoogle()
+      } else if (provider === 'github') {
+        await authService.signInWithGithub()
+      }
+    } catch (error: any) {
+      toast({
+        title: "Authentication Error",
+        description: error.message || `Failed to sign up with ${provider}`,
+        variant: "destructive"
+      })
+      setIsLoading(false)
+    }
   }
 
   const getPasswordStrength = (password: string) => {
@@ -286,6 +324,11 @@ export default function SignupPage() {
               <>
                 {/* Step 2: Password & Terms */}
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {errors.form && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                      {errors.form}
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                       Password
@@ -384,13 +427,21 @@ export default function SignupPage() {
                       />
                       <span className="ml-3 text-sm text-gray-600">
                         I agree to the{" "}
-                        <Link href="/terms" className="text-indigo-600 hover:text-indigo-700 font-medium">
+                        <button 
+                          type="button"
+                          onClick={() => setShowTermsModal(true)}
+                          className="text-indigo-600 hover:text-indigo-700 font-medium underline"
+                        >
                           Terms of Service
-                        </Link>{" "}
+                        </button>{" "}
                         and{" "}
-                        <Link href="/privacy" className="text-indigo-600 hover:text-indigo-700 font-medium">
+                        <button 
+                          type="button"
+                          onClick={() => setShowPrivacyModal(true)}
+                          className="text-indigo-600 hover:text-indigo-700 font-medium underline"
+                        >
                           Privacy Policy
-                        </Link>
+                        </button>
                       </span>
                     </label>
                     {errors.agreeToTerms && (
@@ -452,6 +503,16 @@ export default function SignupPage() {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Modals */}
+        <TermsModal 
+          isOpen={showTermsModal} 
+          onClose={() => setShowTermsModal(false)} 
+        />
+        <PrivacyModal 
+          isOpen={showPrivacyModal} 
+          onClose={() => setShowPrivacyModal(false)} 
+        />
       </div>
     </div>
   )

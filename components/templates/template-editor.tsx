@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { SaasLandingTemplate } from "./saas-landing"
 import { PortfolioTemplate } from "./portfolio"
 import { SeptiCleanTemplate } from "./septiclean"
@@ -22,15 +23,18 @@ import { Sparkles } from "lucide-react"
 
 interface TemplateEditorProps {
   templateId: string
+  initialSavedProjectId?: string
+  editorRef?: React.RefObject<HTMLDivElement | null>
 }
 
-export function TemplateEditor({ templateId }: TemplateEditorProps) {
+export function TemplateEditor({ templateId, initialSavedProjectId, editorRef: propEditorRef }: TemplateEditorProps) {
   const [viewMode, setViewMode] = useState<"desktop" | "tablet" | "mobile">("desktop")
-  const editorRef = useRef<HTMLDivElement>(null)
+  const defaultEditorRef = useRef<HTMLDivElement>(null)
+  const editorRef = propEditorRef || defaultEditorRef
 
   return (
     <TemplateEditorProvider>
-      <TemplateEditorContent templateId={templateId} viewMode={viewMode} setViewMode={setViewMode} editorRef={editorRef} />
+      <TemplateEditorContent templateId={templateId} viewMode={viewMode} setViewMode={setViewMode} editorRef={editorRef} savedProjectId={initialSavedProjectId} />
     </TemplateEditorProvider>
   )
 }
@@ -40,17 +44,25 @@ function TemplateEditorContent({
   viewMode,
   setViewMode,
   editorRef,
+  savedProjectId: initialSavedProjectId
 }: {
   templateId: string
   viewMode: "desktop" | "tablet" | "mobile"
   setViewMode: React.Dispatch<React.SetStateAction<"desktop" | "tablet" | "mobile">>
-  editorRef: React.RefObject<HTMLDivElement | null>
+  editorRef?: React.RefObject<HTMLDivElement | null>
+  savedProjectId?: string
 }) {
-  const { selectedElement, selectElement, canUndo, canRedo, undo, redo, updateElement, setTemplateId } = useTemplateEditor()
+  const { selectedElement, selectElement, canUndo, canRedo, undo, redo, updateElement, setTemplateId, elements } = useTemplateEditor()
   const [isGenerating, setIsGenerating] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
   const [showLoadingScreen, setShowLoadingScreen] = useState(false)
   const [templateGenerated, setTemplateGenerated] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [savedProjectId, setSavedProjectId] = useState<string | null>(initialSavedProjectId || null)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [showViewPreviewButton, setShowViewPreviewButton] = useState(false)
+  const router = useRouter()
 
   // State to track if elements have been initialized
   const [elementsInitialized, setElementsInitialized] = useState(false)
@@ -63,6 +75,9 @@ function TemplateEditorContent({
     "ai-blog-page",
     "ai-dental-health-landing"
   ].includes(templateId)
+
+  // All templates can now use AI generation
+  const canUseAI = true
 
   // Show AI modal on mount for paid templates
   useEffect(() => {
@@ -159,30 +174,121 @@ function TemplateEditorContent({
           position: { x: 0, y: 0 }
         });
       } else {
-        // Initialize common elements for free templates (saas-landing, portfolio, etc.)
-        const commonElements = [
-          { id: "hero-title", type: "heading", content: "Welcome to Our Platform" },
-          { id: "hero-subtitle", type: "text", content: "Transform your business with our innovative solutions" },
-          { id: "hero-cta", type: "button", content: "Get Started" },
-          { id: "company-logo", type: "text", content: "YourBrand" },
-          { id: "nav-logo", type: "text", content: "YourBrand" },
-          { id: "footer-logo", type: "text", content: "YourBrand" },
-          { id: "about-title", type: "heading", content: "About Us" },
-          { id: "about-description", type: "text", content: "We are passionate about delivering exceptional solutions that drive results." },
-          { id: "contact-title", type: "heading", content: "Get in Touch" },
-          { id: "contact-description", type: "text", content: "Ready to get started? Contact us today!" }
-        ];
+        // Initialize comprehensive elements for all other templates
+        const getTemplateSpecificElements = () => {
+          const baseElements = [
+            // Core branding elements
+            { id: "company-logo", type: "text", content: "YourBrand" },
+            { id: "nav-logo", type: "text", content: "YourBrand" },
+            { id: "footer-logo", type: "text", content: "YourBrand" },
+            { id: "brand-name", type: "text", content: "YourBrand" },
+            
+            // Hero section elements
+            { id: "hero-title", type: "heading", content: "Welcome to Our Platform" },
+            { id: "main-title", type: "heading", content: "Welcome to Our Platform" },
+            { id: "hero-subtitle", type: "text", content: "Transform your business with our innovative solutions" },
+            { id: "hero-description", type: "text", content: "Transform your business with our innovative solutions" },
+            { id: "tagline", type: "text", content: "Transform your business with our innovative solutions" },
+            { id: "hero-cta", type: "button", content: "Get Started" },
+            { id: "main-cta", type: "button", content: "Get Started" },
+            { id: "primary-cta", type: "button", content: "Get Started" },
+            
+            // About section elements
+            { id: "about-title", type: "heading", content: "About Us" },
+            { id: "about-description", type: "text", content: "We are passionate about delivering exceptional solutions that drive results." },
+            { id: "company-description", type: "text", content: "We are passionate about delivering exceptional solutions that drive results." },
+            
+            // Contact section elements
+            { id: "contact-title", type: "heading", content: "Get in Touch" },
+            { id: "contact-description", type: "text", content: "Ready to get started? Contact us today!" },
+            { id: "contact-cta", type: "button", content: "Contact Us" },
+            
+            // Footer elements
+            { id: "footer-description", type: "text", content: "Your trusted partner for innovative solutions." }
+          ];
+
+          // Add feature elements (1-6)
+          for (let i = 1; i <= 6; i++) {
+            baseElements.push(
+              { id: `feature-${i}-title`, type: "heading", content: `Feature ${i}` },
+              { id: `feature-${i}-description`, type: "text", content: `Description for feature ${i} that explains its benefits.` }
+            );
+          }
+
+          // Add service elements (1-6) for service-based templates
+          for (let i = 1; i <= 6; i++) {
+            baseElements.push(
+              { id: `service-${i}-title`, type: "heading", content: `Service ${i}` },
+              { id: `service-${i}-description`, type: "text", content: `Description for service ${i} and how it helps clients.` }
+            );
+          }
+
+          // Add testimonial elements (1-3)
+          for (let i = 1; i <= 3; i++) {
+            baseElements.push(
+              { id: `testimonial-${i}-text`, type: "text", content: `"This service exceeded our expectations and delivered amazing results."` },
+              { id: `testimonial-${i}-author`, type: "text", content: `Client ${i}` },
+              { id: `testimonial-${i}-company`, type: "text", content: `Company ${i}` }
+            );
+          }
+
+          // Template-specific elements
+          if (templateId === "saas-landing") {
+            baseElements.push(
+              { id: "saas-title", type: "heading", content: "Revolutionary SaaS Platform" },
+              { id: "saas-subtitle", type: "text", content: "Streamline your workflow with our cutting-edge software solution" },
+              { id: "benefit-1-title", type: "heading", content: "Increased Productivity" },
+              { id: "benefit-2-title", type: "heading", content: "Cost Effective" },
+              { id: "benefit-3-title", type: "heading", content: "Easy Integration" },
+              { id: "pricing-title", type: "heading", content: "Simple Pricing" }
+            );
+          }
+
+          if (templateId === "portfolio") {
+            baseElements.push(
+              { id: "portfolio-name", type: "text", content: "John Doe" },
+              { id: "hero-name", type: "heading", content: "John Doe" },
+              { id: "portfolio-role", type: "text", content: "Creative Designer & Developer" },
+              { id: "portfolio-bio", type: "text", content: "Passionate about creating beautiful and functional digital experiences." },
+              { id: "skills-title", type: "heading", content: "Skills & Expertise" },
+              { id: "projects-title", type: "heading", content: "Featured Projects" }
+            );
+          }
+
+          if (templateId === "septiclean") {
+            baseElements.push(
+              { id: "service-area", type: "text", content: "Serving Your Local Area" },
+              { id: "phone-number", type: "text", content: "(555) 123-4567" },
+              { id: "emergency-title", type: "heading", content: "24/7 Emergency Service" },
+              { id: "licensed-title", type: "heading", content: "Licensed & Insured" }
+            );
+          }
+
+          if (templateId === "ebook-landing") {
+            baseElements.push(
+              { id: "ebook-title", type: "heading", content: "The Ultimate Guide to Success" },
+              { id: "ebook-description", type: "text", content: "Discover the secrets to achieving your goals with this comprehensive guide." },
+              { id: "download-cta", type: "button", content: "Download Free eBook" },
+              { id: "author-name", type: "text", content: "Expert Author" }
+            );
+          }
+
+          if (templateId === "dental-health-landing") {
+            baseElements.push(
+              { id: "product-name", type: "heading", content: "Advanced Dental Care Solution" },
+              { id: "health-benefit", type: "text", content: "Improve your oral health with our scientifically proven formula." },
+              { id: "problem-title", type: "heading", content: "Common Dental Problems" },
+              { id: "solution-title", type: "heading", content: "Our Solution" }
+            );
+          }
+
+          return baseElements;
+        };
+
+        const templateElements = getTemplateSpecificElements();
         
-        // Add feature elements
-        for (let i = 1; i <= 6; i++) {
-          commonElements.push(
-            { id: `feature-${i}-title`, type: "heading", content: `Feature ${i}` },
-            { id: `feature-${i}-description`, type: "text", content: `Description for feature ${i} that explains its benefits.` }
-          );
-        }
-        
-        // Initialize all common elements
-        commonElements.forEach(element => {
+        // Initialize all elements
+        templateElements.forEach(element => {
           updateElement(element.id, {
             type: element.type,
             content: element.content,
@@ -511,8 +617,166 @@ function TemplateEditorContent({
         if (data["blog-conclusion"]) {
           updateElementWithForce("blog-conclusion", data["blog-conclusion"], "text");
         }
+      } else {
+        // Handle ALL other templates with comprehensive AI content application
+        console.log(`Template editor: Updating ${templateId} template elements with AI content:`, data);
+        
+        const updateElementWithForce = (id: string, content: string, type: string = "text", url?: string) => {
+          console.log(`Force updating element ${id} with content:`, content);
+          updateElement(id, {
+            type: type,
+            content: content,
+            url: url,
+            styles: {},
+            position: { x: 0, y: 0 }
+          });
+        };
+
+        // Apply AI content to common template elements based on available data
+        
+        // Update branding/logos
+        if (data["company-name"] || data["brand-name"] || data["site-name"]) {
+          const brandName = data["company-name"] || data["brand-name"] || data["site-name"];
+          updateElementWithForce("company-logo", brandName, "text");
+          updateElementWithForce("nav-logo", brandName, "text");
+          updateElementWithForce("footer-logo", brandName, "text");
+          updateElementWithForce("brand-name", brandName, "text");
+        }
+
+        // Update hero section
+        if (data["hero-title"] || data["main-title"]) {
+          const heroTitle = data["hero-title"] || data["main-title"];
+          updateElementWithForce("hero-title", heroTitle, "heading");
+          updateElementWithForce("main-title", heroTitle, "heading");
+        }
+
+        if (data["hero-subtitle"] || data["tagline"]) {
+          const heroSubtitle = data["hero-subtitle"] || data["tagline"];
+          updateElementWithForce("hero-subtitle", heroSubtitle, "text");
+          updateElementWithForce("hero-description", heroSubtitle, "text");
+          updateElementWithForce("tagline", heroSubtitle, "text");
+        }
+
+        if (data["hero-cta"] || data["main-cta"]) {
+          const heroCTA = data["hero-cta"] || data["main-cta"];
+          updateElementWithForce("hero-cta", heroCTA, "button");
+          updateElementWithForce("main-cta", heroCTA, "button");
+          updateElementWithForce("primary-cta", heroCTA, "button");
+        }
+
+        // Update about section
+        if (data["about-title"]) {
+          updateElementWithForce("about-title", data["about-title"], "heading");
+        }
+
+        if (data["about-description"] || data["company-description"]) {
+          const aboutDesc = data["about-description"] || data["company-description"];
+          updateElementWithForce("about-description", aboutDesc, "text");
+          updateElementWithForce("company-description", aboutDesc, "text");
+        }
+
+        // Update features (handle up to 6 features)
+        if (data["features"]) {
+          const features = data["features"].split('\n').filter((f: string) => f.trim() !== '').slice(0, 6);
+          
+          features.forEach((feature: string, index: number) => {
+            const featureNumber = index + 1;
+            const featureParts = feature.split(': ');
+            
+            if (featureParts.length > 1) {
+              updateElementWithForce(`feature-${featureNumber}-title`, featureParts[0].trim(), "heading");
+              updateElementWithForce(`feature-${featureNumber}-description`, featureParts[1].trim(), "text");
+            } else {
+              updateElementWithForce(`feature-${featureNumber}-title`, `Feature ${featureNumber}`, "heading");
+              updateElementWithForce(`feature-${featureNumber}-description`, feature.trim(), "text");
+            }
+          });
+        }
+
+        // Update services (for service-based templates)
+        if (data["services"]) {
+          const services = data["services"].split('\n').filter((s: string) => s.trim() !== '').slice(0, 6);
+          
+          services.forEach((service: string, index: number) => {
+            const serviceNumber = index + 1;
+            const serviceParts = service.split(': ');
+            
+            if (serviceParts.length > 1) {
+              updateElementWithForce(`service-${serviceNumber}-title`, serviceParts[0].trim(), "heading");
+              updateElementWithForce(`service-${serviceNumber}-description`, serviceParts[1].trim(), "text");
+            } else {
+              updateElementWithForce(`service-${serviceNumber}-title`, `Service ${serviceNumber}`, "heading");
+              updateElementWithForce(`service-${serviceNumber}-description`, service.trim(), "text");
+            }
+          });
+        }
+
+        // Update contact section
+        if (data["contact-title"]) {
+          updateElementWithForce("contact-title", data["contact-title"], "heading");
+        }
+
+        if (data["contact-description"]) {
+          updateElementWithForce("contact-description", data["contact-description"], "text");
+        }
+
+        if (data["contact-cta"]) {
+          updateElementWithForce("contact-cta", data["contact-cta"], "button");
+        }
+
+        // Update testimonials
+        if (data["testimonial-1"]) {
+          updateElementWithForce("testimonial-1-text", data["testimonial-1"], "text");
+        }
+        if (data["testimonial-2"]) {
+          updateElementWithForce("testimonial-2-text", data["testimonial-2"], "text");
+        }
+        if (data["testimonial-3"]) {
+          updateElementWithForce("testimonial-3-text", data["testimonial-3"], "text");
+        }
+
+        // Update pricing (if applicable)
+        if (data["pricing-title"]) {
+          updateElementWithForce("pricing-title", data["pricing-title"], "heading");
+        }
+
+        // Update footer content
+        if (data["footer-description"]) {
+          updateElementWithForce("footer-description", data["footer-description"], "text");
+        }
+
+        // Template-specific updates
+        if (templateId === "saas-landing") {
+          if (data["saas-benefit-1"]) updateElementWithForce("benefit-1-title", data["saas-benefit-1"], "heading");
+          if (data["saas-benefit-2"]) updateElementWithForce("benefit-2-title", data["saas-benefit-2"], "heading");
+          if (data["saas-benefit-3"]) updateElementWithForce("benefit-3-title", data["saas-benefit-3"], "heading");
+        }
+
+        if (templateId === "portfolio") {
+          if (data["portfolio-name"]) {
+            updateElementWithForce("portfolio-name", data["portfolio-name"], "text");
+            updateElementWithForce("hero-name", data["portfolio-name"], "heading");
+          }
+          if (data["portfolio-role"]) updateElementWithForce("portfolio-role", data["portfolio-role"], "text");
+          if (data["portfolio-bio"]) updateElementWithForce("portfolio-bio", data["portfolio-bio"], "text");
+        }
+
+        if (templateId === "septiclean") {
+          if (data["service-area"]) updateElementWithForce("service-area", data["service-area"], "text");
+          if (data["phone-number"]) updateElementWithForce("phone-number", data["phone-number"], "text");
+        }
+
+        if (templateId === "ebook-landing") {
+          if (data["ebook-title"]) updateElementWithForce("ebook-title", data["ebook-title"], "heading");
+          if (data["ebook-description"]) updateElementWithForce("ebook-description", data["ebook-description"], "text");
+          if (data["download-cta"]) updateElementWithForce("download-cta", data["download-cta"], "button");
+        }
+
+        if (templateId === "dental-health-landing") {
+          if (data["product-name"]) updateElementWithForce("product-name", data["product-name"], "heading");
+          if (data["health-benefit"]) updateElementWithForce("health-benefit", data["health-benefit"], "text");
+        }
       }
-      // Add other template handling here...
       
       console.log("Template editor: AI content generation completed successfully");
       
@@ -536,19 +800,89 @@ function TemplateEditorContent({
     }
   }
 
-  const handleCloseAIModal = () => {
-    setShowAIModal(false)
-    // If user closes modal without generating, redirect back to templates
-    if (!templateGenerated) {
-      window.history.back()
+  const handleSaveTemplate = async () => {
+    setIsSaving(true)
+    setSaveError(null)
+    
+    try {
+      console.log('Saving template with templateId:', templateId)
+      
+      const projectData = {
+        name: `${getTemplateName()} - ${new Date().toLocaleDateString()}`,
+        type: 'Template',
+        status: 'draft',
+        thumbnail: '/placeholder.svg?height=120&width=200&text=Template',
+        elements: elements,
+        templateId: templateId, // Ensure templateId is passed correctly
+        settings: {
+          title: getTemplateName(),
+          description: `Template based on ${getTemplateName()}`,
+          favicon: '',
+          customCSS: '',
+          customJS: ''
+        }
+      }
+      
+      console.log('Project data being sent:', JSON.stringify(projectData))
+      
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectData),
+      })
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = 'Failed to save template';
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+          console.error('Error parsing error response:', e);
+          // Use the raw text if it's not valid JSON
+          if (errorText) errorMessage = errorText;
+        }
+        
+        console.error(`API error (${response.status}):`, errorMessage);
+        throw new Error(errorMessage);
+      }
+      
+      const { project } = await response.json()
+      setSavedProjectId(project.id)
+      setShowSuccessMessage(true)
+      setShowViewPreviewButton(true)
+      
+      // Just show success message, don't auto-navigate
+      setTimeout(() => {
+        setShowSuccessMessage(false)
+        setShowViewPreviewButton(false)
+      }, 5000)
+    } catch (error) {
+      console.error('Error saving template:', error)
+      setSaveError(error instanceof Error ? error.message : 'Failed to save template. Please try again.')
+      setTimeout(() => {
+        setSaveError(null)
+      }, 5000)
+    } finally {
+      setIsSaving(false)
     }
   }
 
+  const handleCloseAIModal = () => {
+    setShowAIModal(false)
+    // If user closes modal without generating, redirect back to templates
+    if (isPaidAITemplate && !templateGenerated) {
+      router.push('/templates')
+    }
+  }
+  
   const renderTemplate = () => {
     const commonProps = {
-      selectedElement,
-      onElementSelect: selectElement,
+      elements: elements,
       isEditable: true,
+      selectedElement: selectedElement,
+      onElementSelect: selectElement
     }
 
     switch (templateId) {
@@ -656,10 +990,10 @@ function TemplateEditorContent({
             </Button>
           </div>
 
-          {isPaidAITemplate && templateGenerated && (
+          {canUseAI && (
             <Button size="sm" onClick={() => setShowAIModal(true)} disabled={isGenerating}>
               <Sparkles className="w-4 h-4 mr-2" />
-              Regenerate with AI
+              {isPaidAITemplate && !templateGenerated ? 'Generate with AI' : 'Enhance with AI'}
             </Button>
           )}
 
@@ -684,7 +1018,7 @@ function TemplateEditorContent({
             </svg>
           </Button>
           <div className="h-6 w-px bg-gray-300" />
-          <Link href={`/preview/${templateId}`}>
+          <Link href={savedProjectId ? `/preview/template/${savedProjectId}` : `/preview/${templateId}`}>
             <Button variant="outline" size="sm">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -703,19 +1037,64 @@ function TemplateEditorContent({
               Preview
             </Button>
           </Link>
-          <Button size="sm">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"
-              />
-            </svg>
-            Save
+          <Button size="sm" onClick={handleSaveTemplate} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-gray-300 border-t-white"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+                Save
+              </>
+            )}
           </Button>
+          {savedProjectId && (
+            <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard`)}>
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Go to Dashboard
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Template saved successfully!</span>
+          {showViewPreviewButton && (
+            <button 
+              onClick={() => router.push(`/preview/template/${savedProjectId}`)}
+              className="ml-4 bg-white text-green-500 px-3 py-1 rounded-md text-sm font-medium hover:bg-green-50"
+            >
+              View Preview
+            </button>
+          )}
+        </div>
+      )}
+      
+      {/* Error Message */}
+      {saveError && (
+        <div className="fixed top-20 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <span>{saveError}</span>
+        </div>
+      )}
 
       {/* Editor Content */}
       <div className="flex-1 relative overflow-auto" ref={editorRef}>

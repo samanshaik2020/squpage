@@ -4,6 +4,7 @@ import { use } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Share2 } from "lucide-react"
 import Link from "next/link"
+import { useAnalyticsTracking } from "@/hooks/use-analytics-tracking"
 import { SaasLandingTemplate } from "@/components/templates/saas-landing"
 import { PortfolioTemplate } from "@/components/templates/portfolio"
 import { SeptiCleanTemplate } from "@/components/templates/septiclean"
@@ -24,6 +25,13 @@ interface PreviewPageProps {
 
 export default function PreviewPage({ params }: PreviewPageProps) {
   const resolvedParams = use(params)
+  
+  // Track page visits for template previews (these are considered "published" templates)
+  const { trackVisit } = useAnalyticsTracking({
+    pageId: resolvedParams.id,
+    enabled: true, // Template previews are always trackable
+    trackOnMount: true
+  })
   
   const getTemplateName = () => {
     switch (resolvedParams.id) {
