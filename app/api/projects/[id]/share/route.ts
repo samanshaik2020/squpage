@@ -7,6 +7,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('POST /api/projects/[id]/share - Project ID:', params.id)
     const { customName, expiryDays } = await request.json()
     
     if (!customName || customName.trim() === '') {
@@ -15,7 +16,34 @@ export async function POST(
     
     // Get current project to verify it exists
     const currentProject = await projectsStore.getById(params.id)
+    console.log('POST /api/projects/[id]/share - Project found:', currentProject ? 'Yes' : 'No')
+    
     if (!currentProject) {
+      // Get all projects to see what IDs are available
+      const allProjects = await projectsStore.getAll()
+      console.log('POST /api/projects/[id]/share - Available project IDs:', allProjects.map(p => p.id))
+      
+      // Try to find project by string comparison (in case of type mismatch)
+      const projectByString = allProjects.find(p => String(p.id) === String(params.id))
+      if (projectByString) {
+        console.log('POST /api/projects/[id]/share - Found project by string comparison')
+        // Use the found project
+        const shareData = await projectsStore.generateShareToken(
+          projectByString.id, 
+          customName, 
+          expiryDays
+        )
+        
+        if (!shareData) {
+          return NextResponse.json({ error: 'Failed to generate share token' }, { status: 500 })
+        }
+        
+        return NextResponse.json({
+          message: 'Share token generated successfully',
+          shareData
+        })
+      }
+      
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
     
@@ -74,9 +102,38 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('GET /api/projects/[id]/share - Project ID:', params.id)
+    
     // Get current project
     const project = await projectsStore.getById(params.id)
+    console.log('GET /api/projects/[id]/share - Project found:', project ? 'Yes' : 'No')
+    
     if (!project) {
+      // Get all projects to see what IDs are available
+      const allProjects = await projectsStore.getAll()
+      console.log('GET /api/projects/[id]/share - Available project IDs:', allProjects.map(p => p.id))
+      
+      // Try to find project by string comparison (in case of type mismatch)
+      const projectByString = allProjects.find(p => String(p.id) === String(params.id))
+      if (projectByString) {
+        console.log('GET /api/projects/[id]/share - Found project by string comparison')
+        // Return share information for the found project
+        return NextResponse.json({
+          shareStatus: {
+            isPubliclyShared: projectByString.isPubliclyShared || false,
+            shareToken: projectByString.shareToken,
+            shareName: projectByString.shareName,
+            shareSlug: projectByString.shareSlug,
+            shareExpiryDate: projectByString.shareExpiryDate,
+            shareUrl: projectByString.shareSlug 
+              ? `${process.env.NEXT_PUBLIC_SITE_URL}/share/${projectByString.shareSlug}`
+              : projectByString.shareToken 
+                ? `${process.env.NEXT_PUBLIC_SITE_URL}/share/token/${projectByString.shareToken}`
+                : null
+          }
+        })
+      }
+      
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
     

@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Zap, Github, Chrome } from "lucide-react"
-import { authService } from "@/lib/supabase-auth"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
 
@@ -49,11 +48,32 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
-      // Use Supabase auth service to sign in
-      await authService.signIn(formData.email, formData.password)
+      // Simulate authentication with localStorage
+      // In a real app, you would validate credentials against a server
+      // For now, we'll accept any valid email/password format
       
-      // Redirect to dashboard on success
-      router.push('/dashboard')
+      // Create a user object
+      const user = {
+        user: {
+          email: formData.email,
+          id: 'local-user-id'
+        },
+        profile: {
+          full_name: formData.email.split('@')[0],
+          username: formData.email.split('@')[0].toLowerCase()
+        }
+      }
+      
+      // Store in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('squpage_user', JSON.stringify(user))
+      }
+      
+      // Add a small delay to simulate network request
+      setTimeout(() => {
+        // Redirect to dashboard on success
+        router.push('/dashboard')
+      }, 500)
     } catch (error: any) {
       // Handle login errors
       setErrors({
@@ -74,12 +94,27 @@ export default function LoginPage() {
   const handleSocialLogin = async (provider: string) => {
     setIsLoading(true)
     try {
-      if (provider === 'google') {
-        await authService.signInWithGoogle()
-      } else if (provider === 'github') {
-        await authService.signInWithGithub()
+      // Create a user object for social login
+      const user = {
+        user: {
+          email: `user@${provider}.com`,
+          id: `${provider}-user-id`
+        },
+        profile: {
+          full_name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+          username: `${provider}user`
+        }
       }
-      router.push('/dashboard')
+      
+      // Store in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('squpage_user', JSON.stringify(user))
+      }
+      
+      // Add a small delay to simulate network request
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 800)
     } catch (error: any) {
       toast({
         title: "Authentication Error",

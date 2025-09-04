@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { ProjectProvider } from "@/lib/project-context"
-import { authService } from "@/lib/supabase-auth"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -91,20 +90,37 @@ function DashboardContent() {
   const [selectedShareProject, setSelectedShareProject] = useState<any>(null)
   const router = useRouter()
 
-  // Load user data on mount
+  // Load user data from localStorage on mount
   useEffect(() => {
-    const loadUserData = async () => {
+    const loadUserData = () => {
       try {
-        console.log('Fetching current user data...')
-        const userData = await authService.getCurrentUser()
-        console.log('User data received:', userData)
-        if (userData) {
+        console.log('Fetching user data from localStorage...')
+        const storedUser = typeof window !== 'undefined' ? localStorage.getItem('squpage_user') : null
+        
+        if (storedUser) {
+          const userData = JSON.parse(storedUser)
+          console.log('User data loaded from localStorage:', userData)
           setCurrentUser(userData)
-          console.log('User state updated with:', userData)
         } else {
-          console.log('No user data returned from getCurrentUser')
-          // If not logged in, redirect to login page
-          router.push('/login')
+          console.log('No user data found in localStorage')
+          // Create a default user since we're using localStorage only
+          const defaultUser = {
+            user: {
+              email: 'user@example.com',
+              id: 'local-user-id'
+            },
+            profile: {
+              full_name: 'Local User',
+              username: 'localuser'
+            }
+          }
+          
+          // Store the default user
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('squpage_user', JSON.stringify(defaultUser))
+          }
+          
+          setCurrentUser(defaultUser)
         }
       } catch (error) {
         console.error('Error loading user data:', error)
@@ -338,9 +354,12 @@ function DashboardContent() {
                     </Link>
                     <hr className="my-2" />
                     <button 
-                      onClick={async () => {
+                      onClick={() => {
                         try {
-                          await authService.signOut();
+                          // Remove user data from localStorage
+                          if (typeof window !== 'undefined') {
+                            localStorage.removeItem('squpage_user');
+                          }
                           router.push('/login');
                         } catch (error) {
                           console.error('Error signing out:', error);

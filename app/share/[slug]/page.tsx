@@ -1,78 +1,104 @@
 import { notFound } from 'next/navigation'
-import { projectsStore } from '@/lib/projects-store'
+import { projectsStore, ProjectData } from '@/lib/projects-store'
 
 // This page handles both token and slug-based shares
-export default async function SharedProjectPage({ params }: { params: { slug: string } }) {
-  const slug = params.slug
+export default async function SharedProjectPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   
-  // Try to get project by slug first
-  let project = await projectsStore.getByShareSlug(slug)
-  
-  // If not found by slug, try as token
-  if (!project) {
-    project = await projectsStore.getByShareToken(slug)
-  }
-  
-  // If still not found, return 404
-  if (!project) {
-    notFound()
-  }
-  
-  // Check if the share has expired
-  if (project.shareExpiryDate && new Date(project.shareExpiryDate) < new Date()) {
+  try {
+    // Try to get project by slug first
+    let project = null;
+    try {
+      project = await projectsStore.getByShareSlug(slug);
+    } catch (slugError) {
+      console.error(`Error fetching project by share slug ${slug}:`, slugError);
+      // Continue to try token method
+    }
+    
+    // If not found by slug, try as token
+    if (!project) {
+      try {
+        project = await projectsStore.getByShareToken(slug);
+      } catch (tokenError) {
+        console.error(`Error fetching project by share token ${slug}:`, tokenError);
+        // Both methods failed with errors
+        throw new Error(`Failed to fetch project with identifier ${slug}`);
+      }
+    }
+    
+    // If still not found, return 404
+    if (!project) {
+      notFound();
+    }
+    
+    // Check if the share has expired
+    if (project.shareExpiryDate && new Date(project.shareExpiryDate) < new Date()) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+          <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Share Link Expired</h1>
+            <p className="text-gray-600 mb-6">
+              This shared link has expired and is no longer available.
+            </p>
+          </div>
+        </div>
+      )
+    }
+    
+    // Get project elements
+    const elements = await projectsStore.getProjectElements(project.id)
+    
+    // Determine which preview component to render based on project type
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-4 bg-blue-600 text-white flex justify-between items-center">
+              <h1 className="text-xl font-semibold">
+                {project.shareName || project.name}
+              </h1>
+              <div className="text-sm opacity-75">
+                Shared via Squpage
+              </div>
+            </div>
+            
+            <div className="p-6">
+              {project.type === 'Template' && (
+                <TemplatePreview project={project} elements={elements} />
+              )}
+              
+              {project.type === 'Elementor' && (
+                <ElementorPreview project={project} elements={elements} />
+              )}
+              
+              {(project.type !== 'Template' && project.type !== 'Elementor') && (
+                <GenericPreview project={project} elements={elements} />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  } catch (error) {
+    console.error('Error in SharedProjectPage:', error);
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
         <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Share Link Expired</h1>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Project</h1>
           <p className="text-gray-600 mb-6">
-            This shared link has expired and is no longer available.
+            There was an error loading this project. Please check your connection and try again.
+          </p>
+          <p className="text-sm text-gray-500">
+            Error details: {error instanceof Error ? error.message : 'Unknown error'}
           </p>
         </div>
       </div>
-    )
+    );
   }
-  
-  // Get project elements
-  const elements = await projectsStore.getProjectElements(project.id)
-  
-  // Track the view (optional, can be implemented later)
-  // await projectsStore.trackShareView(token)
-  
-  // Determine which preview component to render based on project type
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-4 bg-blue-600 text-white flex justify-between items-center">
-            <h1 className="text-xl font-semibold">
-              {project.shareName || project.name}
-            </h1>
-            <div className="text-sm opacity-75">
-              Shared via Squpage
-            </div>
-          </div>
-          
-          <div className="p-6">
-            {project.type === 'Template' && (
-              <TemplatePreview project={project} elements={elements} />
-            )}
-            
-            {project.type === 'Elementor' && (
-              <ElementorPreview project={project} elements={elements} />
-            )}
-            
-            {(project.type !== 'Template' && project.type !== 'Elementor') && (
-              <GenericPreview project={project} elements={elements} />
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 // Template Preview Component
-function TemplatePreview({ project, elements }: { project: any, elements: any[] }) {
+function TemplatePreview({ project, elements }: { project: ProjectData, elements: any[] }) {
   return (
     <div className="template-preview">
       <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
@@ -130,7 +156,7 @@ function TemplatePreview({ project, elements }: { project: any, elements: any[] 
 }
 
 // Elementor Preview Component
-function ElementorPreview({ project, elements }: { project: any, elements: any[] }) {
+function ElementorPreview({ project, elements }: { project: ProjectData, elements: any[] }) {
   // Group elements by their parent-child relationship
   const rootElements = elements.filter(el => !el.parentId)
   
@@ -161,7 +187,7 @@ function ElementorPreview({ project, elements }: { project: any, elements: any[]
 }
 
 // Generic Preview Component for other project types
-function GenericPreview({ project, elements }: { project: any, elements: any[] }) {
+function GenericPreview({ project, elements }: { project: ProjectData, elements: any[] }) {
   return (
     <div className="generic-preview">
       <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">

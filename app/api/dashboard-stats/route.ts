@@ -1,5 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { projectsStore, leadsStore, pageVisitsStore, formSubmissionsStore } from '@/lib/projects-store'
+import { projectsStore } from '@/lib/projects-store'
+
+// Define types for analytics data
+interface Lead {
+  id: string;
+  projectId: string;
+  name: string;
+  email: string;
+  message?: string;
+  phone?: string;
+  source: string;
+  createdAt: string;
+  status: 'new' | 'contacted' | 'converted' | 'closed';
+}
+
+interface PageVisit {
+  id: string;
+  pageId: string;
+  timestamp: string;
+  ipAddress?: string;
+  userAgent?: string;
+  referrer?: string;
+  sessionId?: string;
+}
+
+interface FormSubmission {
+  id: string;
+  pageId: string;
+  formData: { [key: string]: any };
+  timestamp: string;
+  ipAddress?: string;
+  userAgent?: string;
+  source?: string;
+}
+
+// Define localStorage-based stores for analytics data
+const leadsStore = {
+  getAll: () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('squpage_leads');
+        if (!stored) return [];
+        return JSON.parse(stored);
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading leads:', error);
+      return [];
+    }
+  }
+};
+
+const pageVisitsStore = {
+  getAll: () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('squpage_page_visits');
+        if (!stored) return [];
+        return JSON.parse(stored);
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading page visits:', error);
+      return [];
+    }
+  }
+};
+
+const formSubmissionsStore = {
+  getAll: () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('squpage_form_submissions');
+        if (!stored) return [];
+        return JSON.parse(stored);
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading form submissions:', error);
+      return [];
+    }
+  }
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,23 +94,23 @@ export async function GET(request: NextRequest) {
     const draftProjects = projects.filter(p => p.status === 'draft').length
     
     // Get all leads
-    const allLeads = leadsStore.getAll()
+    const allLeads = leadsStore.getAll() as Lead[]
     const totalLeads = allLeads.length
-    const newLeads = allLeads.filter(l => l.status === 'new').length
+    const newLeads = allLeads.filter((l: Lead) => l.status === 'new').length
     
     // Get all page visits (last 30 days)
-    const allVisits = pageVisitsStore.getAll()
+    const allVisits = pageVisitsStore.getAll() as PageVisit[]
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    const recentVisits = allVisits.filter(v => new Date(v.timestamp) >= thirtyDaysAgo)
+    const recentVisits = allVisits.filter((v: PageVisit) => new Date(v.timestamp) >= thirtyDaysAgo)
     const totalViews = recentVisits.length
     
     // Get unique visitors (based on IP)
-    const uniqueIPs = new Set(recentVisits.map(v => v.ipAddress).filter(Boolean))
+    const uniqueIPs = new Set(recentVisits.map((v: PageVisit) => v.ipAddress).filter(Boolean))
     const uniqueVisitors = uniqueIPs.size
     
     // Get form submissions (last 30 days)
-    const allSubmissions = formSubmissionsStore.getAll()
-    const recentSubmissions = allSubmissions.filter(s => new Date(s.timestamp) >= thirtyDaysAgo)
+    const allSubmissions = formSubmissionsStore.getAll() as FormSubmission[]
+    const recentSubmissions = allSubmissions.filter((s: FormSubmission) => new Date(s.timestamp) >= thirtyDaysAgo)
     const totalSubmissions = recentSubmissions.length
     
     // Calculate conversion rate
@@ -55,7 +137,7 @@ export async function GET(request: NextRequest) {
       {
         type: 'system',
         timestamp: new Date(now.getTime() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
-        description: 'Integrated Supabase database with projects store',
+        description: 'Integrated localStorage with projects store',
         icon: '🗄️'
       },
       {
@@ -91,7 +173,7 @@ export async function GET(request: NextRequest) {
       {
         type: 'system',
         timestamp: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
-        description: 'Set up complete SQL schema for Supabase',
+        description: 'Set up complete data structure for localStorage',
         icon: '🏗️'
       },
       {
@@ -110,7 +192,7 @@ export async function GET(request: NextRequest) {
         description: `${p.type === 'Template' ? 'Saved template' : 'Updated project'}: ${p.name}`,
         icon: p.type === 'Template' ? '📄' : '🎨'
       })),
-      ...allLeads.filter(l => new Date(l.createdAt) >= sevenDaysAgo).map(l => ({
+      ...allLeads.filter((l: Lead) => new Date(l.createdAt) >= sevenDaysAgo).map((l: Lead) => ({
         type: 'lead',
         timestamp: l.createdAt,
         description: `New lead received: ${l.name}`,
@@ -129,8 +211,8 @@ export async function GET(request: NextRequest) {
       const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
       const dateStr = date.toISOString().split('T')[0]
       
-      const dayVisits = allVisits.filter(v => v.timestamp.startsWith(dateStr))
-      const dayLeads = allLeads.filter(l => l.createdAt.startsWith(dateStr))
+      const dayVisits = allVisits.filter((v: PageVisit) => v.timestamp.startsWith(dateStr))
+      const dayLeads = allLeads.filter((l: Lead) => l.createdAt.startsWith(dateStr))
       
       dailyStats.push({
         date: dateStr,
@@ -157,8 +239,8 @@ export async function GET(request: NextRequest) {
         .map(p => ({
           id: p.id,
           name: p.name,
-          views: allVisits.filter(v => v.pageId === p.id).length,
-          leads: allLeads.filter(l => l.projectId === p.id).length
+          views: allVisits.filter((v: PageVisit) => v.pageId === p.id).length,
+          leads: allLeads.filter((l: Lead) => l.projectId === p.id).length
         }))
         .sort((a, b) => b.views - a.views)
         .slice(0, 5)

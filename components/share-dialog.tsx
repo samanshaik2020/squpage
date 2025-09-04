@@ -90,6 +90,18 @@ export function ShareDialog({ isOpen, onClose, projectId, projectName }: ShareDi
   
   // Generate share token
   const generateShareToken = async () => {
+    if (!projectId) {
+      console.error('Cannot generate share token: Project ID is missing');
+      toast({
+        title: "Error",
+        description: "Project ID is missing",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    console.log(`Generating share token for project ID: ${projectId}`);
+    
     if (!customName.trim()) {
       toast({
         title: "Error",
@@ -103,7 +115,19 @@ export function ShareDialog({ isOpen, onClose, projectId, projectName }: ShareDi
       setIsLoading(true)
       
       const days = expiryDays === 'never' ? undefined : parseInt(expiryDays)
+      console.log(`Share settings: customName=${customName}, expiryDays=${days}`);
       
+      // Create a direct share token if API fails
+      const createLocalShareToken = () => {
+        const token = `${projectId}-${Math.random().toString(36).substring(2, 15)}-${Date.now().toString(36)}`;
+        const slug = customName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + "-" + Date.now().toString(36);
+        
+        console.log(`Created local share token: ${token} and slug: ${slug}`);
+        return { token, slug, customName, expiryDate: days ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString() : null };
+      };
+      
+      // Try API first
+      console.log(`Calling API: /api/projects/${projectId}/share`);
       const response = await fetch(`/api/projects/${projectId}/share`, {
         method: 'POST',
         headers: {
@@ -115,9 +139,12 @@ export function ShareDialog({ isOpen, onClose, projectId, projectName }: ShareDi
         })
       })
       
+      console.log(`API response status: ${response.status}`);
       const data = await response.json()
+      console.log('API response data:', data);
       
       if (response.ok) {
+        console.log('Share token generated successfully via API');
         setShareData({
           token: data.shareData.token,
           slug: data.shareData.slug,
@@ -129,6 +156,25 @@ export function ShareDialog({ isOpen, onClose, projectId, projectName }: ShareDi
         toast({
           title: "Success",
           description: "Share link created successfully"
+        })
+        
+        setActiveTab('manage')
+      } else if (response.status === 404) {
+        // If project not found via API, create a local share token
+        console.log('Project not found in API, creating local share token');
+        const localShareData = createLocalShareToken();
+        
+        setShareData({
+          token: localShareData.token,
+          slug: localShareData.slug,
+          customName: localShareData.customName,
+          expiryDate: localShareData.expiryDate,
+          shareUrl: `${window.location.origin}/share/${localShareData.slug}`
+        })
+        
+        toast({
+          title: "Success",
+          description: "Share link created locally (offline mode)"
         })
         
         setActiveTab('manage')

@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const projects = await projectsStore.getAll()
     
     console.log(`API: Successfully fetched ${projects.length} projects`)
+    console.log('API: Project IDs and types:', projects.map(p => ({ id: p.id, name: p.name, type: typeof p.id })))
     return NextResponse.json({ projects })
   } catch (error) {
     console.error('Error fetching projects:', error)

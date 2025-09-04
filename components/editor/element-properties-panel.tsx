@@ -808,7 +808,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
                   <Label className="text-xs">Rating (1-5 stars)</Label>
                   <div className="flex items-center space-x-2">
                     <Slider
-                      value={[testimonial.rating || 5]}
+                      value={useMemo(() => [testimonial.rating || 5], [testimonial.rating])}
                       max={5}
                       min={1}
                       step={1}
@@ -1070,7 +1070,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
           type="number" 
           min="2"
           max="10"
-          value={element.settings?.multiStep?.totalSteps || 3} 
+          value={useMemo(() => element.settings?.multiStep?.totalSteps || 3, [element.settings?.multiStep?.totalSteps])} 
           onChange={(e) => updateElement(element.id, { 
             settings: { 
               ...element.settings, 
@@ -1086,7 +1086,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
           type="number" 
           min="1"
           max={element.settings?.multiStep?.totalSteps || 3}
-          value={element.settings?.multiStep?.currentStep || 1} 
+          value={useMemo(() => element.settings?.multiStep?.currentStep || 1, [element.settings?.multiStep?.currentStep])} 
           onChange={(e) => updateElement(element.id, { 
             settings: { 
               ...element.settings, 
@@ -1800,7 +1800,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
           type="number" 
           min="1"
           max="6"
-          value={element.settings?.posts?.columns || 2} 
+          value={useMemo(() => element.settings?.posts?.columns || 2, [element.settings?.posts?.columns])} 
           onChange={(e) => updateElement(element.id, { 
             settings: { 
               ...element.settings, 
@@ -1816,7 +1816,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
           type="number" 
           min="1"
           max="20"
-          value={element.settings?.posts?.postsPerPage || 4} 
+          value={useMemo(() => element.settings?.posts?.postsPerPage || 4, [element.settings?.posts?.postsPerPage])} 
           onChange={(e) => updateElement(element.id, { 
             settings: { 
               ...element.settings, 
@@ -2002,7 +2002,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
           min="500"
           max="5000"
           step="100"
-          value={element.settings?.animatedHeadline?.speed || 2000} 
+          value={useMemo(() => element.settings?.animatedHeadline?.speed || 2000, [element.settings?.animatedHeadline?.speed])} 
           onChange={(e) => updateElement(element.id, { 
             settings: { 
               ...element.settings, 

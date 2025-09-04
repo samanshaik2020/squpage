@@ -44,9 +44,7 @@ export function TemplateEditableElement({
 
   if (isEditable && editorContext) {
     const { elements } = editorContext
-    console.log(`TemplateEditableElement ${id}: Looking for element in context`, { elements });
     const element = elements.find((el) => el.id === id)
-    console.log(`TemplateEditableElement ${id}: Found element:`, element);
     
     // Handle content and URL based on element type
     if (type === "image" || type === "video" || type === "section") {
@@ -60,7 +58,6 @@ export function TemplateEditableElement({
     }
     
     styles = element?.styles || defaultStyle
-    console.log(`TemplateEditableElement ${id}: Using content:`, content, "URL:", elementUrl);
   } else if (type === "image" || type === "video" || type === "section") {
     // Handle non-editable images - use defaultContent as URL if it looks like a URL
     if (defaultContent.startsWith('http') || defaultContent.startsWith('/')) {

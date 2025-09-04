@@ -1,11 +1,13 @@
-// Shared projects store for API routes with Supabase integration
-import { createClient } from '@supabase/supabase-js'
+// Shared projects store for API routes with localStorage integration
+// No database dependencies - localStorage only implementation
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-// Only create supabase client if environment variables are set
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
+// Helper function to safely access localStorage (works in both client and server contexts)
+const getLocalStorage = () => {
+  if (typeof window !== 'undefined') {
+    return window.localStorage;
+  }
+  return null;
+};
 
 export interface ProjectAnalytics {
     views: number
@@ -80,115 +82,67 @@ export interface ProjectData {
     }
 }
 
-// Supabase client is already imported above
+// Project store using localStorage only
 
-// Load projects from Supabase database
+// Load projects from localStorage
+const loadProjectsFromLocalStorage = (): ProjectData[] => {
+    try {
+        if (typeof window === 'undefined') return [];
+        const stored = localStorage.getItem('squpage_projects');
+        if (!stored) return [];
+        const parsed = JSON.parse(stored);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error('Error loading projects from localStorage:', error);
+        return [];
+    }
+};
+
+// Save projects to localStorage
+const saveProjectsToLocalStorage = (projects: ProjectData[]) => {
+    try {
+        if (typeof window === 'undefined') return;
+        localStorage.setItem('squpage_projects', JSON.stringify(projects));
+    } catch (error) {
+        console.error('Error saving projects to localStorage:', error);
+    }
+};
+
+// Load projects from localStorage or return defaults
 const loadProjectsFromDatabase = async (): Promise<ProjectData[]> => {
     try {
-        if (!supabase) {
-            console.log('Supabase not configured, returning default projects');
-            return defaultProjects;
-        }
-
-        // Get current user first
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-            console.log('No user logged in, returning default projects');
-            return defaultProjects;
-        }
-
-        // Get projects for current user
-        const { data, error } = await supabase
-            .from('projects')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('updated_at', { ascending: false });
-
-        if (error) {
-            console.error('Error loading projects from database:', error);
-            return defaultProjects;
-        }
-
-        // Transform database projects to ProjectData format
-        return data.map((dbProject: any) => ({
-            id: dbProject.id,
-            name: dbProject.name,
-            type: dbProject.type,
-            status: dbProject.status,
-            createdAt: dbProject.created_at,
-            updatedAt: dbProject.updated_at,
-            thumbnail: dbProject.thumbnail || '/placeholder.svg?height=120&width=200&text=' + encodeURIComponent(dbProject.name),
-            elements: [], // Elements are loaded separately
-            templateId: dbProject.template_id,
-            shareToken: dbProject.share_token,
-            shareName: dbProject.share_name,
-            shareSlug: dbProject.share_slug,
-            isPubliclyShared: dbProject.is_publicly_shared,
-            shareExpiryDate: dbProject.share_expiry_date,
-            settings: dbProject.settings || {
-                title: dbProject.name,
-                description: '',
-                favicon: '',
-                customCSS: '',
-                customJS: ''
-            }
-        }));
+        // Load from localStorage
+        const localProjects = loadProjectsFromLocalStorage();
+        return localProjects.length > 0 ? localProjects : defaultProjects;
     } catch (error) {
         console.error('Error in loadProjectsFromDatabase:', error);
         return defaultProjects;
     }
 };
 
-// Save project to Supabase database
+// Save project (localStorage only implementation)
 const saveProjectToDatabase = async (project: ProjectData): Promise<ProjectData | null> => {
     try {
-        if (!supabase) {
-            console.log('Supabase not configured, cannot save to database');
-            return null;
+        // Update in-memory cache and localStorage
+        const index = projects.findIndex(p => p.id === project.id);
+        if (index >= 0) {
+            projects[index] = {
+                ...project,
+                updatedAt: new Date().toISOString()
+            };
+        } else {
+            projects.push({
+                ...project,
+                updatedAt: new Date().toISOString()
+            });
         }
-
-        // Get current user first
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-            console.error('No user logged in, cannot save project');
-            return null;
-        }
-
-        // Transform ProjectData to database format
-        const dbProject = {
-            id: project.id,
-            name: project.name,
-            type: project.type,
-            status: project.status,
-            thumbnail: project.thumbnail,
-            settings: project.settings,
-            template_id: project.templateId,
-            share_token: project.shareToken,
-            share_name: project.shareName,
-            share_slug: project.shareSlug,
-            is_publicly_shared: project.isPubliclyShared,
-            share_expiry_date: project.shareExpiryDate,
-            user_id: user.id,
-            updated_at: new Date().toISOString()
-        };
-
-        // Update or insert project
-        const { data, error } = await supabase
-            .from('projects')
-            .upsert(dbProject)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error saving project to database:', error);
-            return null;
-        }
-
+        
+        // Save to localStorage
+        saveProjectsToLocalStorage(projects);
+        
         return {
             ...project,
-            updatedAt: data.updated_at
+            updatedAt: new Date().toISOString()
         };
     } catch (error) {
         console.error('Error in saveProjectToDatabase:', error);
@@ -196,26 +150,18 @@ const saveProjectToDatabase = async (project: ProjectData): Promise<ProjectData 
     }
 };
 
-// Delete project from Supabase database
+// Delete project (localStorage only implementation)
 const deleteProjectFromDatabase = async (id: string): Promise<boolean> => {
     try {
-        if (!supabase) {
-            console.log('Supabase not configured, cannot delete from database');
-            return false;
+        // Remove from in-memory cache
+        const index = projects.findIndex(p => p.id === id);
+        if (index >= 0) {
+            projects.splice(index, 1);
+            // Save to localStorage
+            saveProjectsToLocalStorage(projects);
+            return true;
         }
-
-        // Delete project
-        const { error } = await supabase
-            .from('projects')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error('Error deleting project from database:', error);
-            return false;
-        }
-
-        return true;
+        return false;
     } catch (error) {
         console.error('Error in deleteProjectFromDatabase:', error);
         return false;
@@ -268,163 +214,94 @@ const defaultProjects: ProjectData[] = [
     }
 ]
 
-// Initialize projects with default values until loaded from database
-let projects: ProjectData[] = defaultProjects;
+// Initialize projects with localStorage data if available, otherwise use defaults
+let projects: ProjectData[] = (() => {
+    try {
+        if (typeof window !== 'undefined') {
+            const localProjects = loadProjectsFromLocalStorage();
+            return localProjects.length > 0 ? localProjects : defaultProjects;
+        }
+        return defaultProjects;
+    } catch {
+        return defaultProjects;
+    }
+})();
 
 export const projectsStore = {
-    // Load all projects for current user
-    getAll: async () => {
+    // Create a new project
+    create: async (project: Omit<ProjectData, 'id' | 'createdAt' | 'updatedAt'>) => {
         try {
-            if (!supabase) {
-                console.log('Supabase not configured, returning in-memory projects');
-                return projects;
-            }
-
-            const loadedProjects = await loadProjectsFromDatabase();
-            projects = loadedProjects; // Update in-memory cache
-            return loadedProjects;
-        } catch (error) {
-            console.error('Error loading projects, returning in-memory projects:', error);
-            return projects;
-        }
-    },
-
-    // Get project by ID
-    getById: async (id: string) => {
-        try {
-            // Try to get from in-memory cache first
-            const cachedProject = projects.find(p => p.id === id);
-            if (cachedProject) return cachedProject;
-
-            // If Supabase not configured, return null
-            if (!supabase) {
-                console.log('Supabase not configured, project not found in cache');
-                return null;
-            }
-
-            // If not in cache, get from database
-            const { data, error } = await supabase
-                .from('projects')
-                .select('*')
-                .eq('id', id)
-                .single();
-
-            if (error) {
-                console.error(`Error fetching project ${id}:`, error);
-                return null;
-            }
-
-            // Transform to ProjectData format
-            const project: ProjectData = {
-                id: data.id,
-                name: data.name,
-                type: data.type,
-                status: data.status,
-                createdAt: data.created_at,
-                updatedAt: data.updated_at,
-                thumbnail: data.thumbnail || '/placeholder.svg?height=120&width=200&text=' + encodeURIComponent(data.name),
-                elements: [], // Elements are loaded separately
-                templateId: data.template_id,
-                shareToken: data.share_token,
-                shareName: data.share_name,
-                shareSlug: data.share_slug,
-                isPubliclyShared: data.is_publicly_shared,
-                shareExpiryDate: data.share_expiry_date,
-                settings: data.settings || {
-                    title: data.name,
+            // Generate a new unique ID
+            const id = `project-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+            
+            // Create new project with timestamps
+            const now = new Date().toISOString();
+            const newProject: ProjectData = {
+                ...project,
+                id,
+                createdAt: now,
+                updatedAt: now,
+                elements: project.elements || [],
+                settings: project.settings || {
+                    title: project.name,
                     description: '',
                     favicon: '',
                     customCSS: '',
                     customJS: ''
                 }
             };
-
-            // Update cache
-            const index = projects.findIndex(p => p.id === id);
-            if (index >= 0) {
-                projects[index] = project;
-            } else {
-                projects.push(project);
-            }
-
-            return project;
+            
+            // Add to in-memory cache
+            projects.push(newProject);
+            
+            // Save to localStorage
+            saveProjectsToLocalStorage(projects);
+            
+            return newProject;
         } catch (error) {
-            console.error(`Error in getById for project ${id}:`, error);
+            console.error('Error in create project:', error);
             return null;
         }
     },
-
-    // Create new project
-    create: async (project: ProjectData) => {
+    
+    // Load all projects for current user
+    getAll: async () => {
         try {
-            // If Supabase is not configured, use in-memory storage
-            if (!supabase) {
-                console.log('Supabase not configured, using in-memory storage');
-                projects.push(project);
-                return project;
+            // If we already have projects in memory, return them
+            if (projects.length > 0) {
+                return projects;
             }
 
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                console.log('No user logged in, using in-memory storage');
-                projects.push(project);
-                return project;
-            }
-
-            // Prepare project for database
-            const dbProject = {
-                id: project.id,
-                name: project.name,
-                type: project.type,
-                status: project.status,
-                thumbnail: project.thumbnail,
-                settings: project.settings,
-                template_id: project.templateId || null,
-                user_id: user.id,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-
-            console.log('Creating project with templateId:', project.templateId);
-
-            // Insert into database
-            const { data, error } = await supabase
-                .from('projects')
-                .insert(dbProject)
-                .select()
-                .single();
-
-            if (error) {
-                console.error('Error creating project in database:', error);
-                // Fallback to in-memory storage
-                projects.push(project);
-                return project;
-            }
-
-            if (!data) {
-                console.error('No data returned from database insert');
-                // Fallback to in-memory storage
-                projects.push(project);
-                return project;
-            }
-
-            // Update the project with database values
-            const createdProject: ProjectData = {
-                ...project,
-                id: data.id,
-                createdAt: data.created_at,
-                updatedAt: data.updated_at
-            };
-
-            // Update in-memory cache
-            projects.push(createdProject);
-
-            return createdProject;
+            // Load from localStorage
+            const loadedProjects = await loadProjectsFromDatabase();
+            projects = loadedProjects; // Update in-memory cache
+            
+            // Also save to localStorage as backup
+            saveProjectsToLocalStorage(projects);
+            
+            return projects;
         } catch (error) {
-            console.error('Error creating project:', error);
-            // Fallback to in-memory storage
-            projects.push(project);
-            return project;
+            console.error('Error in getAll:', error);
+            return [];
+        }
+    },
+
+    // Get project by ID
+    getById: async (id: string) => {
+        try {
+            // First check in-memory cache
+            const cachedProject = projects.find(p => String(p.id) === String(id));
+            if (cachedProject) {
+                return cachedProject;
+            }
+            
+            // If not in memory, check localStorage
+            const localProjects = loadProjectsFromLocalStorage();
+            const localProject = localProjects.find(p => String(p.id) === String(id));
+            return localProject || null;
+        } catch (error) {
+            console.error('Error in getById:', error);
+            return null;
         }
     },
 
@@ -434,100 +311,38 @@ export const projectsStore = {
             // Get current project
             const currentProject = projects.find(p => p.id === id);
             if (!currentProject) {
-                console.error(`Project ${id} not found for update`);
+                // Try to find in localStorage if not in memory
+                const localProjects = loadProjectsFromLocalStorage();
+                const localProject = localProjects.find(p => p.id === id);
+                if (!localProject) {
+                    return null;
+                }
+                // Add to memory cache
+                projects.push(localProject);
+            }
+
+            // Get the index again after potentially adding from localStorage
+            const index = projects.findIndex(p => p.id === id);
+            if (index < 0) {
                 return null;
             }
 
-            // If Supabase not configured, update in-memory only
-            if (!supabase) {
-                console.log('Supabase not configured, updating in-memory only');
-                const updatedProject = {
-                    ...currentProject,
-                    ...updates,
-                    updatedAt: new Date().toISOString()
-                };
-
-                const index = projects.findIndex(p => p.id === id);
-                if (index >= 0) {
-                    projects[index] = updatedProject;
-                }
-
-                return updatedProject;
-            }
-
-            // Prepare updates for database
-            const dbUpdates: any = {};
-            if (updates.name) dbUpdates.name = updates.name;
-            if (updates.status) dbUpdates.status = updates.status;
-            if (updates.thumbnail) dbUpdates.thumbnail = updates.thumbnail;
-            if (updates.settings) dbUpdates.settings = { ...currentProject.settings, ...updates.settings };
-            if (updates.templateId) dbUpdates.template_id = updates.templateId;
-            if (updates.shareToken !== undefined) dbUpdates.share_token = updates.shareToken;
-            if (updates.shareName !== undefined) dbUpdates.share_name = updates.shareName;
-            if (updates.shareSlug !== undefined) dbUpdates.share_slug = updates.shareSlug;
-            if (updates.isPubliclyShared !== undefined) dbUpdates.is_publicly_shared = updates.isPubliclyShared;
-            if (updates.shareExpiryDate !== undefined) dbUpdates.share_expiry_date = updates.shareExpiryDate;
-
-            // Always update timestamp
-            dbUpdates.updated_at = new Date().toISOString();
-
-            // Update in database
-            const { data, error } = await supabase
-                .from('projects')
-                .update(dbUpdates)
-                .eq('id', id)
-                .select()
-                .single();
-
-            if (error) {
-                console.error(`Error updating project ${id} in database:`, error);
-                // Fallback to in-memory update
-                const updatedProject = {
-                    ...currentProject,
-                    ...updates,
-                    updatedAt: new Date().toISOString()
-                };
-
-                const index = projects.findIndex(p => p.id === id);
-                if (index >= 0) {
-                    projects[index] = updatedProject;
-                }
-
-                return updatedProject;
-            }
-
-            // Update in-memory project
+            // Create updated project
             const updatedProject = {
-                ...currentProject,
+                ...projects[index],
                 ...updates,
-                updatedAt: data.updated_at
+                updatedAt: new Date().toISOString()
             };
 
-            // Update cache
-            const index = projects.findIndex(p => p.id === id);
-            if (index >= 0) {
-                projects[index] = updatedProject;
-            }
+            // Update in-memory cache
+            projects[index] = updatedProject;
 
+            // Save to localStorage
+            saveProjectsToLocalStorage(projects);
+            
             return updatedProject;
         } catch (error) {
             console.error(`Error in update project ${id}:`, error);
-            // Fallback to in-memory update
-            const currentProject = projects.find(p => p.id === id);
-            if (currentProject) {
-                const updatedProject = {
-                    ...currentProject,
-                    ...updates,
-                    updatedAt: new Date().toISOString()
-                };
-
-                const index = projects.findIndex(p => p.id === id);
-                if (index >= 0) {
-                    projects[index] = updatedProject;
-                }
-
-                return updatedProject;
-            }
             return null;
         }
     },
@@ -535,29 +350,18 @@ export const projectsStore = {
     // Delete project
     delete: async (id: string) => {
         try {
-            // If Supabase not configured, delete from in-memory only
-            if (!supabase) {
-                console.log('Supabase not configured, deleting from in-memory only');
-                projects = projects.filter(p => p.id !== id);
-                return true;
-            }
-
-            // Delete from database
-            const success = await deleteProjectFromDatabase(id);
-
-            if (success) {
-                // Update in-memory cache
-                projects = projects.filter(p => p.id !== id);
-                return true;
-            }
-
-            // Even if database delete failed, remove from memory
+            // Delete from in-memory cache
             projects = projects.filter(p => p.id !== id);
+            
+            // Save updated projects to localStorage
+            saveProjectsToLocalStorage(projects);
+            
             return true;
         } catch (error) {
             console.error(`Error in delete project ${id}:`, error);
             // Fallback: remove from memory anyway
             projects = projects.filter(p => p.id !== id);
+            saveProjectsToLocalStorage(projects);
             return true;
         }
     },
@@ -565,59 +369,23 @@ export const projectsStore = {
     // Get project by share token
     getByShareToken: async (token: string) => {
         try {
-            if (!supabase) {
-                console.log('Supabase not configured, cannot get project by share token');
-                return null;
-            }
-
-            // Get project by share token
-            const { data, error } = await supabase
-                .from('projects')
-                .select('*')
-                .eq('share_token', token)
-                .single();
-
-            if (error) {
-                console.error(`Error fetching project by share token ${token}:`, error);
-                return null;
-            }
-
-            if (!data) {
+            // Load all projects from localStorage
+            const allProjects = loadProjectsFromLocalStorage();
+            
+            // Find project with matching share token
+            const project = allProjects.find(p => p.shareToken === token);
+            
+            if (!project) {
                 console.log(`No project found with share token ${token}`);
                 return null;
             }
-
+            
             // Check if share token has expired
-            if (data.share_expiry_date && new Date(data.share_expiry_date) < new Date()) {
+            if (project.shareExpiryDate && new Date(project.shareExpiryDate) < new Date()) {
                 console.log(`Share token ${token} has expired`);
                 return null;
             }
-
-            // Transform to ProjectData format
-            const project: ProjectData = {
-                id: data.id,
-                name: data.name,
-                type: data.type,
-                status: data.status,
-                createdAt: data.created_at,
-                updatedAt: data.updated_at,
-                thumbnail: data.thumbnail || '/placeholder.svg?height=120&width=200&text=' + encodeURIComponent(data.name),
-                elements: [], // Elements are loaded separately
-                templateId: data.template_id,
-                shareToken: data.share_token,
-                shareName: data.share_name,
-                shareSlug: data.share_slug,
-                isPubliclyShared: data.is_publicly_shared,
-                shareExpiryDate: data.share_expiry_date,
-                settings: data.settings || {
-                    title: data.name,
-                    description: '',
-                    favicon: '',
-                    customCSS: '',
-                    customJS: ''
-                }
-            };
-
+            
             return project;
         } catch (error) {
             console.error(`Error in getByShareToken for token ${token}:`, error);
@@ -628,60 +396,25 @@ export const projectsStore = {
     // Get project by share slug (custom name)
     getByShareSlug: async (slug: string) => {
         try {
-            if (!supabase) {
-                console.log('Supabase not configured, cannot get project by share slug');
-                return null;
-            }
-
-            // Get project by share slug
-            const { data, error } = await supabase
-                .from('projects')
-                .select('*')
-                .eq('share_slug', slug)
-                .eq('is_publicly_shared', true)
-                .single();
-
-            if (error) {
-                console.error(`Error fetching project by share slug ${slug}:`, error);
-                return null;
-            }
-
-            if (!data) {
+            // Load all projects from localStorage
+            const allProjects = loadProjectsFromLocalStorage();
+            
+            // Find project with matching share slug and is publicly shared
+            const project = allProjects.find(p => 
+                p.shareSlug === slug && p.isPubliclyShared === true
+            );
+            
+            if (!project) {
                 console.log(`No project found with share slug ${slug}`);
                 return null;
             }
-
+            
             // Check if share token has expired
-            if (data.share_expiry_date && new Date(data.share_expiry_date) < new Date()) {
+            if (project.shareExpiryDate && new Date(project.shareExpiryDate) < new Date()) {
                 console.log(`Share slug ${slug} has expired`);
                 return null;
             }
-
-            // Transform to ProjectData format
-            const project: ProjectData = {
-                id: data.id,
-                name: data.name,
-                type: data.type,
-                status: data.status,
-                createdAt: data.created_at,
-                updatedAt: data.updated_at,
-                thumbnail: data.thumbnail || '/placeholder.svg?height=120&width=200&text=' + encodeURIComponent(data.name),
-                elements: [], // Elements are loaded separately
-                templateId: data.template_id,
-                shareToken: data.share_token,
-                shareName: data.share_name,
-                shareSlug: data.share_slug,
-                isPubliclyShared: data.is_publicly_shared,
-                shareExpiryDate: data.share_expiry_date,
-                settings: data.settings || {
-                    title: data.name,
-                    description: '',
-                    favicon: '',
-                    customCSS: '',
-                    customJS: ''
-                }
-            };
-
+            
             return project;
         } catch (error) {
             console.error(`Error in getByShareSlug for slug ${slug}:`, error);
@@ -702,28 +435,17 @@ export const projectsStore = {
     // Check if share slug is unique
     isSlugUnique: async (slug: string, excludeProjectId?: string) => {
         try {
-            if (!supabase) {
-                console.log('Supabase not configured, cannot check slug uniqueness');
-                return true; // Assume unique if can't check
-            }
-
-            let query = supabase
-                .from('projects')
-                .select('id')
-                .eq('share_slug', slug);
-
-            if (excludeProjectId) {
-                query = query.neq('id', excludeProjectId);
-            }
-
-            const { data, error } = await query;
-
-            if (error) {
-                console.error(`Error checking slug uniqueness for ${slug}:`, error);
-                return true; // Return true to break infinite loop on error
-            }
-
-            return !data || data.length === 0;
+            // Load all projects from localStorage
+            const allProjects = loadProjectsFromLocalStorage();
+            
+            // Check if any project has the same slug (excluding the specified project)
+            const projectWithSameSlug = allProjects.find(p => 
+                p.shareSlug === slug && 
+                (!excludeProjectId || p.id !== excludeProjectId)
+            );
+            
+            // Return true if no project with the same slug was found
+            return !projectWithSameSlug;
         } catch (error) {
             console.error(`Error in isSlugUnique for slug ${slug}:`, error);
             return true; // Return true to break infinite loop on error
@@ -733,13 +455,21 @@ export const projectsStore = {
     // Generate share token for a project with custom name
     generateShareToken: async (id: string, customName: string, expiryDays?: number) => {
         try {
-            // Get current project
-            const currentProject = await projectsStore.getById(id);
-            if (!currentProject) {
-                console.error(`Project ${id} not found for generating share token`);
-                return null;
+            console.log(`generateShareToken called for project ID: ${id}, customName: ${customName}`);
+            
+            // Verify project exists first
+            const project = projects.find(p => String(p.id) === String(id));
+            if (!project) {
+                console.error(`Project ${id} not found in memory cache when generating share token`);
+                // Try to load from localStorage as fallback
+                const localProjects = loadProjectsFromLocalStorage();
+                const localProject = localProjects.find(p => String(p.id) === String(id));
+                if (!localProject) {
+                    console.error(`Project ${id} not found in localStorage either`);
+                    throw new Error('Project not found');
+                }
             }
-
+            
             // Generate a random token
             const token = `${id}-${Math.random().toString(36).substring(2, 15)}-${Date.now().toString(36)}`;
             
@@ -823,35 +553,16 @@ export const projectsStore = {
     // Load elements for a project
     getProjectElements: async (projectId: string) => {
         try {
-            if (!supabase) {
-                console.log('Supabase not configured, returning empty elements array');
+            // Find project in memory cache or localStorage
+            const project = await projectsStore.getById(projectId);
+            
+            if (!project) {
+                console.error(`Project ${projectId} not found when loading elements`);
                 return [];
             }
-
-            const { data, error } = await supabase
-                .from('elements')
-                .select('*')
-                .eq('project_id', projectId)
-                .order('position', { ascending: true });
-
-            if (error) {
-                console.error(`Error fetching elements for project ${projectId}:`, error);
-                return [];
-            }
-
-            // Transform to element format
-            return data.map((el: any) => ({
-                id: el.id,
-                type: el.type,
-                parentId: el.parent_id,
-                content: el.content,
-                styles: el.styles || {},
-                settings: el.settings || {},
-                formFields: el.form_fields || [],
-                pricingFeatures: el.pricing_features || [],
-                testimonials: el.testimonials || [],
-                slides: el.slides || []
-            }));
+            
+            // Return elements from the project
+            return project.elements || [];
         } catch (error) {
             console.error(`Error in getProjectElements for project ${projectId}:`, error);
             return [];

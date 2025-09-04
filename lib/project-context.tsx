@@ -2,8 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { ElementorElement } from './elementor-context'
-import { projectsService, elementsService, transformFromSupabase } from './supabase-projects'
-import { authService } from './supabase-auth'
+import { projectsStore, ProjectData } from './projects-store'
 
 export interface Project {
   id: string
@@ -71,44 +70,29 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const createProject = useCallback(async (name: string, type: Project['type'] = 'Elementor'): Promise<Project> => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name,
-          type,
-          settings: {
-            title: name,
-            description: '',
-            favicon: '',
-            customCSS: '',
-            customJS: ''
-          }
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create project')
+      const newProject: ProjectData = {
+        id: Date.now().toString(),
+        name,
+        type,
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        thumbnail: '/placeholder.svg?height=120&width=200&text=Website',
+        elements: [],
+        settings: {
+          title: name,
+          description: '',
+          favicon: '',
+          customCSS: '',
+          customJS: ''
+        }
       }
 
-      const { project: dbProject } = await response.json()
+      const createdProject = await projectsStore.create(newProject)
 
       const project: Project = {
-        id: dbProject.id,
-        name: dbProject.name,
-        type: dbProject.type,
-        status: dbProject.status,
-        thumbnail: dbProject.thumbnail,
-        elements: dbProject.elements || [],
-        settings: dbProject.settings || {},
-        analytics: dbProject.analytics,
-        isPublic: dbProject.isPublic,
-        viewCount: dbProject.viewCount,
-        createdAt: dbProject.createdAt,
-        updatedAt: dbProject.updatedAt
+        ...createdProject,
+        elements: createdProject.elements || []
       }
 
       setCurrentProject(project)
@@ -128,14 +112,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const loadProject = useCallback(async (id: string) => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/projects/${id}`)
+      const project = await projectsStore.getById(id)
       
-      if (!response.ok) {
+      if (!project) {
         throw new Error('Failed to load project')
       }
 
-      const { project } = await response.json()
-      setCurrentProject(project)
+      setCurrentProject(project as Project)
     } catch (error) {
       console.error('Error loading project:', error)
       throw error
@@ -148,66 +131,47 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const saveProject = useCallback(async (elements: ElementorElement[], settings?: Partial<Project['settings']>): Promise<Project> => {
     setIsSaving(true)
     try {
-      // Always save to localStorage first as backup
-      const projectData = {
-        elements,
-        settings: settings || {},
-        lastModified: new Date().toISOString()
+      if (!currentProject) {
+        throw new Error('No current project to save')
       }
       
-      const projectId = currentProject?.id || 'default-project'
-      localStorage.setItem(`elementor-project-${projectId}`, JSON.stringify(projectData))
+      // Save elements to localStorage
+      await projectsStore.saveProjectElements(currentProject.id, elements)
       
-      // Try to save to API if available
-      if (currentProject) {
-        try {
-          const response = await fetch(`/api/projects/${currentProject.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              elements,
-              settings,
-            }),
-          })
-
-          if (response.ok) {
-            const { project } = await response.json()
-            setCurrentProject(project)
-            
-            // Update in projects list
-            setProjects(prev => prev.map(p => p.id === project.id ? project : p))
-            
-            return project
+      // Update project settings if provided
+      let updatedProject = currentProject
+      if (settings) {
+        const projectUpdates = {
+          settings: {
+            ...currentProject.settings,
+            ...settings
           }
-        } catch (apiError) {
-          console.warn('API save failed, using localStorage:', apiError)
+        }
+        
+        const result = await projectsStore.update(currentProject.id, projectUpdates)
+        if (result) {
+          updatedProject = {
+            ...result,
+            elements
+          } as Project
+        }
+      } else {
+        // Just update the timestamp
+        const result = await projectsStore.update(currentProject.id, { updatedAt: new Date().toISOString() })
+        if (result) {
+          updatedProject = {
+            ...result,
+            elements
+          } as Project
         }
       }
       
-      // Fallback: create/update project in localStorage
-      const fallbackProject: Project = {
-        id: projectId,
-        name: currentProject?.name || 'Untitled Project',
-        type: currentProject?.type || 'Elementor',
-        status: currentProject?.status || 'draft',
-        thumbnail: currentProject?.thumbnail || '',
-        elements,
-        settings: {
-          title: currentProject?.settings?.title || 'Untitled',
-          description: currentProject?.settings?.description || '',
-          favicon: currentProject?.settings?.favicon || '',
-          customCSS: currentProject?.settings?.customCSS || '',
-          customJS: currentProject?.settings?.customJS || '',
-          ...settings
-        },
-        createdAt: currentProject?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
+      setCurrentProject(updatedProject)
       
-      setCurrentProject(fallbackProject)
-      return fallbackProject
+      // Update in projects list
+      setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p))
+      
+      return updatedProject
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       console.error('Error saving project:', errorMessage, error)
@@ -225,25 +189,21 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     setIsSaving(true)
     try {
-      const response = await fetch(`/api/projects/${currentProject.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status: 'published',
-        }),
-      })
-
-      if (!response.ok) {
+      const result = await projectsStore.update(currentProject.id, { status: 'published' })
+      
+      if (!result) {
         throw new Error('Failed to publish project')
       }
 
-      const { project } = await response.json()
-      setCurrentProject(project)
+      const updatedProject = {
+        ...result,
+        elements: currentProject.elements
+      } as Project
+      
+      setCurrentProject(updatedProject)
       
       // Update in projects list
-      setProjects(prev => prev.map(p => p.id === project.id ? project : p))
+      setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p))
     } catch (error) {
       console.error('Error publishing project:', error)
       throw error
@@ -255,11 +215,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   // Delete project
   const deleteProject = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/projects/${id}`, {
-        method: 'DELETE',
-      })
+      const success = await projectsStore.delete(id)
 
-      if (!response.ok) {
+      if (!success) {
         throw new Error('Failed to delete project')
       }
 
@@ -288,14 +246,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const fetchProjects = useCallback(async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/projects')
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch projects')
-      }
-
-      const { projects } = await response.json()
-      setProjects(projects)
+      const allProjects = await projectsStore.getAll()
+      setProjects(allProjects as Project[])
     } catch (error) {
       console.error('Error fetching projects:', error)
     } finally {
@@ -308,21 +260,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (!currentProject) return
 
     try {
-      const response = await fetch(`/api/projects/${currentProject.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ thumbnail }),
-      })
-
-      if (!response.ok) {
+      const result = await projectsStore.update(currentProject.id, { thumbnail })
+      
+      if (!result) {
         throw new Error('Failed to update thumbnail')
       }
 
-      const { project } = await response.json()
-      setCurrentProject(project)
-      setProjects(prev => prev.map(p => p.id === project.id ? project : p))
+      const updatedProject = {
+        ...result,
+        elements: currentProject.elements
+      } as Project
+      
+      setCurrentProject(updatedProject)
+      setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p))
     } catch (error) {
       console.error('Error updating thumbnail:', error)
     }

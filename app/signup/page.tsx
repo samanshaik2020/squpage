@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Zap, Github, Chrome, CheckCircle } from "lucide-react"
-import { authService } from "@/lib/supabase-auth"
 import { useRouter } from "next/navigation"
 import { toast } from "@/components/ui/use-toast"
 import { TermsModal } from "@/components/ui/terms-modal"
@@ -99,22 +98,34 @@ export default function SignupPage() {
       const username = `${formData.firstName.toLowerCase()}${formData.lastName.toLowerCase()}`
       const fullName = `${formData.firstName} ${formData.lastName}`
       
-      // Use Supabase auth service to sign up
-      await authService.signUp(
-        formData.email,
-        formData.password,
-        username,
-        fullName
-      )
+      // Create a user object for localStorage
+      const user = {
+        user: {
+          email: formData.email,
+          id: `local-${Date.now()}`
+        },
+        profile: {
+          full_name: fullName,
+          username: username
+        }
+      }
       
-      toast({
-        title: "Account created successfully",
-        description: "You can now sign in with your credentials",
-        variant: "default"
-      })
+      // Store in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('squpage_user', JSON.stringify(user))
+      }
       
-      // Redirect to login page
-      router.push('/login')
+      // Add a small delay to simulate network request
+      setTimeout(() => {
+        toast({
+          title: "Account created successfully",
+          description: "You can now sign in with your credentials",
+          variant: "default"
+        })
+        
+        // Redirect to login page
+        router.push('/login')
+      }, 800)
     } catch (error: any) {
       // Handle signup errors
       setErrors({
@@ -135,11 +146,28 @@ export default function SignupPage() {
   const handleSocialSignup = async (provider: string) => {
     setIsLoading(true)
     try {
-      if (provider === 'google') {
-        await authService.signInWithGoogle()
-      } else if (provider === 'github') {
-        await authService.signInWithGithub()
+      // Create a user object for social signup
+      const user = {
+        user: {
+          email: `user@${provider}.com`,
+          id: `${provider}-${Date.now()}`
+        },
+        profile: {
+          full_name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+          username: `${provider}user${Math.floor(Math.random() * 1000)}`
+        }
       }
+      
+      // Store in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('squpage_user', JSON.stringify(user))
+      }
+      
+      // Add a small delay to simulate network request
+      setTimeout(() => {
+        // Redirect to dashboard directly
+        router.push('/dashboard')
+      }, 800)
     } catch (error: any) {
       toast({
         title: "Authentication Error",
