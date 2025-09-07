@@ -7,7 +7,7 @@ import { projectsStore, ProjectData } from './projects-store'
 export interface Project {
   id: string
   name: string
-  type: 'Elementor' | 'Template' | 'AI Generated' | 'Landing Page'
+  type: 'Elementor'
   status: 'draft' | 'published' | 'archived'
   createdAt: string
   updatedAt: string
@@ -41,7 +41,7 @@ interface ProjectContextType {
   isSaving: boolean
   
   // Project management
-  createProject: (name: string, type?: Project['type']) => Promise<Project>
+  createProject: (name: string) => Promise<Project>
   loadProject: (id: string) => Promise<void>
   saveProject: (elements: ElementorElement[], settings?: Partial<Project['settings']>) => Promise<Project>
   publishProject: () => Promise<void>
@@ -67,13 +67,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [autoSaveInterval, setAutoSaveInterval] = useState<NodeJS.Timeout | null>(null)
 
   // Create a new project
-  const createProject = useCallback(async (name: string, type: Project['type'] = 'Elementor'): Promise<Project> => {
+  const createProject = useCallback(async (name: string): Promise<Project> => {
     setIsLoading(true)
     try {
       const newProject: ProjectData = {
         id: Date.now().toString(),
         name,
-        type,
+        type: 'Elementor',
         status: 'draft',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -89,10 +89,27 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }
 
       const createdProject = await projectsStore.create(newProject)
+      
+      if (!createdProject) {
+        throw new Error('Failed to create project')
+      }
 
       const project: Project = {
-        ...createdProject,
-        elements: createdProject.elements || []
+        id: createdProject.id,
+        name: createdProject.name || '',
+        type: createdProject.type || 'Elementor',
+        status: createdProject.status || 'draft',
+        createdAt: createdProject.createdAt || new Date().toISOString(),
+        updatedAt: createdProject.updatedAt || new Date().toISOString(),
+        thumbnail: createdProject.thumbnail || '',
+        elements: createdProject.elements || [],
+        settings: createdProject.settings || {
+          title: createdProject.name || '',
+          description: '',
+          favicon: '',
+          customCSS: '',
+          customJS: ''
+        }
       }
 
       setCurrentProject(project)
@@ -239,7 +256,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Project not found')
     }
 
-    return createProject(`${projectToDuplicate.name} (Copy)`, projectToDuplicate.type)
+    return createProject(`${projectToDuplicate.name} (Copy)`)
   }, [projects, createProject])
 
   // Fetch all projects
@@ -291,14 +308,14 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }, 30000) // Auto-save every 30 seconds
 
     setAutoSaveInterval(interval)
-  }, [currentProject, saveProject, autoSaveInterval])
+  }, [currentProject, saveProject])
 
   const disableAutoSave = useCallback(() => {
     if (autoSaveInterval) {
       clearInterval(autoSaveInterval)
       setAutoSaveInterval(null)
     }
-  }, [autoSaveInterval])
+  }, [])
 
   // Cleanup auto-save on unmount
   useEffect(() => {

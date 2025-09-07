@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { projectsStore, ProjectData } from '@/lib/projects-store'
+import { templateStore, TemplateProject } from '@/lib/template-store'
 
 // This page handles both token and slug-based shares
 export default async function SharedProjectPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -45,8 +46,18 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
       )
     }
     
-    // Get project elements
-    const elements = await projectsStore.getProjectElements(project.id)
+    // Get project elements based on project type
+    let elements = [];
+    
+    // Check if this is an Elementor project or a Template project
+    const isElementorProject = project.type === 'Elementor';
+    
+    if (isElementorProject) {
+      elements = await projectsStore.getProjectElements(project.id);
+    } else {
+      // Assume it's a Template project
+      elements = await templateStore.getTemplateElements(project.id);
+    }
     
     // Determine which preview component to render based on project type
     return (
@@ -63,16 +74,12 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
             </div>
             
             <div className="p-6">
-              {project.type === 'Template' && (
+              {!isElementorProject && (
                 <TemplatePreview project={project} elements={elements} />
               )}
               
-              {project.type === 'Elementor' && (
+              {isElementorProject && (
                 <ElementorPreview project={project} elements={elements} />
-              )}
-              
-              {(project.type !== 'Template' && project.type !== 'Elementor') && (
-                <GenericPreview project={project} elements={elements} />
               )}
             </div>
           </div>
@@ -98,7 +105,7 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
 }
 
 // Template Preview Component
-function TemplatePreview({ project, elements }: { project: ProjectData, elements: any[] }) {
+function TemplatePreview({ project, elements }: { project: ProjectData | TemplateProject, elements: any[] }) {
   return (
     <div className="template-preview">
       <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
@@ -156,7 +163,7 @@ function TemplatePreview({ project, elements }: { project: ProjectData, elements
 }
 
 // Elementor Preview Component
-function ElementorPreview({ project, elements }: { project: ProjectData, elements: any[] }) {
+function ElementorPreview({ project, elements }: { project: ProjectData | TemplateProject, elements: any[] }) {
   // Group elements by their parent-child relationship
   const rootElements = elements.filter(el => !el.parentId)
   
@@ -186,40 +193,6 @@ function ElementorPreview({ project, elements }: { project: ProjectData, element
   )
 }
 
-// Generic Preview Component for other project types
-function GenericPreview({ project, elements }: { project: ProjectData, elements: any[] }) {
-  return (
-    <div className="generic-preview">
-      <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-        {project.thumbnail ? (
-          <img 
-            src={project.thumbnail} 
-            alt={project.name} 
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="text-gray-400 text-center p-8">
-            <svg className="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4V5h12v10z" clipRule="evenodd" />
-            </svg>
-            <p>Preview not available</p>
-          </div>
-        )}
-      </div>
-      
-      <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-2">{project.name}</h2>
-        <p className="text-gray-600">
-          {project.settings?.description || 'No description available'}
-        </p>
-        <div className="mt-4 text-sm text-gray-500">
-          <p>Project Type: {project.type}</p>
-          <p>Last Updated: {new Date(project.updatedAt).toLocaleDateString()}</p>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // Helper component to recursively render Elementor elements
 function RenderElement({ 

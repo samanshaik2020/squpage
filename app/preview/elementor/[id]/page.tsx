@@ -6,11 +6,11 @@ import { ElementorElement } from '@/lib/elementor-context'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Edit, Share2, Download } from 'lucide-react'
 import Link from 'next/link'
-import { useAnalyticsTracking } from '@/hooks/use-analytics-tracking'
 
 interface Project {
   id: string
   name: string
+  status?: string
   elements: ElementorElement[]
   settings: {
     title: string
@@ -26,23 +26,130 @@ export default function ElementorPreviewPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Track page visits for published projects
-  const { trackVisit } = useAnalyticsTracking({
-    pageId: params.id as string,
-    enabled: project?.status === 'published',
-    trackOnMount: true
-  })
 
   useEffect(() => {
     const loadProject = async () => {
       try {
-        const response = await fetch(`/api/projects/${params.id}`)
+        console.log('Loading draft for project with ID:', params.id)
         
-        if (!response.ok) {
-          throw new Error('Failed to load project')
+        // First try to load draft data from API
+        try {
+          const response = await fetch(`/api/projects/${params.id}/draft`)
+          if (response.ok) {
+            const draftData = await response.json()
+            
+            // Also get project metadata
+            const projectResponse = await fetch(`/api/projects/${params.id}`)
+            if (projectResponse.ok) {
+              const projectData = await projectResponse.json()
+              
+              setProject({
+                ...projectData,
+                elements: draftData.elements,
+                settings: draftData.settings
+              })
+              return
+            }
+          }
+        } catch (error) {
+          console.log('Failed to load draft from API, falling back to localStorage:', error)
+        }
+        
+        // Fallback: Load project directly from localStorage
+        const storedProjects = localStorage.getItem('squpage_elementor_projects')
+        console.log('Stored projects:', storedProjects)
+        
+        if (!storedProjects) {
+          console.log('No projects found in localStorage, creating sample project')
+          // Create a sample project if none exists
+          const sampleProject = {
+            id: String(params.id),
+            name: `Untitled Project ${params.id}`,
+            type: 'Elementor',
+            status: 'draft',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            thumbnail: '',
+            elements: [
+              {
+                id: 'section-1',
+                type: 'section' as const,
+                parentId: null,
+                content: '',
+                styles: { backgroundColor: '#ffffff', padding: '60px 0' },
+                settings: {}
+              },
+              {
+                id: 'column-1',
+                type: 'column' as const,
+                parentId: 'section-1',
+                content: '',
+                styles: { width: '100%' },
+                settings: {}
+              },
+              {
+                id: 'heading-1',
+                type: 'heading' as const,
+                parentId: 'column-1',
+                content: 'Welcome to My Website',
+                styles: { fontSize: '48px', color: '#333333', textAlign: 'center', marginBottom: '20px' },
+                settings: { htmlTag: 'h1', size: 'text-5xl' }
+              },
+              {
+                id: 'text-1',
+                type: 'text' as const,
+                parentId: 'column-1',
+                content: 'This is a sample text element to demonstrate the preview functionality.',
+                styles: { fontSize: '18px', color: '#666666', textAlign: 'center', marginBottom: '30px' },
+                settings: {}
+              },
+              {
+                id: 'button-1',
+                type: 'button' as const,
+                parentId: 'column-1',
+                content: 'Get Started',
+                styles: { backgroundColor: '#007cba', color: '#ffffff', padding: '12px 24px', borderRadius: '6px', border: 'none', cursor: 'pointer', display: 'block', margin: '0 auto' },
+                settings: {}
+              }
+            ] as ElementorElement[],
+            settings: {
+              title: `Untitled Project ${params.id}`,
+              description: 'A website built with Elementor',
+              favicon: '',
+              customCSS: '',
+              customJS: ''
+            }
+          }
+          
+          // Save the sample project to localStorage
+          localStorage.setItem('squpage_elementor_projects', JSON.stringify([sampleProject]))
+          setProject(sampleProject)
+          return
         }
 
-        const { project } = await response.json()
+        const projects = JSON.parse(storedProjects)
+        console.log('Parsed projects:', projects)
+        
+        let project = projects.find((p: any) => p.id === params.id)
+        console.log('Found project:', project)
+        
+        if (!project) {
+          console.log('Project not found, checking if any projects exist')
+          // If no project with exact ID found, but projects exist, use the first one for demo
+          if (projects.length > 0) {
+            project = projects[0]
+            console.log('Using first available project:', project)
+          } else {
+            throw new Error('Project not found')
+          }
+        }
+
+        // Ensure project has elements array
+        if (!project.elements) {
+          project.elements = []
+        }
+
+        console.log('Final project data:', project)
         setProject(project)
       } catch (error) {
         console.error('Error loading project:', error)
@@ -57,26 +164,74 @@ export default function ElementorPreviewPage() {
     }
   }, [params.id])
 
-  // Render element based on type
-  const renderElement = (element: ElementorElement) => {
+  // Enhanced renderElement function with nested children support
+  const renderElement = (element: ElementorElement, children?: ElementorElement[]) => {
     const styles = {
       ...element.styles,
       ...(element.settings?.responsive?.hideOnDesktop && { display: 'none' })
     }
 
+    // Get children for this element
+    const childElements = children || project?.elements.filter(e => e.parentId === element.id) || []
+
+    const renderChildren = () => {
+      if (childElements.length === 0) return null
+      
+      return (
+        <div className="children-container">
+          {childElements.map(child => renderElement(child))}
+        </div>
+      )
+    }
+
     switch (element.type) {
-      case 'heading':
+      case 'section':
         return (
-          <h2 key={element.id} style={styles} className="text-2xl font-bold">
+          <section 
+            key={element.id} 
+            style={styles} 
+            className="elementor-section w-full"
+          >
+            <div className="elementor-container mx-auto max-w-7xl px-4">
+              <div className="flex flex-wrap -mx-4">
+                {renderChildren()}
+              </div>
+            </div>
+          </section>
+        )
+
+      case 'column':
+        return (
+          <div 
+            key={element.id} 
+            style={styles} 
+            className="elementor-column flex-1 px-4"
+          >
+            {renderChildren()}
+          </div>
+        )
+
+      case 'heading':
+        const HeadingTag = element.settings?.htmlTag || 'h2'
+        return (
+          <HeadingTag 
+            key={element.id} 
+            style={styles} 
+            className={`elementor-heading-title ${element.settings?.size || 'text-2xl'} font-bold`}
+          >
             {element.content || 'Heading'}
-          </h2>
+            {renderChildren()}
+          </HeadingTag>
         )
       
       case 'text':
         return (
-          <p key={element.id} style={styles} className="text-gray-700">
-            {element.content || 'Text content'}
-          </p>
+          <div 
+            key={element.id} 
+            style={styles} 
+            className="elementor-text-editor"
+            dangerouslySetInnerHTML={{ __html: element.content || 'Text content' }}
+          />
         )
       
       case 'button':
@@ -84,7 +239,7 @@ export default function ElementorPreviewPage() {
           <button 
             key={element.id} 
             style={styles} 
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="elementor-button px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             {element.content || 'Button'}
           </button>
@@ -92,20 +247,22 @@ export default function ElementorPreviewPage() {
       
       case 'image':
         return (
-          <div key={element.id} style={styles}>
+          <div key={element.id} style={styles} className="elementor-image">
             {element.settings?.imageUrl ? (
               <img 
                 src={element.settings.imageUrl} 
                 alt={element.settings?.alt || 'Image'} 
-                className="max-w-full h-auto"
+                className="max-w-full h-auto rounded-lg"
                 style={{ 
-                  width: element.styles?.width || 'auto',
+                  width: element.styles?.width || '100%',
                   height: element.styles?.height || 'auto'
                 }}
               />
             ) : (
-              <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
-                Image placeholder
+              <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
+                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
               </div>
             )}
           </div>
@@ -113,7 +270,7 @@ export default function ElementorPreviewPage() {
       
       case 'form':
         return (
-          <div key={element.id} style={styles} className="p-6 border rounded-lg">
+          <div key={element.id} style={styles} className="elementor-form p-6 border rounded-lg bg-white">
             <h3 className="text-lg font-medium mb-4">{element.content || 'Contact Form'}</h3>
             <div className="space-y-4">
               {element.formFields?.map((field) => (
@@ -124,12 +281,12 @@ export default function ElementorPreviewPage() {
                   </label>
                   {field.type === 'textarea' ? (
                     <textarea 
-                      className="w-full p-3 border rounded-md" 
+                      className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500" 
                       placeholder={field.placeholder || ''}
                       rows={4}
                     />
                   ) : field.type === 'select' ? (
-                    <select className="w-full p-3 border rounded-md">
+                    <select className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500">
                       <option>Select an option</option>
                       {field.options?.map((option, index) => (
                         <option key={index} value={option}>{option}</option>
@@ -138,7 +295,7 @@ export default function ElementorPreviewPage() {
                   ) : (
                     <input 
                       type={field.type} 
-                      className="w-full p-3 border rounded-md" 
+                      className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500" 
                       placeholder={field.placeholder || ''}
                     />
                   )}
@@ -155,9 +312,9 @@ export default function ElementorPreviewPage() {
       
       case 'video':
         return (
-          <div key={element.id} style={styles}>
+          <div key={element.id} style={styles} className="elementor-video">
             {element.settings?.videoId ? (
-              <div className="w-full" style={{ aspectRatio: '16/9' }}>
+              <div className="w-full rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
                 <iframe 
                   width="100%" 
                   height="100%" 
@@ -166,11 +323,14 @@ export default function ElementorPreviewPage() {
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
+                  className="rounded-lg"
                 />
               </div>
             ) : (
-              <div className="w-full bg-gray-200 flex items-center justify-center text-gray-500" style={{ aspectRatio: '16/9' }}>
-                Video placeholder
+              <div className="w-full bg-gray-200 rounded-lg flex items-center justify-center text-gray-500" style={{ aspectRatio: '16/9' }}>
+                <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.01M15 10h1.01M21 12a9 9 0 11-18 0 9 9 0 0118 0zM12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
               </div>
             )}
           </div>
@@ -178,8 +338,9 @@ export default function ElementorPreviewPage() {
       
       default:
         return (
-          <div key={element.id} style={styles} className="p-4 border border-gray-300 rounded">
+          <div key={element.id} style={styles} className="elementor-element p-4">
             {element.content || `${element.type} element`}
+            {renderChildren()}
           </div>
         )
     }
@@ -259,29 +420,27 @@ export default function ElementorPreviewPage() {
       )}
 
       {/* Page Content */}
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white min-h-screen">
-          {project.elements.length === 0 ? (
-            <div className="flex items-center justify-center min-h-[60vh]">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Empty Project</h2>
-                <p className="text-gray-600 mb-4">This project doesn't have any content yet.</p>
-                <Link href={`/elementor?projectId=${project.id}`}>
-                  <Button>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Start Editing
-                  </Button>
-                </Link>
-              </div>
+      <div className="bg-white min-h-screen">
+        {project.elements && project.elements.length === 0 ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Empty Project</h2>
+              <p className="text-gray-600 mb-4">This project doesn't have any content yet.</p>
+              <Link href={`/elementor?projectId=${project.id}`}>
+                <Button>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Start Editing
+                </Button>
+              </Link>
             </div>
-          ) : (
-            <div className="space-y-4 p-6">
-              {project.elements
-                .filter(element => !element.parentId) // Only render root elements
-                .map(renderElement)}
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="elementor-preview">
+            {project.elements
+              .filter(element => !element.parentId) // Only render root elements
+              .map(element => renderElement(element))}
+          </div>
+        )}
       </div>
 
       {/* Custom JavaScript */}

@@ -162,7 +162,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
               <span className="text-sm">{element.styles?.fontSize || '16px'}</span>
             </div>
             <Slider
-              value={useMemo(() => [parseNumericValue(element.styles?.fontSize, 16)], [element.styles?.fontSize, parseNumericValue])}
+              value={useMemo(() => [parseNumericValue(element.styles?.fontSize, 16)], [element.styles?.fontSize])}
               max={72}
               min={8}
               step={1}
@@ -198,7 +198,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
   const renderHeadingOptions = () => {
     const lineHeightValue = useMemo(() => 
       [parseNumericValue(element.styles?.lineHeight, 1.2)], 
-      [element.styles?.lineHeight, parseNumericValue]
+      [element.styles?.lineHeight]
     )
     
     return (
@@ -226,7 +226,7 @@ export function ElementPropertiesPanel({ element }: ElementPropertiesPanelProps)
   const renderTextOptions = () => {
     const lineHeightValue = useMemo(() => 
       [parseNumericValue(element.styles?.lineHeight, 1.5)], 
-      [element.styles?.lineHeight, parseNumericValue]
+      [element.styles?.lineHeight]
     )
     
     return (
