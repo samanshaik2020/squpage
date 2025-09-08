@@ -15,6 +15,7 @@ import { AIPortfolioTemplate } from "@/components/templates/ai-portfolio"
 import { AIBlogPageTemplate } from "@/components/templates/ai-blog-page"
 import { DentalHealthLandingTemplate } from "@/components/templates/dental-health-landing"
 import { AIDentalHealthLandingTemplate } from "@/components/templates/ai-dental-health-landing"
+import SocialMediaHooksLeadMagnet from "@/components/templates/social-media-hooks-lead-magnet"
 import { TemplateEditorProvider } from "@/lib/template-editor-context"
 
 interface PreviewPageProps {
@@ -55,6 +56,8 @@ export default function PreviewPage({ params }: PreviewPageProps) {
         return "Dental Health Landing"
       case "ai-dental-health-landing":
         return "AI Dental Health Landing"
+      case "social-media-hooks-lead-magnet":
+        return "Social Media Hooks Lead Magnet"
       default:
         return "Template"
     }
@@ -88,6 +91,8 @@ export default function PreviewPage({ params }: PreviewPageProps) {
         return <DentalHealthLandingTemplate {...commonProps} />
       case "ai-dental-health-landing":
         return <AIDentalHealthLandingTemplate {...commonProps} />
+      case "social-media-hooks-lead-magnet":
+        return <SocialMediaHooksLeadMagnet />
       default:
         return <SaasLandingTemplate {...commonProps} />
     }

@@ -54,7 +54,7 @@ export interface FormSubmission {
 export interface ProjectData {
     id: string
     name: string
-    type: 'Elementor' | 'Template' | 'AI Generated'
+    type: 'Template' | 'AI Generated'
     status: 'draft' | 'published'
     createdAt: string
     updatedAt: string
@@ -227,7 +227,7 @@ const defaultProjects: ProjectData[] = [
     {
         id: '1',
         name: 'My First Website',
-        type: 'Elementor',
+        type: 'Template',
         status: 'published',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -260,7 +260,7 @@ const defaultProjects: ProjectData[] = [
         },
         settings: {
             title: 'My First Website',
-            description: 'A website built with Elementor',
+            description: 'A website built with templates',
             favicon: '',
             customCSS: '',
             customJS: ''
@@ -566,7 +566,7 @@ export const projectsStore = {
     getByShareToken: async (token: string) => {
         try {
             console.log(`[Database] Searching for project with shareToken: "${token}"`);
-            
+
             if (!supabase) {
                 console.log('Supabase not configured, cannot get project by share token');
                 throw new Error('Supabase client not configured');
@@ -624,7 +624,7 @@ export const projectsStore = {
             };
 
             console.log('[Database] Found project by share token:', { id: data.id, name: data.name });
-            
+
             return project;
         } catch (error) {
             console.error(`Error in getByShareToken for token ${token}:`, error);
@@ -636,7 +636,7 @@ export const projectsStore = {
     getByShareSlug: async (slug: string) => {
         try {
             console.log(`[Database] Searching for project with shareSlug: "${slug}"`);
-            
+
             if (!supabase) {
                 console.log('Supabase not configured, cannot get project by share slug');
                 throw new Error('Supabase client not configured');

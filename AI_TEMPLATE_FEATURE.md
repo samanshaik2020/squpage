@@ -27,13 +27,13 @@ When a user clicks on a paid AI template:
 
 ## Components
 
-### AIGenerationModal (`components/editor/ai-generation-modal.tsx`)
+### AIGenerationModal (`components/templates/ai-generation-modal.tsx`)
 - Collects user input for AI generation
 - Different prompts based on template type
 - Handles form submission and validation
 - Shows loading state during generation
 
-### AIGenerationLoading (`components/editor/ai-generation-loading.tsx`)
+### AIGenerationLoading (`components/templates/ai-generation-loading.tsx`)
 - Animated loading screen during AI generation
 - Shows progress steps specific to each template type
 - Engaging animations and progress indicators

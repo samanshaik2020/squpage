@@ -56,7 +56,7 @@ export interface FormSubmission {
 export interface ProjectData {
     id: string
     name: string
-    type: 'Elementor' | 'Template' | 'AI Generated'
+    type: 'Template' | 'AI Generated'
     status: 'draft' | 'published'
     createdAt: string
     updatedAt: string
@@ -87,7 +87,7 @@ const defaultProjects: ProjectData[] = [
     {
         id: '1',
         name: 'My First Website',
-        type: 'Elementor',
+        type: 'Template',
         status: 'published',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -120,7 +120,7 @@ const defaultProjects: ProjectData[] = [
         },
         settings: {
             title: 'My First Website',
-            description: 'A website built with Elementor',
+            description: 'A website built with templates',
             favicon: '',
             customCSS: '',
             customJS: ''

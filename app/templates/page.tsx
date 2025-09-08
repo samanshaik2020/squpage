@@ -9,28 +9,7 @@ import { Wand2 } from "lucide-react"
 import React from "react"
 
 const templates = [
-  {
-    id: "elementor-basic",
-    name: "Elementor Basic",
-    category: "Elementor",
-    description: "Create your own page from scratch with our drag-and-drop Elementor editor",
-    image: "/placeholder.svg?height=300&width=400&text=Elementor+Basic",
-    tags: ["Elementor", "Drag & Drop", "Free"],
-    isPremium: false,
-    isLocked: false,
-    isElementor: true
-  },
-  {
-    id: "elementor-pro",
-    name: "Elementor Pro",
-    category: "Elementor",
-    description: "Advanced drag-and-drop editor with premium elements and features",
-    image: "/placeholder.svg?height=300&width=400&text=Elementor+Pro",
-    tags: ["Elementor", "Drag & Drop", "Premium"],
-    isPremium: true,
-    isLocked: false,
-    isElementor: true
-  },
+
   {
     id: "saas-landing",
     name: "SaaS Landing Page",
@@ -141,21 +120,22 @@ const templates = [
     isPremium: true,
     isLocked: false,
   },
+
   {
-    id: "marketing-lead-generation",
-    name: "Marketing & Lead Generation",
+    id: "social-media-hooks-lead-magnet",
+    name: "Social Media Hooks Lead Magnet",
     category: "Marketing",
-    description: "Showcase of powerful lead generation widgets including lead magnets, multi-step forms, and newsletter signups.",
-    image: "/placeholder.svg?height=300&width=400&text=Marketing+Lead+Gen",
-    tags: ["Marketing", "Lead Gen", "Forms", "Premium"],
+    description: "Professional lead magnet template for capturing emails with social media hooks and templates. Includes AI content generation.",
+    image: "/placeholder.svg?height=300&width=400&text=Social+Media+Hooks",
+    tags: ["Lead Magnet", "Social Media", "AI Content", "Premium"],
     isPremium: true,
     isLocked: false,
-    isElementor: true,
-    isMarketing: true
+    isElementor: false,
+    isLeadMagnet: true
   },
 ]
 
-const categories = ["All", "Elementor", "Marketing", "Free", "Paid"]
+const categories = ["All", "Marketing", "Free", "Paid"]
 
 export default function TemplatesPage() {
   const [selectedCategory, setSelectedCategory] = React.useState("All")
@@ -163,8 +143,7 @@ export default function TemplatesPage() {
   // Filter templates based on selected category
   const filteredTemplates = templates.filter(template => 
     selectedCategory === "All" || 
-    selectedCategory === "Elementor" && template.isElementor ||
-    selectedCategory === "Marketing" && (template.category === "Marketing" || template.isMarketing) ||
+    selectedCategory === "Marketing" && template.category === "Marketing" ||
     selectedCategory === "Free" && !template.isPremium ||
     selectedCategory === "Paid" && template.isPremium
   )
@@ -223,7 +202,7 @@ export default function TemplatesPage() {
           {filteredTemplates.map((template) => (
             <Card
               key={template.id}
-              className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden relative ${template.isPremium ? 'bg-gradient-to-r from-purple-50 to-blue-50' : ''} ${template.isElementor ? 'border-l-4 border-blue-500' : ''}`}
+              className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden relative ${template.isPremium ? 'bg-gradient-to-r from-purple-50 to-blue-50' : ''}`}
             >
               <div className="relative">
                 <Image
@@ -295,45 +274,30 @@ export default function TemplatesPage() {
                   ))}
                 </div>
 
-                {template.isElementor ? (
-                  <Link href={
-                    template.isMarketing 
-                      ? `/simplified-elementor?premium=true&marketing=true` 
-                      : template.isPremium 
-                        ? `/simplified-elementor?premium=true` 
-                        : `/simplified-elementor`
-                  } className="w-full">
-                    <Button className="w-full">
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      {template.isMarketing ? 'Explore Marketing Features' : template.isPremium ? 'Start Pro Editor' : 'Start Free Editor'}
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link href={`/editor/${template.id}`} className="w-full">
-                    <Button className={`w-full ${template.isPremium ? 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600' : ''}`}>
-                      {template.isPremium ? (
-                        <>
-                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                          Generate with AI
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                          Start Editing
-                        </>
-                      )}
-                    </Button>
-                  </Link>
-                )}
+                <Link href={`/editor/${template.id}`} className="w-full">
+                  <Button className={`w-full ${template.isPremium ? 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600' : ''}`}>
+                    {template.isPremium ? (
+                      <>
+                        <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        {template.isLeadMagnet ? 'Create Lead Magnet' : 'Generate with AI'}
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                        Start Editing
+                      </>
+                    )}
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}

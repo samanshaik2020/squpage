@@ -70,7 +70,7 @@ const defaultStats = [
 const quickActions = [
   { name: "Use Template", description: "Start with a professional design", icon: Layout, color: "from-blue-500 to-cyan-500", href: "/templates" },
   { name: "AI Builder", description: "Generate with artificial intelligence", icon: Sparkles, color: "from-purple-500 to-pink-500", href: "/templates" },
-  { name: "Blank Canvas", description: "Build with drag & drop editor", icon: Zap, color: "from-emerald-500 to-teal-500", href: "/elementor" },
+  { name: "Blank Canvas", description: "Build with template editor", icon: Zap, color: "from-emerald-500 to-teal-500", href: "/templates" },
   { name: "Import Design", description: "Upload your existing design", icon: Download, color: "from-orange-500 to-red-500", href: "/import" }
 ]
 
@@ -183,8 +183,8 @@ function DashboardContent() {
       // For template projects, go back to template editor
       window.location.href = `/editor/${project.templateId}`
     } else {
-      // For Elementor projects, go to elementor editor
-      window.location.href = `/simplified-elementor?projectId=${project.id}`
+      // For other projects, go to template editor
+      window.location.href = `/editor/${project.id}`
     }
   }
 
@@ -193,8 +193,8 @@ function DashboardContent() {
       // For template projects, preview the saved template project
       window.open(`/preview/template/${project.id}`, '_blank')
     } else {
-      // For Elementor projects, preview the elementor project
-      window.open(`/preview/elementor/${project.id}`, '_blank')
+      // For other projects, preview the project
+      window.open(`/preview/${project.id}`, '_blank')
     }
   }
 
@@ -392,7 +392,7 @@ function DashboardContent() {
                 Browse Templates
               </Button>
             </Link>
-            <Link href="/elementor">
+            <Link href="/templates">
               <Button className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300">
                 <Plus className="w-4 h-4 mr-2" />
                 New Website
@@ -613,7 +613,7 @@ function DashboardContent() {
                         ? "Try adjusting your search or filter criteria." 
                         : "Create your first project to get started."}
                     </p>
-                    <Link href="/simplified-elementor">
+                    <Link href="/templates">
                       <Button>
                         <Plus className="w-4 h-4 mr-2" />
                         Create New Project

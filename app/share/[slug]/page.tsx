@@ -49,10 +49,10 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
     // Get project elements based on project type
     let elements = [];
     
-    // Check if this is an Elementor project or a Template project
-    const isElementorProject = project.type === 'Elementor';
+    // All projects are now template-based
+    const isTemplateProject = project.type === 'Template';
     
-    if (isElementorProject) {
+    if (isTemplateProject) {
       elements = await projectsStore.getProjectElements(project.id);
     } else {
       // Assume it's a Template project

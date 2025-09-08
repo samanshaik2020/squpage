@@ -11,6 +11,85 @@ export async function POST(request: NextRequest) {
     // In a real implementation, this would call an actual AI service like OpenAI, Claude, etc.
 
     const generateContent = (input: string, templateType?: string) => {
+      // Handle specific content type requests
+      if (body.type === 'headline') {
+        const headlines = [
+          "GET MORE CLICKS, ENGAGEMENT, & CONVERSIONS",
+          "UNLOCK THE SECRETS TO VIRAL CONTENT", 
+          "MASTER THE ART OF PERSUASIVE COPY",
+          "TRANSFORM YOUR CONTENT WITH PROVEN HOOKS",
+          "BOOST YOUR ENGAGEMENT WITH THESE HOOKS",
+          "DISCOVER THE PSYCHOLOGY OF VIRAL CONTENT",
+          "STOP STRUGGLING WITH LOW ENGAGEMENT",
+          "THE ULTIMATE GUIDE TO SOCIAL MEDIA SUCCESS"
+        ]
+        return NextResponse.json({ content: headlines[Math.floor(Math.random() * headlines.length)] })
+      }
+
+      if (body.type === 'description') {
+        const descriptions = [
+          "Use these fill-in-the-blank hook templates to write attention-grabbing hooks for your captions, Reel cover photos, headlines, subject lines, ads, YouTube video titles, and sales page openers.",
+          "Transform your social media presence with proven hook formulas that capture attention and drive engagement. Perfect for content creators, marketers, and business owners.",
+          "Stop struggling with content that gets ignored. These battle-tested hooks will help you create scroll-stopping content that converts viewers into followers and customers.",
+          "Learn the exact psychology-backed techniques that top creators use to generate millions of views and build massive audiences.",
+          "Get the proven templates and strategies that have helped thousands of creators go viral and build profitable personal brands."
+        ]
+        return NextResponse.json({ content: descriptions[Math.floor(Math.random() * descriptions.length)] })
+      }
+
+      if (body.type === 'benefits') {
+        const benefitSets = [
+          [
+            "Discover the psychology behind viral content",
+            "Learn the exact formulas top creators use", 
+            "Get 99+ proven hook templates"
+          ],
+          [
+            "Master the art of attention-grabbing headlines",
+            "Increase your engagement by 300%",
+            "Turn followers into paying customers"
+          ],
+          [
+            "Stop wasting time on content that flops",
+            "Learn the secrets of viral content creation",
+            "Build a loyal audience that converts"
+          ],
+          [
+            "Unlock the psychology of persuasive writing",
+            "Get instant access to proven templates",
+            "Transform your content strategy overnight"
+          ]
+        ]
+        const selectedSet = benefitSets[Math.floor(Math.random() * benefitSets.length)]
+        return NextResponse.json({ content: JSON.stringify(selectedSet) })
+      }
+
+      if (body.type === 'about') {
+        const aboutTexts = [
+          "Sarah is a leading social media strategist who has helped over 100,000 creators and businesses build their online presence. Through her proven frameworks and templates, she's generated millions of views and helped countless entrepreneurs turn their passion into profit.",
+          "Mark is the founder of Viral Content Academy, where he teaches the psychology and strategy behind content that converts. His methods have been used by Fortune 500 companies and top influencers to create engaging, profitable content.",
+          "Jessica is a copywriting expert and content strategist who specializes in helping businesses create compelling hooks and headlines. Her students have generated over $50 million in revenue using her proven templates and frameworks.",
+          "Alex is the founder of the Content Empire, where they are on a mission to help creators build authentic, engaging content that converts. Through their online programs and communities, Alex has helped over 500,000 marketers & business owners ignite their income with proven content strategies."
+        ]
+        return NextResponse.json({ content: aboutTexts[Math.floor(Math.random() * aboutTexts.length)] })
+      }
+      
+      // Handle social media hooks generation
+      if (body.type === 'social-media-hooks') {
+        const hooks = [
+          "The mistake that's costing you followers...",
+          "Here's what nobody tells you about...",
+          "I tried [X] for 30 days and here's what happened...",
+          "The [X] secret that changed everything...",
+          "Why [X] is actually hurting your business...",
+          "The truth about [X] that experts don't want you to know...",
+          "How I [achieved result] in [timeframe]...",
+          "Stop doing [X] and start doing [Y] instead...",
+          "The [X] hack that saved me [time/money]...",
+          "What I wish I knew before starting [X]..."
+        ]
+        return { content: hooks.slice(0, body.count || 5).join('\n\n') }
+      }
       // Base content that works for most templates
       const baseContent: Record<string, string> = {
         // Branding

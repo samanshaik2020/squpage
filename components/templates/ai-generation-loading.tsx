@@ -70,6 +70,18 @@ export function AIGenerationLoading({ templateId }: AIGenerationLoadingProps) {
             "Optimizing for conversions..."
           ]
         }
+      case "social-media-hooks-lead-magnet":
+        return {
+          title: "Creating Lead Magnet",
+          steps: [
+            "Analyzing your target audience...",
+            "Generating compelling headlines...",
+            "Creating benefit statements...",
+            "Writing social media hooks...",
+            "Optimizing for conversions...",
+            "Finalizing lead capture form..."
+          ]
+        }
       default:
         return {
           title: "Generating AI Content",

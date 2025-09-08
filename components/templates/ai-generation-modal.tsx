@@ -68,6 +68,14 @@ export function AIGenerationModal({
           label: "Health Product Name & Description",
           inputType: "textarea"
         }
+      case "social-media-hooks-lead-magnet":
+        return {
+          title: "Generate Lead Magnet Content",
+          description: "Enter your lead magnet topic and target audience. We'll create compelling headlines, benefits, and social media hooks.",
+          placeholder: "e.g., Social Media Marketing Tips for Small Business Owners",
+          label: "Lead Magnet Topic & Target Audience",
+          inputType: "textarea"
+        }
       default:
         return {
           title: "Generate AI Content",

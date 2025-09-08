@@ -17,8 +17,8 @@ import { DentalHealthLandingTemplate } from "./dental-health-landing"
 import { AIDentalHealthLandingTemplate } from "./ai-dental-health-landing"
 import { TemplateEditingPanel } from "@/components/templates/template-editing-panel"
 import { TemplateEditorProvider, useTemplateEditor } from "@/lib/template-editor-context"
-import { AIGenerationModal } from "@/components/editor/ai-generation-modal"
-import { AIGenerationLoading } from "@/components/editor/ai-generation-loading"
+import { AIGenerationModal } from "@/components/templates/ai-generation-modal"
+import { AIGenerationLoading } from "@/components/templates/ai-generation-loading"
 import { Sparkles } from "lucide-react"
 
 interface TemplateEditorProps {

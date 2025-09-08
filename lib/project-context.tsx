@@ -1,18 +1,18 @@
 "use client"
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
-import { ElementorElement } from './elementor-context'
+// ElementorElement type removed - Elementor system has been removed
 import { projectsStore, ProjectData } from './projects-store'
 
 export interface Project {
   id: string
   name: string
-  type: 'Elementor'
+  type: 'Template'
   status: 'draft' | 'published' | 'archived'
   createdAt: string
   updatedAt: string
   thumbnail: string
-  elements: ElementorElement[]
+  elements: any[] // Generic elements array - Elementor system removed
   shareToken?: string
   shareName?: string
   shareSlug?: string
@@ -43,7 +43,7 @@ interface ProjectContextType {
   // Project management
   createProject: (name: string) => Promise<Project>
   loadProject: (id: string) => Promise<void>
-  saveProject: (elements: ElementorElement[], settings?: Partial<Project['settings']>) => Promise<Project>
+  saveProject: (elements: any[], settings?: Partial<Project['settings']>) => Promise<Project>
   publishProject: () => Promise<void>
   deleteProject: (id: string) => Promise<void>
   duplicateProject: (id: string) => Promise<Project>
@@ -53,7 +53,7 @@ interface ProjectContextType {
   updateProjectThumbnail: (thumbnail: string) => Promise<void>
   
   // Auto-save functionality
-  enableAutoSave: (elements: ElementorElement[]) => void
+  enableAutoSave: (elements: any[]) => void
   disableAutoSave: () => void
 }
 
@@ -73,7 +73,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       const newProject: ProjectData = {
         id: Date.now().toString(),
         name,
-        type: 'Elementor',
+        type: 'Template',
         status: 'draft',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -97,7 +97,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       const project: Project = {
         id: createdProject.id,
         name: createdProject.name || '',
-        type: createdProject.type || 'Elementor',
+        type: createdProject.type || 'Template',
         status: createdProject.status || 'draft',
         createdAt: createdProject.createdAt || new Date().toISOString(),
         updatedAt: createdProject.updatedAt || new Date().toISOString(),
@@ -145,7 +145,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // Save project
-  const saveProject = useCallback(async (elements: ElementorElement[], settings?: Partial<Project['settings']>): Promise<Project> => {
+  const saveProject = useCallback(async (elements: any[], settings?: Partial<Project['settings']>): Promise<Project> => {
     setIsSaving(true)
     try {
       if (!currentProject) {
@@ -296,7 +296,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, [currentProject])
 
   // Auto-save functionality
-  const enableAutoSave = useCallback((elements: ElementorElement[]) => {
+  const enableAutoSave = useCallback((elements: any[]) => {
     if (autoSaveInterval) {
       clearInterval(autoSaveInterval)
     }
