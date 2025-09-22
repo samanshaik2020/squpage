@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const project = projectsStore.getById(params.id)
+    const project = await projectsStore.getById(params.id)
     
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
@@ -38,7 +38,7 @@ export async function POST(
   try {
     const analytics = await request.json()
     
-    const updatedProject = projectsStore.update(params.id, { analytics })
+    const updatedProject = await projectsStore.update(params.id, { analytics })
     
     if (!updatedProject) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })

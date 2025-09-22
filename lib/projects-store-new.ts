@@ -3,10 +3,10 @@
 
 // Helper function to safely access localStorage (works in both client and server contexts)
 const getLocalStorage = () => {
-  if (typeof window !== 'undefined') {
-    return window.localStorage;
-  }
-  return null;
+    if (typeof window !== 'undefined') {
+        return window.localStorage;
+    }
+    return null;
 };
 
 export interface ProjectAnalytics {
@@ -133,10 +133,10 @@ const loadProjectsFromLocalStorage = (): ProjectData[] => {
     try {
         const localStorage = getLocalStorage();
         if (!localStorage) return defaultProjects;
-        
+
         const stored = localStorage.getItem('squpage_projects');
         if (!stored) return defaultProjects;
-        
+
         const parsed = JSON.parse(stored);
         return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultProjects;
     } catch (error) {
@@ -150,7 +150,7 @@ const saveProjectsToLocalStorage = (projects: ProjectData[]) => {
     try {
         const localStorage = getLocalStorage();
         if (!localStorage) return;
-        
+
         localStorage.setItem('squpage_projects', JSON.stringify(projects));
     } catch (error) {
         console.error('Error saving projects to localStorage:', error);
@@ -162,10 +162,10 @@ const loadElementsFromLocalStorage = (projectId: string): any[] => {
     try {
         const localStorage = getLocalStorage();
         if (!localStorage) return [];
-        
+
         const stored = localStorage.getItem(`squpage_elements_${projectId}`);
         if (!stored) return [];
-        
+
         const parsed = JSON.parse(stored);
         return Array.isArray(parsed) ? parsed : [];
     } catch (error) {
@@ -179,7 +179,7 @@ const saveElementsToLocalStorage = (projectId: string, elements: any[]) => {
     try {
         const localStorage = getLocalStorage();
         if (!localStorage) return;
-        
+
         localStorage.setItem(`squpage_elements_${projectId}`, JSON.stringify(elements));
     } catch (error) {
         console.error(`Error saving elements for project ${projectId} to localStorage:`, error);
@@ -201,7 +201,7 @@ const generateSlug = (name: string): string => {
 
 // Check if a slug is unique among existing projects
 const isSlugUnique = (slug: string, excludeProjectId?: string): boolean => {
-    return !projects.some(p => 
+    return !projects.some(p =>
         p.shareSlug === slug && (!excludeProjectId || p.id !== excludeProjectId)
     );
 };
@@ -224,13 +224,13 @@ export const projectsStore = {
         try {
             // Refresh from localStorage in case it was updated elsewhere
             projects = loadProjectsFromLocalStorage();
-            
+
             const project = projects.find(p => String(p.id) === String(id));
             if (!project) {
                 console.log(`Project ${id} not found`);
                 return null;
             }
-            
+
             // Load elements for this project
             const elements = loadElementsFromLocalStorage(id);
             return {
@@ -261,18 +261,18 @@ export const projectsStore = {
                     customJS: ''
                 }
             };
-            
+
             // Add to projects array
             projects.push(newProject);
-            
+
             // Save to localStorage
             saveProjectsToLocalStorage(projects);
-            
+
             // Save elements separately if any
             if (newProject.elements && newProject.elements.length > 0) {
                 saveElementsToLocalStorage(newProject.id, newProject.elements);
             }
-            
+
             return newProject;
         } catch (error) {
             console.error('Error creating project:', error);
@@ -288,28 +288,28 @@ export const projectsStore = {
                 console.error(`Project ${id} not found for update`);
                 return null;
             }
-            
+
             // Get current project
             const currentProject = projects[index];
-            
+
             // Create updated project
             const updatedProject: ProjectData = {
                 ...currentProject,
                 ...updates,
                 updatedAt: new Date().toISOString()
             };
-            
+
             // Update in array
             projects[index] = updatedProject;
-            
+
             // Save to localStorage
             saveProjectsToLocalStorage(projects);
-            
+
             // If elements were updated, save them separately
             if (updates.elements) {
                 saveElementsToLocalStorage(id, updatedProject.elements);
             }
-            
+
             return updatedProject;
         } catch (error) {
             console.error(`Error updating project ${id}:`, error);
@@ -322,21 +322,21 @@ export const projectsStore = {
         try {
             const initialLength = projects.length;
             projects = projects.filter(p => String(p.id) !== String(id));
-            
+
             if (projects.length === initialLength) {
                 console.error(`Project ${id} not found for deletion`);
                 return false;
             }
-            
+
             // Save updated projects to localStorage
             saveProjectsToLocalStorage(projects);
-            
+
             // Remove elements for this project
             const localStorage = getLocalStorage();
             if (localStorage) {
                 localStorage.removeItem(`squpage_elements_${id}`);
             }
-            
+
             return true;
         } catch (error) {
             console.error(`Error deleting project ${id}:`, error);
@@ -349,19 +349,19 @@ export const projectsStore = {
         try {
             // Refresh from localStorage in case it was updated elsewhere
             projects = loadProjectsFromLocalStorage();
-            
+
             const project = projects.find(p => p.shareToken === token && p.isPubliclyShared);
             if (!project) {
                 console.log(`No project found with share token ${token}`);
                 return null;
             }
-            
+
             // Check if share token has expired
             if (project.shareExpiryDate && new Date(project.shareExpiryDate) < new Date()) {
                 console.log(`Share token ${token} has expired`);
                 return null;
             }
-            
+
             // Load elements for this project
             const elements = loadElementsFromLocalStorage(project.id);
             return {
@@ -379,19 +379,19 @@ export const projectsStore = {
         try {
             // Refresh from localStorage in case it was updated elsewhere
             projects = loadProjectsFromLocalStorage();
-            
+
             const project = projects.find(p => p.shareSlug === slug && p.isPubliclyShared);
             if (!project) {
                 console.log(`No project found with share slug ${slug}`);
                 return null;
             }
-            
+
             // Check if share has expired
             if (project.shareExpiryDate && new Date(project.shareExpiryDate) < new Date()) {
                 console.log(`Share slug ${slug} has expired`);
                 return null;
             }
-            
+
             // Load elements for this project
             const elements = loadElementsFromLocalStorage(project.id);
             return {
@@ -413,26 +413,26 @@ export const projectsStore = {
                 console.error(`Project ${id} not found when generating share token`);
                 return null;
             }
-            
+
             // Generate a random token
             const token = `${id}-${Math.random().toString(36).substring(2, 15)}-${Date.now().toString(36)}`;
-            
+
             // Generate slug from custom name
             const baseSlug = generateSlug(customName);
             let slug = baseSlug;
             let counter = 1;
-            
+
             // Ensure slug is unique
             while (!isSlugUnique(slug, id) && counter <= 100) {
                 slug = `${baseSlug}-${counter}`;
                 counter++;
             }
-            
+
             // If we hit the limit, use a timestamp-based slug
             if (counter > 100) {
                 slug = `${baseSlug}-${Date.now()}`;
             }
-            
+
             // Calculate expiry date if provided
             let expiryDate: string | null = null;
             if (expiryDays) {
@@ -440,7 +440,7 @@ export const projectsStore = {
                 date.setDate(date.getDate() + expiryDays);
                 expiryDate = date.toISOString();
             }
-            
+
             // Update project with share token and custom name
             const updates: Partial<ProjectData> = {
                 shareToken: token,
@@ -449,14 +449,14 @@ export const projectsStore = {
                 isPubliclyShared: true,
                 shareExpiryDate: expiryDate || undefined
             };
-            
+
             // Save updates
             const updatedProject = await projectsStore.update(id, updates);
             if (!updatedProject) {
                 console.error(`Failed to update project ${id} with share token`);
                 return null;
             }
-            
+
             return {
                 token,
                 slug,
@@ -480,14 +480,14 @@ export const projectsStore = {
                 isPubliclyShared: false,
                 shareExpiryDate: undefined
             };
-            
+
             // Save updates
             const updatedProject = await projectsStore.update(id, updates);
             if (!updatedProject) {
                 console.error(`Failed to revoke share token for project ${id}`);
                 return false;
             }
-            
+
             return true;
         } catch (error) {
             console.error(`Error revoking share token for project ${id}:`, error);
@@ -509,14 +509,14 @@ export const projectsStore = {
     saveProjectElements: async (projectId: string, elements: any[]): Promise<boolean> => {
         try {
             saveElementsToLocalStorage(projectId, elements);
-            
+
             // Update the project's updatedAt timestamp
             const project = projects.find(p => String(p.id) === String(projectId));
             if (project) {
                 project.updatedAt = new Date().toISOString();
                 saveProjectsToLocalStorage(projects);
             }
-            
+
             return true;
         } catch (error) {
             console.error(`Error saving elements for project ${projectId}:`, error);
@@ -525,10 +525,10 @@ export const projectsStore = {
     },
 
     // Update share settings for a project
-    updateShareSettings: async (id: string, settings: { 
-        customName?: string; 
-        isPubliclyShared?: boolean; 
-        expiryDays?: number 
+    updateShareSettings: async (id: string, settings: {
+        customName?: string;
+        isPubliclyShared?: boolean;
+        expiryDays?: number
     }): Promise<{ token: string; slug: string; customName: string; expiryDate: string | null } | null> => {
         try {
             // Verify project exists
@@ -537,45 +537,45 @@ export const projectsStore = {
                 console.error(`Project ${id} not found when updating share settings`);
                 return null;
             }
-            
+
             // If project doesn't have a share token yet, generate one
             if (!project.shareToken && settings.isPubliclyShared) {
                 return projectsStore.generateShareToken(
-                    id, 
-                    settings.customName || project.name, 
+                    id,
+                    settings.customName || project.name,
                     settings.expiryDays
                 );
             }
-            
+
             // Otherwise update existing share settings
             const updates: Partial<ProjectData> = {};
-            
+
             if (settings.customName) {
                 updates.shareName = settings.customName;
-                
+
                 // Generate new slug from custom name
                 const baseSlug = generateSlug(settings.customName);
                 let slug = baseSlug;
                 let counter = 1;
-                
+
                 // Ensure slug is unique
                 while (!isSlugUnique(slug, id) && counter <= 100) {
                     slug = `${baseSlug}-${counter}`;
                     counter++;
                 }
-                
+
                 // If we hit the limit, use a timestamp-based slug
                 if (counter > 100) {
                     slug = `${baseSlug}-${Date.now()}`;
                 }
-                
+
                 updates.shareSlug = slug;
             }
-            
+
             if (settings.isPubliclyShared !== undefined) {
                 updates.isPubliclyShared = settings.isPubliclyShared;
             }
-            
+
             if (settings.expiryDays !== undefined) {
                 if (settings.expiryDays > 0) {
                     const date = new Date();
@@ -585,14 +585,14 @@ export const projectsStore = {
                     updates.shareExpiryDate = undefined;
                 }
             }
-            
+
             // Save updates
             const updatedProject = await projectsStore.update(id, updates);
             if (!updatedProject) {
                 console.error(`Failed to update share settings for project ${id}`);
                 return null;
             }
-            
+
             return {
                 token: updatedProject.shareToken || '',
                 slug: updatedProject.shareSlug || '',

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 interface ElementData {
@@ -334,7 +334,7 @@ function ElementRenderer({ element, allElements }: { element: ElementData, allEl
   }
 }
 
-export default function PreviewIframePage() {
+function PreviewIframeContent() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId')
   const [elements, setElements] = useState<ElementData[]>([])
@@ -396,5 +396,20 @@ export default function PreviewIframePage() {
         ))}
       </div>
     </div>
+  )
+}
+
+export default function PreviewIframePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading preview...</p>
+        </div>
+      </div>
+    }>
+      <PreviewIframeContent />
+    </Suspense>
   )
 }

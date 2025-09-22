@@ -4,13 +4,13 @@ import { formSubmissionsStore, projectsStore } from '@/lib/projects-store'
 export async function POST(request: NextRequest) {
   try {
     const { pageId, formData, source } = await request.json()
-    
+
     if (!pageId || !formData) {
       return NextResponse.json({ error: 'pageId and formData are required' }, { status: 400 })
     }
 
     // Verify the project exists
-    const project = projectsStore.getById(pageId)
+    const project = await projectsStore.getById(pageId)
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
@@ -26,9 +26,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Get visitor information from headers
-    const ipAddress = request.headers.get('x-forwarded-for') || 
-                     request.headers.get('x-real-ip') || 
-                     'unknown'
+    const ipAddress = request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown'
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
     // Create the form submission record
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         company: formData.company?.toString().trim() || '',
         // Include any additional custom fields
         ...Object.fromEntries(
-          Object.entries(formData).filter(([key]) => 
+          Object.entries(formData).filter(([key]) =>
             !['name', 'email', 'phone', 'message', 'subject', 'company'].includes(key)
           )
         )
@@ -62,11 +62,11 @@ export async function POST(request: NextRequest) {
         ...project.analytics,
         conversions: project.analytics.conversions + 1
       }
-      projectsStore.update(pageId, { analytics: updatedAnalytics })
+      await projectsStore.update(pageId, { analytics: updatedAnalytics })
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       submissionId: submission.id,
       message: 'Form submitted successfully'
     })

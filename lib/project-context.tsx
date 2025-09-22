@@ -7,7 +7,7 @@ import { projectsStore, ProjectData } from './projects-store'
 export interface Project {
   id: string
   name: string
-  type: 'Template'
+  type: 'Template' | 'AI Generated'
   status: 'draft' | 'published' | 'archived'
   createdAt: string
   updatedAt: string

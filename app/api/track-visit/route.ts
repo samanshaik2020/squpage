@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the project exists
-    const project = projectsStore.getById(pageId)
+    const project = await projectsStore.getById(pageId)
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }

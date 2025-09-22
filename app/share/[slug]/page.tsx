@@ -51,6 +51,7 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
     
     // All projects are now template-based
     const isTemplateProject = project.type === 'Template';
+    const isElementorProject = false; // Elementor functionality has been removed
     
     if (isTemplateProject) {
       elements = await projectsStore.getProjectElements(project.id);

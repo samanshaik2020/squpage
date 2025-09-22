@@ -15,11 +15,13 @@ import { AIPortfolioTemplate } from "./ai-portfolio"
 import { AIBlogPageTemplate } from "./ai-blog-page"
 import { DentalHealthLandingTemplate } from "./dental-health-landing"
 import { AIDentalHealthLandingTemplate } from "./ai-dental-health-landing"
+import SocialMediaHooksLeadMagnet from "./social-media-hooks-lead-magnet"
 import { TemplateEditingPanel } from "@/components/templates/template-editing-panel"
 import { TemplateEditorProvider, useTemplateEditor } from "@/lib/template-editor-context"
 import { AIGenerationModal } from "@/components/templates/ai-generation-modal"
 import { AIGenerationLoading } from "@/components/templates/ai-generation-loading"
 import { Sparkles } from "lucide-react"
+import { TemplateDebug } from "@/components/debug/template-debug"
 
 interface TemplateEditorProps {
   templateId: string
@@ -52,7 +54,7 @@ function TemplateEditorContent({
   editorRef?: React.RefObject<HTMLDivElement | null>
   savedProjectId?: string
 }) {
-  const { selectedElement, selectElement, canUndo, canRedo, undo, redo, updateElement, setTemplateId, elements } = useTemplateEditor()
+  const { selectedElement, selectElement, canUndo, canRedo, undo, redo, updateElement, setTemplateId, elements, hasElementsForTemplate } = useTemplateEditor()
   const [isGenerating, setIsGenerating] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
   const [showLoadingScreen, setShowLoadingScreen] = useState(false)
@@ -73,7 +75,8 @@ function TemplateEditorContent({
     "product-landing-page", 
     "ai-portfolio",
     "ai-blog-page",
-    "ai-dental-health-landing"
+    "ai-dental-health-landing",
+    "social-media-hooks-lead-magnet"
   ].includes(templateId)
 
   // All templates can now use AI generation
@@ -86,16 +89,35 @@ function TemplateEditorContent({
     }
   }, [isPaidAITemplate, templateGenerated])
   
-  // Initialize template context with templateId
+  // Initialize template context with templateId and reset state when template changes
   useEffect(() => {
+    console.log(`Template editor: Setting template ID to ${templateId}`);
     setTemplateId(templateId);
+    // Reset initialization state when template changes
+    setElementsInitialized(false);
   }, [templateId, setTemplateId]);
 
   // Initialize template elements when component mounts (only once)
   useEffect(() => {
     // Only initialize if not already done and not a paid AI template that hasn't been generated
-    if (!elementsInitialized && !(isPaidAITemplate && !templateGenerated)) {
-      console.log("Template editor: Initializing template elements for:", templateId);
+    if (!elementsInitialized && !(isPaidAITemplate && !templateGenerated) && templateId) {
+      // Wait a bit for the context to load elements from localStorage
+      const initTimeout = setTimeout(() => {
+        // Check if elements were loaded from localStorage
+        if (elements.length > 0) {
+          console.log(`Template editor: Elements already loaded from localStorage for ${templateId}, skipping initialization`);
+          setElementsInitialized(true);
+          return;
+        }
+        
+        // Check if there are saved elements in localStorage
+        if (hasElementsForTemplate(templateId)) {
+          console.log(`Template editor: Found saved elements for ${templateId}, skipping initialization`);
+          setElementsInitialized(true);
+          return;
+        }
+        
+        console.log("Template editor: No saved elements found, initializing default template elements for:", templateId);
       
       // Clear existing elements first to avoid conflicts
       // Initialize elements based on template type
@@ -298,10 +320,13 @@ function TemplateEditorContent({
         });
       }
       
-      // Mark as initialized
-      setElementsInitialized(true);
+        // Mark as initialized
+        setElementsInitialized(true);
+      }, 100); // Wait 100ms for context to load elements
+      
+      return () => clearTimeout(initTimeout);
     }
-  }, [templateId, updateElement, elementsInitialized, isPaidAITemplate, templateGenerated]);
+  }, [templateId, updateElement, elementsInitialized, isPaidAITemplate, templateGenerated, hasElementsForTemplate, elements]);
   
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -357,6 +382,8 @@ function TemplateEditorContent({
         return "Dental Health Landing"
       case "ai-dental-health-landing":
         return "AI Dental Health Landing"
+      case "social-media-hooks-lead-magnet":
+        return "Social Media Hooks Lead Magnet"
       default:
         return "Template"
     }
@@ -373,6 +400,8 @@ function TemplateEditorContent({
       requestParam = "blogInfo"
     } else if (templateId === "ai-dental-health-landing") {
       requestParam = "healthProductName"
+    } else if (templateId === "social-media-hooks-lead-magnet") {
+      requestParam = "leadMagnetTopic"
     } else {
       requestParam = "topic"
     }
@@ -578,6 +607,67 @@ function TemplateEditorContent({
         
         if (data["problem-subtitle"]) {
           updateElementWithForce("problem-subtitle", data["problem-subtitle"], "text");
+        }
+        
+      } else if (templateId === "social-media-hooks-lead-magnet") {
+        console.log("Template editor: Updating social media hooks lead magnet elements with:", data);
+        
+        const updateElementWithForce = (id: string, content: string, type: string = "text") => {
+          console.log(`Force updating social media element ${id} with content:`, content);
+          updateElement(id, {
+            type: type,
+            content: content,
+            styles: {},
+            position: { x: 0, y: 0 }
+          });
+        };
+        
+        // Update branding elements
+        if (data["company-name"]) {
+          updateElementWithForce("company-name", data["company-name"], "text");
+        }
+        
+        if (data["logo-text"]) {
+          updateElementWithForce("logo-text", data["logo-text"], "text");
+        }
+        
+        // Update main content
+        if (data["main-headline"]) {
+          updateElementWithForce("main-headline", data["main-headline"], "heading");
+        }
+        
+        if (data["subheadline"]) {
+          updateElementWithForce("subheadline", data["subheadline"], "text");
+        }
+        
+        if (data["description"]) {
+          updateElementWithForce("description", data["description"], "text");
+        }
+        
+        // Update benefits
+        if (data["benefit-1"]) {
+          updateElementWithForce("benefit-1", data["benefit-1"], "text");
+        }
+        
+        if (data["benefit-2"]) {
+          updateElementWithForce("benefit-2", data["benefit-2"], "text");
+        }
+        
+        if (data["benefit-3"]) {
+          updateElementWithForce("benefit-3", data["benefit-3"], "text");
+        }
+        
+        // Update author info
+        if (data["author-name"]) {
+          updateElementWithForce("author-name", data["author-name"], "text");
+        }
+        
+        if (data["author-bio"]) {
+          updateElementWithForce("author-bio", data["author-bio"], "text");
+        }
+        
+        if (data["cta-button"]) {
+          updateElementWithForce("cta-button", data["cta-button"], "text");
         }
         
       } else if (templateId === "ai-generated-blog-post") {
@@ -853,11 +943,14 @@ function TemplateEditorContent({
       setShowSuccessMessage(true)
       setShowViewPreviewButton(true)
       
-      // Just show success message, don't auto-navigate
+      console.log(`Template saved successfully with ID: ${project.id}`)
+      console.log('Project saved to dashboard and can be accessed at /dashboard')
+      
+      // Show success message for 7 seconds to give users time to see the buttons
       setTimeout(() => {
         setShowSuccessMessage(false)
         setShowViewPreviewButton(false)
-      }, 5000)
+      }, 7000)
     } catch (error) {
       console.error('Error saving template:', error)
       setSaveError(error instanceof Error ? error.message : 'Failed to save template. Please try again.')
@@ -906,6 +999,8 @@ function TemplateEditorContent({
         return <DentalHealthLandingTemplate {...commonProps} />
       case "ai-dental-health-landing":
         return <AIDentalHealthLandingTemplate {...commonProps} />
+      case "social-media-hooks-lead-magnet":
+        return <SocialMediaHooksLeadMagnet {...commonProps} />
       default:
         return <SaasLandingTemplate {...commonProps} />
     }
@@ -1037,7 +1132,13 @@ function TemplateEditorContent({
               Preview
             </Button>
           </Link>
-          <Button size="sm" onClick={handleSaveTemplate} disabled={isSaving}>
+          <Button 
+            size="sm" 
+            onClick={handleSaveTemplate} 
+            disabled={isSaving}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            title="Save template to dashboard"
+          >
             {isSaving ? (
               <>
                 <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-gray-300 border-t-white"></div>
@@ -1053,7 +1154,7 @@ function TemplateEditorContent({
                     d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"
                   />
                 </svg>
-                Save
+                Save to Dashboard
               </>
             )}
           </Button>
@@ -1076,12 +1177,20 @@ function TemplateEditorContent({
           </svg>
           <span>Template saved successfully!</span>
           {showViewPreviewButton && (
-            <button 
-              onClick={() => router.push(`/preview/template/${savedProjectId}`)}
-              className="ml-4 bg-white text-green-500 px-3 py-1 rounded-md text-sm font-medium hover:bg-green-50"
-            >
-              View Preview
-            </button>
+            <>
+              <button 
+                onClick={() => router.push(`/preview/template/${savedProjectId}`)}
+                className="ml-4 bg-white text-green-500 px-3 py-1 rounded-md text-sm font-medium hover:bg-green-50"
+              >
+                View Preview
+              </button>
+              <button 
+                onClick={() => router.push('/dashboard')}
+                className="ml-2 bg-white text-green-500 px-3 py-1 rounded-md text-sm font-medium hover:bg-green-50"
+              >
+                View Dashboard
+              </button>
+            </>
           )}
         </div>
       )}
@@ -1118,6 +1227,9 @@ function TemplateEditorContent({
         templateId={templateId}
         isGenerating={isGenerating}
       />
+      
+      {/* Debug Component - Temporary for debugging */}
+      <TemplateDebug />
     </div>
   )
 }

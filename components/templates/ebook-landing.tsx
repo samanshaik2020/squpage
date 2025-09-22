@@ -2,7 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { TemplateEditableElement } from "./template-editable-element"
-import { useEditor } from "@/lib/editor-context" // Import useEditor
+import { useTemplateEditor } from "@/lib/template-editor-context" // Import useTemplateEditor
 
 interface EbookLandingTemplateProps {
   selectedElement: string | null
@@ -11,7 +11,7 @@ interface EbookLandingTemplateProps {
 }
 
 export function EbookLandingTemplate({ selectedElement, onElementSelect, isEditable }: EbookLandingTemplateProps) {
-  const { elements } = useEditor() // Get elements from editor context
+  const { elements } = useTemplateEditor() // Get elements from template editor context
 
   // Find the hero section element to get its background URL
   const heroSectionElement = elements.find((el) => el.id === "hero-section")

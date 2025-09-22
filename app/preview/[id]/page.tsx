@@ -92,7 +92,7 @@ export default function PreviewPage({ params }: PreviewPageProps) {
       case "ai-dental-health-landing":
         return <AIDentalHealthLandingTemplate {...commonProps} />
       case "social-media-hooks-lead-magnet":
-        return <SocialMediaHooksLeadMagnet />
+        return <SocialMediaHooksLeadMagnet {...commonProps} />
       default:
         return <SaasLandingTemplate {...commonProps} />
     }

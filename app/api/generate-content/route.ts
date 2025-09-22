@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Extract the input parameter (could be topic, productName, portfolioInfo, etc.)
-    const input = body.topic || body.productName || body.portfolioInfo || body.blogInfo || body.healthProductName || 'general business'
+    const input = body.topic || body.productName || body.portfolioInfo || body.blogInfo || body.healthProductName || body.leadMagnetTopic || 'general business'
 
     // Simulate AI content generation with realistic, comprehensive content
     // In a real implementation, this would call an actual AI service like OpenAI, Claude, etc.
@@ -192,6 +192,34 @@ Proven Results: Trusted by thousands of satisfied customers`,
           "problem-subtitle": `Many people struggle with health issues that could be addressed with the right solution.`,
           "product-name": body.healthProductName,
           "health-benefit": `${body.healthProductName} provides scientifically-proven benefits for improved health and wellness.`
+        }
+      }
+
+      if (body.leadMagnetTopic) {
+        const topic = body.leadMagnetTopic.toLowerCase()
+        const isHooksRelated = topic.includes('hook') || topic.includes('social') || topic.includes('content')
+        const companyName = extractCompanyName(body.leadMagnetTopic)
+        
+        return {
+          ...baseContent,
+          "company-name": companyName.toUpperCase(),
+          "logo-text": companyName.substring(0, 2).toUpperCase(),
+          "subheadline": isHooksRelated ? "99 Social Media Hooks That Capture Attention" : `${body.leadMagnetTopic} - Complete Guide`,
+          "main-headline": isHooksRelated ? "GET MORE CLICKS, ENGAGEMENT, & CONVERSIONS" : `MASTER ${body.leadMagnetTopic.toUpperCase()}`,
+          "description": isHooksRelated 
+            ? "Use these fill-in-the-blank hook templates to write attention-grabbing hooks for your captions, Reel cover photos, headlines, subject lines, ads, YouTube video titles, and sales page openers."
+            : `Get instant access to proven strategies and templates that will help you master ${body.leadMagnetTopic} and achieve better results.`,
+          "benefit-1": isHooksRelated ? "Discover the #1 goal your marketing must accomplish." : `Learn the fundamentals of ${body.leadMagnetTopic}`,
+          "benefit-2": isHooksRelated ? "Learn when and where a good hook is absolutely critical." : "Get step-by-step implementation guides",
+          "benefit-3": isHooksRelated ? "Get 99 Posse-approved hook ideas & templates." : "Access exclusive templates and resources",
+          "benefits-title": "WHAT YOU'LL LEARN IN THIS FREE GUIDE:",
+          "about-title": `ABOUT ${companyName.toUpperCase()}`,
+          "author-name": extractPersonName(body.leadMagnetTopic) || "Expert Author",
+          "author-title": `${body.leadMagnetTopic} Expert`,
+          "author-bio": `Our expert has helped thousands of people master ${body.leadMagnetTopic} through proven strategies and actionable insights. With years of experience and a track record of success, they're here to help you achieve your goals.`,
+          "cta-button": "GET INSTANT ACCESS",
+          "book-title": isHooksRelated ? "99 HOT HOOK TEMPLATES" : `${body.leadMagnetTopic.toUpperCase()} GUIDE`,
+          "book-author": companyName.toUpperCase()
         }
       }
 
