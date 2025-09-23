@@ -10,6 +10,20 @@ interface TemplateElement {
   styles: any
   url?: string
   position: { x: number; y: number }
+  animation?: {
+    type: 'none' | 'pulse' | 'bounce' | 'shake' | 'glow' | 'slide' | 'scale' | 'rotate' | 'flip'
+    duration: number // in milliseconds
+    timing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear'
+    trigger: 'hover' | 'click' | 'load' | 'scroll'
+    infinite: boolean
+    delay: number // in milliseconds
+  }
+  transition?: {
+    property: 'all' | 'background' | 'transform' | 'color' | 'border' | 'shadow'
+    duration: number // in milliseconds
+    timing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear'
+    delay: number // in milliseconds
+  }
 }
 
 interface TemplateEditorState {

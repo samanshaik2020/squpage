@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { projectsStore } from '@/lib/projects-store'
+import { projectsStore } from '@/lib/projects-store-new'
 
 // GET - Access a shared project by custom slug
 export async function GET(

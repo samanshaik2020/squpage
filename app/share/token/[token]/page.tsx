@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { projectsStore } from '@/lib/projects-store'
+import { projectsStore } from '@/lib/projects-store-new'
 
 // This page handles token-based shares and redirects to the slug-based route if available
 export default async function SharedProjectTokenPage({ params }: { params: { token: string } }) {

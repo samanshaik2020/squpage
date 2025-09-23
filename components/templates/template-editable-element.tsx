@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { useContext } from "react"
 import { TemplateEditorContext } from "@/lib/template-editor-context"
+import { getAnimationClass, getTransitionStyles, getAnimationStyles } from "@/lib/button-animations"
 
 interface TemplateEditableElementProps {
   id: string
@@ -108,12 +109,25 @@ export function TemplateEditableElement({
       )
 
     case "button":
+      // Get animation and transition styles for buttons
+      const element = editorContext?.elements.find((el) => el.id === id)
+      const animationClass = getAnimationClass(element?.animation)
+      const transitionStyles = getTransitionStyles(element?.transition)
+      const animationStyles = getAnimationStyles(element?.animation)
+      
+      const buttonClassName = `${combinedClassName} ${animationClass}`.trim()
+      const buttonStyles = {
+        ...combinedStyles,
+        ...transitionStyles,
+        ...animationStyles
+      }
+      
       return (
         <Button
           variant={variant}
           size={size}
-          className={combinedClassName}
-          style={combinedStyles}
+          className={buttonClassName}
+          style={buttonStyles}
           onClick={handleClick}
           data-editable={isEditable}
         >

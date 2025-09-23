@@ -311,12 +311,32 @@ function TemplateEditorContent({
         
         // Initialize all elements
         templateElements.forEach(element => {
-          updateElement(element.id, {
+          const elementData: any = {
             type: element.type,
             content: element.content,
             styles: {},
             position: { x: 0, y: 0 }
-          });
+          };
+          
+          // Add default animations for button elements
+          if (element.type === "button") {
+            elementData.animation = {
+              type: 'scale',
+              duration: 200,
+              timing: 'ease-out',
+              trigger: 'hover',
+              infinite: false,
+              delay: 0
+            };
+            elementData.transition = {
+              property: 'all',
+              duration: 300,
+              timing: 'ease',
+              delay: 0
+            };
+          }
+          
+          updateElement(element.id, elementData);
         });
       }
       

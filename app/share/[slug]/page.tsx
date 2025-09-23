@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { projectsStore, ProjectData } from '@/lib/projects-store'
+import { projectsStore, ProjectData } from '@/lib/projects-store-new'
 import { templateStore, TemplateProject } from '@/lib/template-store'
 
 // This page handles both token and slug-based shares

@@ -10,7 +10,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { useTemplateEditor } from "@/lib/template-editor-context"
+import { defaultAnimations, defaultTransitions, animationPresets } from "@/lib/button-animations"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +53,35 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
     height: 'auto',
   })
 
+  // Animation and transition states
+  const [animation, setAnimation] = useState<{
+    type: 'none' | 'pulse' | 'bounce' | 'shake' | 'glow' | 'slide' | 'scale' | 'rotate' | 'flip'
+    duration: number
+    timing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear'
+    trigger: 'hover' | 'click' | 'load' | 'scroll'
+    infinite: boolean
+    delay: number
+  }>({
+    type: 'none',
+    duration: 300,
+    timing: 'ease',
+    trigger: 'hover',
+    infinite: false,
+    delay: 0
+  })
+
+  const [transition, setTransition] = useState<{
+    property: 'all' | 'background' | 'transform' | 'color' | 'border' | 'shadow'
+    duration: number
+    timing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear'
+    delay: number
+  }>({
+    property: 'all',
+    duration: 300,
+    timing: 'ease',
+    delay: 0
+  })
+
   // Update local state when element changes or when elementId changes
   useEffect(() => {
     if (element) {
@@ -69,6 +101,23 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
           height: 'auto',
         },
       )
+      
+      // Load animation and transition settings
+      setAnimation(element.animation || {
+        type: 'none',
+        duration: 300,
+        timing: 'ease',
+        trigger: 'hover',
+        infinite: false,
+        delay: 0
+      })
+      
+      setTransition(element.transition || {
+        property: 'all',
+        duration: 300,
+        timing: 'ease',
+        delay: 0
+      })
     } else {
       // If element doesn't exist in context, get the original content from the DOM element
       console.log(`TemplateEditingPanel: Element ${elementId} not found in context, getting original content from DOM`);
@@ -148,6 +197,38 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
     }, 0)
   }
 
+  const handleAnimationChange = (animationKey: string, value: any) => {
+    const newAnimation = { ...animation, [animationKey]: value }
+    setAnimation(newAnimation)
+    // Debounce the update to prevent infinite loops
+    setTimeout(() => {
+      updateElement(elementId, { animation: newAnimation })
+    }, 0)
+  }
+
+  const handleTransitionChange = (transitionKey: string, value: any) => {
+    const newTransition = { ...transition, [transitionKey]: value }
+    setTransition(newTransition)
+    // Debounce the update to prevent infinite loops
+    setTimeout(() => {
+      updateElement(elementId, { transition: newTransition })
+    }, 0)
+  }
+
+  const handlePresetChange = (presetName: string) => {
+    const preset = animationPresets[presetName as keyof typeof animationPresets]
+    if (preset) {
+      setAnimation(preset.animation)
+      setTransition(preset.transition)
+      setTimeout(() => {
+        updateElement(elementId, { 
+          animation: preset.animation, 
+          transition: preset.transition 
+        })
+      }, 0)
+    }
+  }
+
   const handlePositionChange = (axis: 'x' | 'y', value: number) => {
     const newPosition = { ...currentElement.position }
     newPosition[axis] = value
@@ -197,9 +278,10 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
         </CardHeader>
         <CardContent className="flex-1 overflow-auto">
           <Tabs defaultValue="content" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="style">Style</TabsTrigger>
+              <TabsTrigger value="animation">Animation</TabsTrigger>
               <TabsTrigger value="preview">Preview</TabsTrigger>
               <TabsTrigger value="advanced">Advanced</TabsTrigger>
             </TabsList>
@@ -499,6 +581,191 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
                   />
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="animation" className="space-y-4">
+              {/* Show animation controls only for buttons */}
+              {currentElement.type === "button" && (
+                <>
+                  {/* Animation Presets */}
+                  <div>
+                    <Label>Animation Presets</Label>
+                    <Select onValueChange={handlePresetChange}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Choose a preset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="subtle">Subtle (Scale)</SelectItem>
+                        <SelectItem value="energetic">Energetic (Bounce)</SelectItem>
+                        <SelectItem value="elegant">Elegant (Glow)</SelectItem>
+                        <SelectItem value="playful">Playful (Shake)</SelectItem>
+                        <SelectItem value="modern">Modern (Slide)</SelectItem>
+                        <SelectItem value="classic">Classic (Pulse)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Animation Type */}
+                  <div>
+                    <Label>Animation Type</Label>
+                    <Select value={animation.type} onValueChange={(value) => handleAnimationChange('type', value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="pulse">Pulse</SelectItem>
+                        <SelectItem value="bounce">Bounce</SelectItem>
+                        <SelectItem value="shake">Shake</SelectItem>
+                        <SelectItem value="glow">Glow</SelectItem>
+                        <SelectItem value="slide">Slide</SelectItem>
+                        <SelectItem value="scale">Scale</SelectItem>
+                        <SelectItem value="rotate">Rotate</SelectItem>
+                        <SelectItem value="flip">Flip</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Animation Trigger */}
+                  <div>
+                    <Label>Animation Trigger</Label>
+                    <Select value={animation.trigger} onValueChange={(value) => handleAnimationChange('trigger', value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hover">On Hover</SelectItem>
+                        <SelectItem value="click">On Click</SelectItem>
+                        <SelectItem value="load">On Load</SelectItem>
+                        <SelectItem value="scroll">On Scroll</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Animation Duration */}
+                  <div>
+                    <Label>Animation Duration: {animation.duration}ms</Label>
+                    <Slider
+                      value={[animation.duration]}
+                      onValueChange={([value]) => handleAnimationChange('duration', value)}
+                      max={2000}
+                      min={100}
+                      step={50}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  {/* Animation Timing */}
+                  <div>
+                    <Label>Animation Timing</Label>
+                    <Select value={animation.timing} onValueChange={(value) => handleAnimationChange('timing', value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ease">Ease</SelectItem>
+                        <SelectItem value="ease-in">Ease In</SelectItem>
+                        <SelectItem value="ease-out">Ease Out</SelectItem>
+                        <SelectItem value="ease-in-out">Ease In Out</SelectItem>
+                        <SelectItem value="linear">Linear</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Animation Delay */}
+                  <div>
+                    <Label>Animation Delay: {animation.delay}ms</Label>
+                    <Slider
+                      value={[animation.delay]}
+                      onValueChange={([value]) => handleAnimationChange('delay', value)}
+                      max={1000}
+                      min={0}
+                      step={50}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  {/* Infinite Animation */}
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={animation.infinite}
+                      onCheckedChange={(checked) => handleAnimationChange('infinite', checked)}
+                    />
+                    <Label>Infinite Animation</Label>
+                  </div>
+
+                  <hr className="my-4" />
+
+                  {/* Transition Property */}
+                  <div>
+                    <Label>Transition Property</Label>
+                    <Select value={transition.property} onValueChange={(value) => handleTransitionChange('property', value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Properties</SelectItem>
+                        <SelectItem value="background">Background</SelectItem>
+                        <SelectItem value="transform">Transform</SelectItem>
+                        <SelectItem value="color">Color</SelectItem>
+                        <SelectItem value="border">Border</SelectItem>
+                        <SelectItem value="shadow">Shadow</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Transition Duration */}
+                  <div>
+                    <Label>Transition Duration: {transition.duration}ms</Label>
+                    <Slider
+                      value={[transition.duration]}
+                      onValueChange={([value]) => handleTransitionChange('duration', value)}
+                      max={1000}
+                      min={50}
+                      step={25}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  {/* Transition Timing */}
+                  <div>
+                    <Label>Transition Timing</Label>
+                    <Select value={transition.timing} onValueChange={(value) => handleTransitionChange('timing', value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ease">Ease</SelectItem>
+                        <SelectItem value="ease-in">Ease In</SelectItem>
+                        <SelectItem value="ease-out">Ease Out</SelectItem>
+                        <SelectItem value="ease-in-out">Ease In Out</SelectItem>
+                        <SelectItem value="linear">Linear</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Transition Delay */}
+                  <div>
+                    <Label>Transition Delay: {transition.delay}ms</Label>
+                    <Slider
+                      value={[transition.delay]}
+                      onValueChange={([value]) => handleTransitionChange('delay', value)}
+                      max={500}
+                      min={0}
+                      step={25}
+                      className="mt-2"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Show message for non-button elements */}
+              {currentElement.type !== "button" && (
+                <div className="text-center text-gray-500 py-8">
+                  <p>Animation controls are only available for button elements.</p>
+                  <p className="text-sm mt-2">Select a button to customize its animations and transitions.</p>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="advanced" className="space-y-4">
