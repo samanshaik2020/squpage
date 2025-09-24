@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import button animations */
+@import './button-animations.css';
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

@@ -57,6 +57,7 @@ export interface ProjectData {
     thumbnail: string
     elements: any[]
     templateId?: string // For template-based projects
+    themeId?: string // For themed templates
     analytics?: ProjectAnalytics
     shareToken?: string // Token for public sharing
     shareName?: string // Custom name for the shareable link

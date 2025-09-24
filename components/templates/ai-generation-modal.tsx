@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { X, Sparkles } from 'lucide-react'
+import { X, Sparkles, ChevronRight, ChevronLeft, Palette } from 'lucide-react'
+import { themes } from '@/lib/theme-system'
+import { ThemeSelection } from './theme-preview'
 
 interface AIGenerationModalProps {
   isOpen: boolean
   onClose: () => void
-  onGenerate: (input: string) => void
+  onGenerate: (input: string, themeId: string) => void
   templateId: string
   isGenerating: boolean
 }
@@ -23,6 +25,8 @@ export function AIGenerationModal({
   isGenerating 
 }: AIGenerationModalProps) {
   const [userInput, setUserInput] = useState('')
+  const [selectedThemeId, setSelectedThemeId] = useState(themes[0].id)
+  const [step, setStep] = useState<'content' | 'theme'>('content')
 
   if (!isOpen) return null
 
@@ -91,9 +95,15 @@ export function AIGenerationModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (userInput.trim()) {
-      onGenerate(userInput.trim())
+    if (step === 'content' && userInput.trim()) {
+      setStep('theme')
+    } else if (step === 'theme') {
+      onGenerate(userInput.trim(), selectedThemeId)
     }
+  }
+  
+  const handleBack = () => {
+    setStep('content')
   }
 
   return (
@@ -104,9 +114,15 @@ export function AIGenerationModal({
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
+                {step === 'content' ? (
+                  <Sparkles className="w-4 h-4 text-white" />
+                ) : (
+                  <Palette className="w-4 h-4 text-white" />
+                )}
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">{config.title}</h2>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {step === 'content' ? config.title : 'Select Theme'}
+              </h2>
             </div>
             <Button
               variant="ghost"
@@ -119,79 +135,134 @@ export function AIGenerationModal({
             </Button>
           </div>
 
-          {/* Description */}
-          <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-            {config.description}
-          </p>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="user-input" className="text-sm font-medium text-gray-700">
-                {config.label}
-              </Label>
-              {config.inputType === "textarea" ? (
-                <Textarea
-                  id="user-input"
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  placeholder={config.placeholder}
-                  className="mt-1 min-h-[100px]"
-                  disabled={isGenerating}
-                  required
-                />
-              ) : (
-                <Input
-                  id="user-input"
-                  type="text"
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  placeholder={config.placeholder}
-                  className="mt-1"
-                  disabled={isGenerating}
-                  required
-                />
-              )}
+          {/* Step indicator */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'content' ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-500'}`}>
+                1
+              </div>
+              <div className="w-12 h-1 bg-gray-200">
+                <div className={`h-full ${step === 'theme' ? 'bg-purple-500' : 'bg-gray-200'}`} style={{ width: step === 'content' ? '0%' : '100%' }}></div>
+              </div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'theme' ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-500'}`}>
+                2
+              </div>
             </div>
-
-            {/* Actions */}
-            <div className="flex space-x-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isGenerating}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isGenerating || !userInput.trim()}
-                className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-              >
-                {isGenerating ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Content
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-
-          {/* Pro tip */}
-          <div className="mt-6 p-3 bg-blue-50 rounded-lg">
-            <p className="text-xs text-blue-700">
-              💡 <strong>Pro tip:</strong> Be specific about your requirements for better AI-generated content. 
-              Include target audience, tone, and key features you want to highlight.
-            </p>
           </div>
+
+          {step === 'content' ? (
+            <>
+              {/* Description */}
+              <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                {config.description}
+              </p>
+
+              {/* Content Form */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="user-input" className="text-sm font-medium text-gray-700">
+                    {config.label}
+                  </Label>
+                  {config.inputType === "textarea" ? (
+                    <Textarea
+                      id="user-input"
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      placeholder={config.placeholder}
+                      className="mt-1 min-h-[100px]"
+                      disabled={isGenerating}
+                      required
+                    />
+                  ) : (
+                    <Input
+                      id="user-input"
+                      type="text"
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      placeholder={config.placeholder}
+                      className="mt-1"
+                      disabled={isGenerating}
+                      required
+                    />
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex space-x-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClose}
+                    disabled={isGenerating}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isGenerating || !userInput.trim()}
+                    className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </form>
+
+              {/* Pro tip */}
+              <div className="mt-6 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  💡 <strong>Pro tip:</strong> Be specific about your requirements for better AI-generated content. 
+                  Include target audience, tone, and key features you want to highlight.
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Theme Selection */}
+              <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                Choose a theme for your template. The theme will determine the colors, fonts, and overall style of your template.
+              </p>
+              
+              <ThemeSelection 
+                themes={themes} 
+                selectedThemeId={selectedThemeId} 
+                onSelectTheme={setSelectedThemeId} 
+              />
+              
+              {/* Actions */}
+              <div className="flex space-x-3 pt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={isGenerating}
+                  className="flex-1"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isGenerating}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate Template
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

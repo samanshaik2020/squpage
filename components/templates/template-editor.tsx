@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -21,7 +21,10 @@ import { TemplateEditorProvider, useTemplateEditor } from "@/lib/template-editor
 import { AIGenerationModal } from "@/components/templates/ai-generation-modal"
 import { AIGenerationLoading } from "@/components/templates/ai-generation-loading"
 import { Sparkles } from "lucide-react"
+import { ThemeProvider } from "./theme-provider"
+import { themes, getThemeById } from "@/lib/theme-system"
 import { TemplateDebug } from "@/components/debug/template-debug"
+import { templateStore } from "@/lib/template-store"
 
 interface TemplateEditorProps {
   templateId: string
@@ -54,7 +57,7 @@ function TemplateEditorContent({
   editorRef?: React.RefObject<HTMLDivElement | null>
   savedProjectId?: string
 }) {
-  const { selectedElement, selectElement, canUndo, canRedo, undo, redo, updateElement, setTemplateId, elements, hasElementsForTemplate } = useTemplateEditor()
+  const { selectedElement, selectElement, canUndo, canRedo, undo, redo, updateElement, setTemplateId, elements, hasElementsForTemplate, currentThemeId, setCurrentThemeId } = useTemplateEditor()
   const [isGenerating, setIsGenerating] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
   const [showLoadingScreen, setShowLoadingScreen] = useState(false)
@@ -89,13 +92,25 @@ function TemplateEditorContent({
     }
   }, [isPaidAITemplate, templateGenerated])
   
-  // Initialize template context with templateId and reset state when template changes
+  // Load saved theme from template when templateId changes
   useEffect(() => {
-    console.log(`Template editor: Setting template ID to ${templateId}`);
-    setTemplateId(templateId);
-    // Reset initialization state when template changes
-    setElementsInitialized(false);
-  }, [templateId, setTemplateId]);
+    if (templateId) {
+      // Try to load theme from saved template
+      const loadTemplateTheme = async () => {
+        try {
+          const template = await templateStore.getById(templateId);
+          if (template && template.themeId) {
+            console.log(`Template editor: Loading saved theme ${template.themeId} for template ${templateId}`);
+            setCurrentThemeId(template.themeId);
+          }
+        } catch (error) {
+          console.error('Error loading template theme:', error);
+        }
+      };
+      
+      loadTemplateTheme();
+    }
+  }, [templateId, setCurrentThemeId]);
 
   // Initialize template elements when component mounts (only once)
   useEffect(() => {
@@ -409,7 +424,7 @@ function TemplateEditorContent({
     }
   }
 
-  const handleGenerateAIContent = async (userInput: string) => {
+  const handleGenerateAIContent = async (userInput: string, themeId: string) => {
     let requestParam = "topic"
     
     if (templateId === "product-landing-page") {
@@ -429,6 +444,26 @@ function TemplateEditorContent({
     setShowAIModal(false)
     setShowLoadingScreen(true)
     setIsGenerating(true)
+    
+    // Store the selected theme ID
+    console.log(`Template editor: Using theme ${themeId} for generation`);
+    
+    // Update the template with the theme ID
+    setCurrentThemeId(themeId);
+    
+    if (savedProjectId) {
+      try {
+        await fetch(`/api/templates/${savedProjectId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ themeId }),
+        });
+      } catch (error) {
+        console.error("Error updating template theme:", error);
+      }
+    }
     
     // Clear existing elements before AI generation to ensure clean state
     console.log("Template editor: Clearing elements before AI generation");
@@ -924,6 +959,7 @@ function TemplateEditorContent({
         thumbnail: '/placeholder.svg?height=120&width=200&text=Template',
         elements: elements,
         templateId: templateId, // Ensure templateId is passed correctly
+        themeId: currentThemeId, // Include the selected theme ID
         settings: {
           title: getTemplateName(),
           description: `Template based on ${getTemplateName()}`,
@@ -981,6 +1017,11 @@ function TemplateEditorContent({
       setIsSaving(false)
     }
   }
+
+  // Get the current theme object based on the selected theme ID
+  const currentTheme = useMemo(() => {
+    return getThemeById(currentThemeId);
+  }, [currentThemeId]);
 
   const handleCloseAIModal = () => {
     setShowAIModal(false)
@@ -1054,7 +1095,9 @@ function TemplateEditorContent({
     )
   }
 
-  return (
+
+return (
+  <ThemeProvider theme={currentTheme}>
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Top Bar */}
       <div className="h-16 bg-white border-b flex items-center justify-between px-4 relative z-50">
@@ -1237,19 +1280,25 @@ function TemplateEditorContent({
         </div>
 
         {selectedElement && <TemplateEditingPanel elementId={selectedElement} onClose={() => selectElement(null)} />}
-      </div>
 
+      </div>
+      
       {/* AI Generation Modal */}
       <AIGenerationModal
         isOpen={showAIModal}
-        onClose={handleCloseAIModal}
+        onClose={() => setShowAIModal(false)}
         onGenerate={handleGenerateAIContent}
         templateId={templateId}
         isGenerating={isGenerating}
       />
       
-      {/* Debug Component - Temporary for debugging */}
+      {/* AI Generation Loading Screen */}
+      {showLoadingScreen && (
+        <AIGenerationLoading templateId={templateId} />
+      )}
+      
       <TemplateDebug />
     </div>
+    </ThemeProvider>
   )
 }

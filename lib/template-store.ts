@@ -43,6 +43,7 @@ export interface TemplateProject {
   thumbnail: string
   elements: TemplateElement[]
   templateId?: string
+  themeId?: string // Added theme ID for theme system
   settings: {
     title: string
     description: string

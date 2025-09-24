@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { useTemplateEditor } from "@/lib/template-editor-context" // Updated import
+import { defaultAnimations, defaultTransitions, animationPresets } from "@/lib/button-animations"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -131,15 +134,55 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
   }
 
   const getElementType = () => {
-    if (elementId.includes("image") || elementId.includes("avatar") || elementId.includes("logo")) return "image"
-    if (elementId.includes("video")) return "video"
-    if (elementId.includes("button") || elementId.includes("cta")) return "button"
-    if (elementId.includes("title") || elementId.includes("heading")) return "heading"
-    if (elementId.includes("section")) return "section" // Identify sections
-    return "text"
+    console.log("Element ID for detection:", elementId);
+    
+    // Check if we have an element with this ID
+    const element = elements.find(el => el.id === elementId);
+    console.log("Found element:", element);
+    
+    // If we have an element and it has a type property, use that
+    if (element && element.type) {
+      console.log("Using element.type:", element.type);
+      return element.type;
+    }
+    
+    // Otherwise use the ID-based detection as fallback
+    if (elementId.includes("image") || elementId.includes("avatar") || elementId.includes("logo")) {
+      console.log("Detected as image");
+      return "image";
+    }
+    if (elementId.includes("video")) {
+      console.log("Detected as video");
+      return "video";
+    }
+    if (elementId.includes("button") || elementId.includes("cta") || elementId.includes("btn")) {
+      console.log("Detected as button");
+      return "button";
+    }
+    if (elementId.includes("title") || elementId.includes("heading")) {
+      console.log("Detected as heading");
+      return "heading";
+    }
+    if (elementId.includes("section")) {
+      console.log("Detected as section");
+      return "section";
+    }
+    
+    console.log("Defaulting to text");
+    return "text";
   }
 
   const elementType = getElementType()
+  console.log("Final element type:", elementType);
+
+  const sliderFontSize = useMemo(() => {
+    const fontSize = styles.fontSize ?? 16
+    if (typeof fontSize === "string") {
+      const parsed = parseFloat(fontSize)
+      return Number.isNaN(parsed) ? 16 : parsed
+    }
+    return fontSize
+  }, [styles.fontSize])
 
   return (
     <div className="editing-panel fixed right-4 top-20 w-80 bg-white border shadow-2xl rounded-lg z-50 max-h-[calc(100vh-6rem)] overflow-hidden">
@@ -192,7 +235,7 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
 
           <TabsContent value="content" className="p-4 space-y-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-sm">
                   {elementType === "image"
                     ? "Image Content"
@@ -200,8 +243,34 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
                       ? "Video Content"
                       : elementType === "section"
                         ? "Section Properties"
-                        : "Text Content"}
+                        : elementType === "button"
+                          ? "Button Content"
+                          : "Text Content"}
                 </CardTitle>
+                <div className="flex gap-2">
+                  <Button 
+                    variant={elementType === "button" ? "default" : "outline"} 
+                    size="sm"
+                    onClick={() => {
+                      // Set this element as a button
+                      updateElement(elementId, { type: "button" });
+                      console.log("Set element type to button");
+                    }}
+                  >
+                    Button
+                  </Button>
+                  <Button 
+                    variant={elementType === "text" ? "default" : "outline"} 
+                    size="sm"
+                    onClick={() => {
+                      // Set this element as text
+                      updateElement(elementId, { type: "text" });
+                      console.log("Set element type to text");
+                    }}
+                  >
+                    Text
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {elementType === "image" ? (
@@ -367,6 +436,7 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
                   </div>
                 )}
 
+                {/* Always show URL field for buttons */}
                 {elementType === "button" && (
                   <div>
                     <Label htmlFor="button-url">Button URL</Label>
@@ -386,6 +456,9 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
                         placeholder="https://example.com"
                         className="flex-1"
                       />
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Add a URL to make this button a clickable link (e.g., https://example.com)
                     </div>
                   </div>
                 )}
@@ -454,9 +527,9 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
                 </div>
 
                 <div>
-                  <Label>Font Size: {styles.fontSize}px</Label>
+                  <Label>Font Size: {sliderFontSize}px</Label>
                   <Slider
-                    value={[styles.fontSize || 16]}
+                    value={[sliderFontSize]}
                     onValueChange={([value]) => handleStyleChange({ fontSize: value })}
                     max={72}
                     min={12}
@@ -530,6 +603,248 @@ export function EditingPanel({ elementId, onClose }: EditingPanelProps) {
                 </div>
               </CardContent>
             </Card>
+            
+            {/* Only show animations for text and button elements */}
+            {(elementType === "text" || elementType === "heading" || elementType === "button") && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Animation & Transitions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Animation Preset Selector */}
+                  <div>
+                    <Label>Animation Preset</Label>
+                    <Select
+                      value={(() => {
+                        // Determine the current preset based on animation and transition settings
+                        if (!styles.animation || styles.animation.type === 'none') return "none";
+                        
+                        // Check if current settings match any preset
+                        for (const [key, preset] of Object.entries(animationPresets)) {
+                          const animMatch = JSON.stringify(styles.animation) === JSON.stringify(preset.animation);
+                          const transMatch = JSON.stringify(styles.transition) === JSON.stringify(preset.transition);
+                          if (animMatch && transMatch) return key;
+                        }
+                        
+                        return "custom";
+                      })()}
+                      onValueChange={(value) => {
+                        if (value === "none") {
+                          handleStyleChange({
+                            animation: defaultAnimations.none,
+                            transition: defaultTransitions.all
+                          });
+                        } else if (value in animationPresets) {
+                          const preset = animationPresets[value as keyof typeof animationPresets];
+                          handleStyleChange({
+                            animation: preset.animation,
+                            transition: preset.transition
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a preset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="subtle">Subtle</SelectItem>
+                        <SelectItem value="energetic">Energetic</SelectItem>
+                        <SelectItem value="elegant">Elegant</SelectItem>
+                        <SelectItem value="playful">Playful</SelectItem>
+                        <SelectItem value="modern">Modern</SelectItem>
+                        <SelectItem value="classic">Classic</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Animation Type */}
+                  <div>
+                    <Label>Animation Type</Label>
+                    <Select
+                      value={styles.animation?.type || "none"}
+                      onValueChange={(value) => {
+                        const currentAnimation = styles.animation || defaultAnimations.none;
+                        handleStyleChange({
+                          animation: {
+                            ...currentAnimation,
+                            type: value as any
+                          }
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select animation type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="pulse">Pulse</SelectItem>
+                        <SelectItem value="bounce">Bounce</SelectItem>
+                        <SelectItem value="shake">Shake</SelectItem>
+                        <SelectItem value="glow">Glow</SelectItem>
+                        <SelectItem value="slide">Slide</SelectItem>
+                        <SelectItem value="scale">Scale</SelectItem>
+                        <SelectItem value="rotate">Rotate</SelectItem>
+                        <SelectItem value="flip">Flip</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Animation Trigger */}
+                  {styles.animation?.type !== "none" && (
+                    <div>
+                      <Label>Trigger On</Label>
+                      <Select
+                        value={styles.animation?.trigger || "hover"}
+                        onValueChange={(value) => {
+                          const currentAnimation = styles.animation || defaultAnimations.none;
+                          handleStyleChange({
+                            animation: {
+                              ...currentAnimation,
+                              trigger: value as any
+                            }
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select trigger" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="hover">Hover</SelectItem>
+                          <SelectItem value="click">Click</SelectItem>
+                          <SelectItem value="load">Page Load</SelectItem>
+                          <SelectItem value="scroll">Scroll Into View</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  
+                  {/* Animation Duration */}
+                  {styles.animation?.type !== "none" && (
+                    <div>
+                      <Label>Duration: {styles.animation?.duration || 300}ms</Label>
+                      <Slider
+                        value={useMemo(() => [styles.animation?.duration || 300], [styles.animation?.duration])}
+                        onValueChange={([value]) => {
+                          const currentAnimation = styles.animation || defaultAnimations.none;
+                          handleStyleChange({
+                            animation: {
+                              ...currentAnimation,
+                              duration: value
+                            }
+                          });
+                        }}
+                        max={2000}
+                        min={100}
+                        step={100}
+                        className="mt-2"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Animation Timing Function */}
+                  {styles.animation?.type !== "none" && (
+                    <div>
+                      <Label>Timing Function</Label>
+                      <Select
+                        value={styles.animation?.timing || "ease"}
+                        onValueChange={(value) => {
+                          const currentAnimation = styles.animation || defaultAnimations.none;
+                          handleStyleChange({
+                            animation: {
+                              ...currentAnimation,
+                              timing: value as any
+                            }
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select timing" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ease">Ease</SelectItem>
+                          <SelectItem value="ease-in">Ease In</SelectItem>
+                          <SelectItem value="ease-out">Ease Out</SelectItem>
+                          <SelectItem value="ease-in-out">Ease In Out</SelectItem>
+                          <SelectItem value="linear">Linear</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  
+                  {/* Infinite Animation */}
+                  {styles.animation?.type !== "none" && (
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="infinite-animation"
+                        checked={styles.animation?.infinite || false}
+                        onCheckedChange={(checked) => {
+                          const currentAnimation = styles.animation || defaultAnimations.none;
+                          handleStyleChange({
+                            animation: {
+                              ...currentAnimation,
+                              infinite: checked
+                            }
+                          });
+                        }}
+                      />
+                      <Label htmlFor="infinite-animation">Infinite Animation</Label>
+                    </div>
+                  )}
+                  
+                  {/* Transition Settings */}
+                  <div className="pt-2">
+                    <Label>Transition Property</Label>
+                    <Select
+                      value={styles.transition?.property || "all"}
+                      onValueChange={(value) => {
+                        const currentTransition = styles.transition || defaultTransitions.all;
+                        handleStyleChange({
+                          transition: {
+                            ...currentTransition,
+                            property: value as any
+                          }
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select property" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Properties</SelectItem>
+                        <SelectItem value="background">Background</SelectItem>
+                        <SelectItem value="transform">Transform</SelectItem>
+                        <SelectItem value="color">Color</SelectItem>
+                        <SelectItem value="border">Border</SelectItem>
+                        <SelectItem value="shadow">Shadow</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Transition Duration */}
+                  <div>
+                    <Label>Transition Duration: {styles.transition?.duration || 300}ms</Label>
+                    <Slider
+                      value={useMemo(() => [styles.transition?.duration || 300], [styles.transition?.duration])}
+                      onValueChange={([value]) => {
+                        const currentTransition = styles.transition || defaultTransitions.all;
+                        handleStyleChange({
+                          transition: {
+                            ...currentTransition,
+                            duration: value
+                          }
+                        });
+                      }}
+                      max={1000}
+                      min={100}
+                      step={50}
+                      className="mt-2"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="layout" className="p-4 space-y-4">

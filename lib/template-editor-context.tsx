@@ -7,22 +7,49 @@ interface TemplateElement {
   id: string
   type: string
   content: any
-  styles: any
+  styles: {
+    color?: string
+    backgroundColor?: string
+    fontSize?: number | string
+    fontWeight?: string
+    textAlign?: string
+    width?: string | number
+    height?: string | number
+    xPosition?: number
+    yPosition?: number
+    // Animation properties moved into styles
+    animation?: {
+      type: 'none' | 'pulse' | 'bounce' | 'shake' | 'glow' | 'slide' | 'scale' | 'rotate' | 'flip'
+      duration: number // in milliseconds
+      timing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear'
+      trigger: 'hover' | 'click' | 'load' | 'scroll'
+      infinite: boolean
+      delay: number // in milliseconds
+    }
+    // Transition properties moved into styles
+    transition?: {
+      property: 'all' | 'background' | 'transform' | 'color' | 'border' | 'shadow'
+      duration: number // in milliseconds
+      timing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear'
+      delay: number // in milliseconds
+    }
+  }
   url?: string
   position: { x: number; y: number }
+  // Keep these for backward compatibility but mark as deprecated
   animation?: {
     type: 'none' | 'pulse' | 'bounce' | 'shake' | 'glow' | 'slide' | 'scale' | 'rotate' | 'flip'
-    duration: number // in milliseconds
+    duration: number
     timing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear'
     trigger: 'hover' | 'click' | 'load' | 'scroll'
     infinite: boolean
-    delay: number // in milliseconds
+    delay: number
   }
   transition?: {
     property: 'all' | 'background' | 'transform' | 'color' | 'border' | 'shadow'
-    duration: number // in milliseconds
+    duration: number
     timing: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear'
-    delay: number // in milliseconds
+    delay: number
   }
 }
 
@@ -34,6 +61,7 @@ interface TemplateEditorState {
   canUndo: boolean
   canRedo: boolean
   templateId: string | null
+  currentThemeId: string
 }
 
 interface TemplateEditorActions {
@@ -45,6 +73,7 @@ interface TemplateEditorActions {
   redo: () => void
   saveToHistory: (currentElements: TemplateElement[]) => void
   setTemplateId: (templateId: string) => void
+  setCurrentThemeId: (themeId: string) => void
   clearElements: () => void
   hasElementsForTemplate: (templateId: string) => boolean
   switchTemplate: (newTemplateId: string) => void
@@ -60,6 +89,7 @@ export function TemplateEditorProvider({ children }: { children: React.ReactNode
   const [history, setHistory] = useState<TemplateElement[][]>([[]])
   const [historyIndex, setHistoryIndex] = useState(0)
   const [templateId, setTemplateId] = useState<string | null>(null)
+  const [currentThemeId, setCurrentThemeId] = useState<string>('modern-minimal')
   
   // Load current templateId from localStorage on mount and clean up old storage
   useEffect(() => {
@@ -340,6 +370,7 @@ export function TemplateEditorProvider({ children }: { children: React.ReactNode
       canUndo,
       canRedo,
       templateId,
+      currentThemeId,
       addElement,
       updateElement,
       deleteElement,
@@ -348,6 +379,7 @@ export function TemplateEditorProvider({ children }: { children: React.ReactNode
       redo,
       saveToHistory,
       setTemplateId,
+      setCurrentThemeId,
       clearElements,
       hasElementsForTemplate,
       switchTemplate,
@@ -361,6 +393,7 @@ export function TemplateEditorProvider({ children }: { children: React.ReactNode
       canUndo,
       canRedo,
       templateId,
+      currentThemeId,
       addElement,
       updateElement,
       deleteElement,
@@ -368,6 +401,8 @@ export function TemplateEditorProvider({ children }: { children: React.ReactNode
       undo,
       redo,
       saveToHistory,
+      setTemplateId,
+      setCurrentThemeId,
       clearElements,
       hasElementsForTemplate,
       switchTemplate,

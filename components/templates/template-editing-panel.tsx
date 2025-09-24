@@ -88,36 +88,54 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
       setContent(element.content || "")
       setUrl(element.url || "")
       setElementType(element.type || "text")
-      setStyles(
-        element.styles || {
-          color: "#000000",
-          backgroundColor: "#ffffff",
-          fontSize: 16,
-          fontWeight: "normal",
-          textAlign: "left",
-          xPosition: 0,
-          yPosition: 0,
-          width: 'auto',
-          height: 'auto',
-        },
-      )
       
-      // Load animation and transition settings
-      setAnimation(element.animation || {
+      // Get styles with defaults
+      const elementStyles = element.styles || {
+        color: "#000000",
+        backgroundColor: "#ffffff",
+        fontSize: 16,
+        fontWeight: "normal",
+        textAlign: "left",
+        xPosition: 0,
+        yPosition: 0,
+        width: 'auto',
+        height: 'auto',
+      }
+      
+      // Set basic styles
+      setStyles({
+        color: elementStyles.color || "#000000",
+        backgroundColor: elementStyles.backgroundColor || "#ffffff",
+        fontSize: typeof elementStyles.fontSize === 'string' ? parseInt(elementStyles.fontSize as string, 10) : (elementStyles.fontSize || 16),
+        fontWeight: elementStyles.fontWeight || "normal",
+        textAlign: elementStyles.textAlign || "left",
+        xPosition: elementStyles.xPosition || 0,
+        yPosition: elementStyles.yPosition || 0,
+        width: typeof elementStyles.width === 'number' ? `${elementStyles.width}px` : (elementStyles.width || 'auto'),
+        height: typeof elementStyles.height === 'number' ? `${elementStyles.height}px` : (elementStyles.height || 'auto'),
+      })
+      
+      // Load animation settings - check both places (for backward compatibility)
+      const animationData = elementStyles.animation || element.animation || {
         type: 'none',
         duration: 300,
         timing: 'ease',
         trigger: 'hover',
         infinite: false,
         delay: 0
-      })
+      }
       
-      setTransition(element.transition || {
+      setAnimation(animationData)
+      
+      // Load transition settings - check both places (for backward compatibility)
+      const transitionData = elementStyles.transition || element.transition || {
         property: 'all',
         duration: 300,
         timing: 'ease',
         delay: 0
-      })
+      }
+      
+      setTransition(transitionData)
     } else {
       // If element doesn't exist in context, get the original content from the DOM element
       console.log(`TemplateEditingPanel: Element ${elementId} not found in context, getting original content from DOM`);
@@ -180,48 +198,119 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
 
   const handleContentChange = (newContent: string) => {
     setContent(newContent)
-    updateElement(elementId, { content: newContent })
+    
+    // Ensure element exists
+    if (!element) {
+      const newElement = {
+        id: elementId,
+        type: elementType,
+        content: newContent,
+        url: url,
+        styles: styles,
+        position: { x: 0, y: 0 }
+      }
+      addElement(newElement)
+    } else {
+      updateElement(elementId, { content: newContent })
+    }
   }
 
   const handleUrlChange = (newUrl: string) => {
     setUrl(newUrl)
-    updateElement(elementId, { url: newUrl })
+    
+    // Ensure element exists
+    if (!element) {
+      const newElement = {
+        id: elementId,
+        type: elementType,
+        content: content,
+        url: newUrl,
+        styles: styles,
+        position: { x: 0, y: 0 }
+      }
+      addElement(newElement)
+    } else {
+      updateElement(elementId, { url: newUrl })
+    }
   }
 
   const handleStyleChange = (styleKey: string, value: any) => {
     const newStyles = { ...styles, [styleKey]: value }
     setStyles(newStyles)
+    
     // Debounce the update to prevent infinite loops
     setTimeout(() => {
-      updateElement(elementId, { styles: newStyles })
+      // Ensure element exists
+      if (!element) {
+        const newElement = {
+          id: elementId,
+          type: elementType,
+          content: content,
+          url: url,
+          styles: newStyles,
+          position: { x: 0, y: 0 }
+        }
+        addElement(newElement)
+      } else {
+        updateElement(elementId, { styles: newStyles })
+      }
     }, 0)
   }
 
   const handleAnimationChange = (animationKey: string, value: any) => {
+    // Update local state
     const newAnimation = { ...animation, [animationKey]: value }
     setAnimation(newAnimation)
+    
     // Debounce the update to prevent infinite loops
     setTimeout(() => {
-      updateElement(elementId, { animation: newAnimation })
+      // Update element with animation in styles property
+      updateElement(elementId, { 
+        styles: { 
+          ...element?.styles,
+          animation: newAnimation 
+        },
+        // Keep legacy property for backward compatibility
+        animation: newAnimation
+      })
     }, 0)
   }
 
   const handleTransitionChange = (transitionKey: string, value: any) => {
+    // Update local state
     const newTransition = { ...transition, [transitionKey]: value }
     setTransition(newTransition)
+    
     // Debounce the update to prevent infinite loops
     setTimeout(() => {
-      updateElement(elementId, { transition: newTransition })
+      // Update element with transition in styles property
+      updateElement(elementId, { 
+        styles: { 
+          ...element?.styles,
+          transition: newTransition 
+        },
+        // Keep legacy property for backward compatibility
+        transition: newTransition
+      })
     }, 0)
   }
 
   const handlePresetChange = (presetName: string) => {
     const preset = animationPresets[presetName as keyof typeof animationPresets]
     if (preset) {
+      // Update local state
       setAnimation(preset.animation)
       setTransition(preset.transition)
+      
       setTimeout(() => {
+        // Update element with animation and transition in styles property
         updateElement(elementId, { 
+          styles: {
+            ...element?.styles,
+            animation: preset.animation,
+            transition: preset.transition
+          },
+          // Keep legacy properties for backward compatibility
           animation: preset.animation, 
           transition: preset.transition 
         })
@@ -230,9 +319,24 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
   }
 
   const handlePositionChange = (axis: 'x' | 'y', value: number) => {
-    const newPosition = { ...currentElement.position }
-    newPosition[axis] = value
-    updateElement(elementId, { position: newPosition })
+    // Ensure element exists first
+    if (!element) {
+      // Create the element if it doesn't exist
+      const newElement = {
+        id: elementId,
+        type: elementType,
+        content: content,
+        url: url,
+        styles: styles,
+        position: { x: axis === 'x' ? value : 0, y: axis === 'y' ? value : 0 }
+      }
+      addElement(newElement)
+    } else {
+      // Update existing element
+      const currentPosition = element.position || { x: 0, y: 0 }
+      const newPosition = { ...currentPosition, [axis]: value }
+      updateElement(elementId, { position: newPosition })
+    }
   }
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -248,17 +352,46 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
   }
 
   const handleDelete = () => {
-    deleteElement(elementId)
-    onClose()
+    if (element) {
+      deleteElement(elementId)
+      onClose()
+    } else {
+      // If element doesn't exist in context, just close the panel
+      onClose()
+    }
   }
 
   const handleDuplicate = () => {
+    // Ensure element exists in context first
+    if (!element) {
+      // Create the original element first
+      const originalElement = {
+        id: elementId,
+        type: elementType,
+        content: content,
+        url: url,
+        styles: styles,
+        position: { x: 0, y: 0 }
+      }
+      addElement(originalElement)
+    }
+    
+    // Create duplicate
+    const sourceElement = element || {
+      id: elementId,
+      type: elementType,
+      content: content,
+      url: url,
+      styles: styles,
+      position: { x: 0, y: 0 }
+    }
+    
     const newElement = {
-      ...currentElement,
-      id: `${currentElement.id}_copy_${Date.now()}`,
+      ...sourceElement,
+      id: `${sourceElement.id}_copy_${Date.now()}`,
       position: {
-        x: currentElement.position.x + 20,
-        y: currentElement.position.y + 20,
+        x: (sourceElement.position?.x || 0) + 20,
+        y: (sourceElement.position?.y || 0) + 20,
       },
     }
     addElement(newElement)
@@ -278,11 +411,9 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
         </CardHeader>
         <CardContent className="flex-1 overflow-auto">
           <Tabs defaultValue="content" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="style">Style</TabsTrigger>
-              <TabsTrigger value="animation">Animation</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
               <TabsTrigger value="advanced">Advanced</TabsTrigger>
             </TabsList>
 
@@ -356,131 +487,6 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
               )}
             </TabsContent>
 
-            <TabsContent value="preview" className="space-y-4">
-              {/* Live Preview */}
-              <div className="border rounded-lg p-4 bg-white min-h-[200px]">
-                <Label className="text-sm font-medium mb-2 block">Live Preview</Label>
-                <div className="preview-container" style={{ 
-                  fontFamily: 'inherit',
-                  lineHeight: '1.5'
-                }}>
-                  {currentElement.type === 'text' && (
-                    <p style={{
-                      color: styles.color,
-                      backgroundColor: styles.backgroundColor,
-                      fontSize: `${styles.fontSize}px`,
-                      fontWeight: styles.fontWeight,
-                      textAlign: styles.textAlign as any,
-                      width: styles.width,
-                      height: styles.height,
-                      padding: '8px',
-                      margin: '0',
-                      borderRadius: '4px'
-                    }}>
-                      {content || 'Enter your text content...'}
-                    </p>
-                  )}
-                  {currentElement.type === 'heading' && (
-                    <h2 style={{
-                      color: styles.color,
-                      backgroundColor: styles.backgroundColor,
-                      fontSize: `${styles.fontSize}px`,
-                      fontWeight: styles.fontWeight,
-                      textAlign: styles.textAlign as any,
-                      width: styles.width,
-                      height: styles.height,
-                      padding: '8px',
-                      margin: '0',
-                      borderRadius: '4px'
-                    }}>
-                      {content || 'Enter heading...'}
-                    </h2>
-                  )}
-                  {currentElement.type === 'button' && (
-                    <button style={{
-                      color: styles.color,
-                      backgroundColor: styles.backgroundColor,
-                      fontSize: `${styles.fontSize}px`,
-                      fontWeight: styles.fontWeight,
-                      textAlign: styles.textAlign as any,
-                      width: styles.width,
-                      height: styles.height,
-                      padding: '12px 24px',
-                      margin: '0',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer'
-                    }}>
-                      {content || 'Button text...'}
-                    </button>
-                  )}
-                  {currentElement.type === 'image' && (
-                    <div style={{
-                      backgroundColor: styles.backgroundColor,
-                      width: styles.width,
-                      height: styles.height,
-                      borderRadius: '4px',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      {url ? (
-                        <img 
-                          src={url} 
-                          alt="Preview" 
-                          style={{
-                            maxWidth: '100%',
-                            maxHeight: '100%',
-                            objectFit: 'cover'
-                          }}
-                        />
-                      ) : (
-                        <div style={{
-                          color: '#666',
-                          textAlign: 'center',
-                          padding: '20px'
-                        }}>
-                          No image selected
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Share Options */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Share Preview</Label>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      const previewData = {
-                        element: currentElement,
-                        styles,
-                        content,
-                        url
-                      }
-                      navigator.clipboard.writeText(JSON.stringify(previewData, null, 2))
-                    }}
-                  >
-                    Copy Data
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      const shareUrl = `${window.location.origin}/preview?element=${encodeURIComponent(JSON.stringify({ element: currentElement, styles, content, url }))}`
-                      navigator.clipboard.writeText(shareUrl)
-                    }}
-                  >
-                    Copy Link
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
 
             <TabsContent value="style" className="space-y-4">
               {/* Typography */}
@@ -581,200 +587,105 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
                   />
                 </div>
               </div>
-            </TabsContent>
 
-            <TabsContent value="animation" className="space-y-4">
-              {/* Show animation controls only for buttons */}
+              {/* Animation Section - Only for buttons */}
               {currentElement.type === "button" && (
-                <>
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h3 className="text-sm font-medium mb-4">Animation & Effects</h3>
+                  
                   {/* Animation Presets */}
-                  <div>
-                    <Label>Animation Presets</Label>
-                    <Select onValueChange={handlePresetChange}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Choose a preset" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="subtle">Subtle (Scale)</SelectItem>
-                        <SelectItem value="energetic">Energetic (Bounce)</SelectItem>
-                        <SelectItem value="elegant">Elegant (Glow)</SelectItem>
-                        <SelectItem value="playful">Playful (Shake)</SelectItem>
-                        <SelectItem value="modern">Modern (Slide)</SelectItem>
-                        <SelectItem value="classic">Classic (Pulse)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <Label className="text-xs font-medium mb-2 block">Quick Presets</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(animationPresets).map(([key, preset]) => (
+                        <Button 
+                          key={key}
+                          variant={animation.type === preset.animation.type ? "default" : "outline"}
+                          size="sm"
+                          className="text-xs h-auto py-1.5"
+                          onClick={() => handlePresetChange(key)}
+                        >
+                          {key.charAt(0).toUpperCase() + key.slice(1)}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Animation Type */}
-                  <div>
-                    <Label>Animation Type</Label>
-                    <Select value={animation.type} onValueChange={(value) => handleAnimationChange('type', value)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="pulse">Pulse</SelectItem>
-                        <SelectItem value="bounce">Bounce</SelectItem>
-                        <SelectItem value="shake">Shake</SelectItem>
-                        <SelectItem value="glow">Glow</SelectItem>
-                        <SelectItem value="slide">Slide</SelectItem>
-                        <SelectItem value="scale">Scale</SelectItem>
-                        <SelectItem value="rotate">Rotate</SelectItem>
-                        <SelectItem value="flip">Flip</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  {/* Animation Controls */}
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">Animation</Label>
+                        <Select value={animation.type} onValueChange={(value) => handleAnimationChange('type', value)}>
+                          <SelectTrigger className="mt-1 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="pulse">Pulse</SelectItem>
+                            <SelectItem value="bounce">Bounce</SelectItem>
+                            <SelectItem value="shake">Shake</SelectItem>
+                            <SelectItem value="glow">Glow</SelectItem>
+                            <SelectItem value="slide">Slide</SelectItem>
+                            <SelectItem value="scale">Scale</SelectItem>
+                            <SelectItem value="rotate">Rotate</SelectItem>
+                            <SelectItem value="flip">Flip</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Trigger</Label>
+                        <Select value={animation.trigger} onValueChange={(value) => handleAnimationChange('trigger', value)}>
+                          <SelectTrigger className="mt-1 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="hover">Hover</SelectItem>
+                            <SelectItem value="click">Click</SelectItem>
+                            <SelectItem value="load">Load</SelectItem>
+                            <SelectItem value="scroll">Scroll</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Duration Slider */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">Duration</Label>
+                        <span className="text-xs text-gray-500">{animation.duration}ms</span>
+                      </div>
+                      <Slider
+                        value={[animation.duration]}
+                        onValueChange={([value]) => handleAnimationChange('duration', value)}
+                        max={2000}
+                        min={100}
+                        step={50}
+                        className="h-1"
+                      />
+                    </div>
+
+                    {/* Infinite Toggle */}
+                    <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      <Label className="text-xs">Infinite</Label>
+                      <Switch
+                        checked={animation.infinite}
+                        onCheckedChange={(checked) => handleAnimationChange('infinite', checked)}
+                      />
+                    </div>
                   </div>
-
-                  {/* Animation Trigger */}
-                  <div>
-                    <Label>Animation Trigger</Label>
-                    <Select value={animation.trigger} onValueChange={(value) => handleAnimationChange('trigger', value)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="hover">On Hover</SelectItem>
-                        <SelectItem value="click">On Click</SelectItem>
-                        <SelectItem value="load">On Load</SelectItem>
-                        <SelectItem value="scroll">On Scroll</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Animation Duration */}
-                  <div>
-                    <Label>Animation Duration: {animation.duration}ms</Label>
-                    <Slider
-                      value={[animation.duration]}
-                      onValueChange={([value]) => handleAnimationChange('duration', value)}
-                      max={2000}
-                      min={100}
-                      step={50}
-                      className="mt-2"
-                    />
-                  </div>
-
-                  {/* Animation Timing */}
-                  <div>
-                    <Label>Animation Timing</Label>
-                    <Select value={animation.timing} onValueChange={(value) => handleAnimationChange('timing', value)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ease">Ease</SelectItem>
-                        <SelectItem value="ease-in">Ease In</SelectItem>
-                        <SelectItem value="ease-out">Ease Out</SelectItem>
-                        <SelectItem value="ease-in-out">Ease In Out</SelectItem>
-                        <SelectItem value="linear">Linear</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Animation Delay */}
-                  <div>
-                    <Label>Animation Delay: {animation.delay}ms</Label>
-                    <Slider
-                      value={[animation.delay]}
-                      onValueChange={([value]) => handleAnimationChange('delay', value)}
-                      max={1000}
-                      min={0}
-                      step={50}
-                      className="mt-2"
-                    />
-                  </div>
-
-                  {/* Infinite Animation */}
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={animation.infinite}
-                      onCheckedChange={(checked) => handleAnimationChange('infinite', checked)}
-                    />
-                    <Label>Infinite Animation</Label>
-                  </div>
-
-                  <hr className="my-4" />
-
-                  {/* Transition Property */}
-                  <div>
-                    <Label>Transition Property</Label>
-                    <Select value={transition.property} onValueChange={(value) => handleTransitionChange('property', value)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Properties</SelectItem>
-                        <SelectItem value="background">Background</SelectItem>
-                        <SelectItem value="transform">Transform</SelectItem>
-                        <SelectItem value="color">Color</SelectItem>
-                        <SelectItem value="border">Border</SelectItem>
-                        <SelectItem value="shadow">Shadow</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Transition Duration */}
-                  <div>
-                    <Label>Transition Duration: {transition.duration}ms</Label>
-                    <Slider
-                      value={[transition.duration]}
-                      onValueChange={([value]) => handleTransitionChange('duration', value)}
-                      max={1000}
-                      min={50}
-                      step={25}
-                      className="mt-2"
-                    />
-                  </div>
-
-                  {/* Transition Timing */}
-                  <div>
-                    <Label>Transition Timing</Label>
-                    <Select value={transition.timing} onValueChange={(value) => handleTransitionChange('timing', value)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ease">Ease</SelectItem>
-                        <SelectItem value="ease-in">Ease In</SelectItem>
-                        <SelectItem value="ease-out">Ease Out</SelectItem>
-                        <SelectItem value="ease-in-out">Ease In Out</SelectItem>
-                        <SelectItem value="linear">Linear</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Transition Delay */}
-                  <div>
-                    <Label>Transition Delay: {transition.delay}ms</Label>
-                    <Slider
-                      value={[transition.delay]}
-                      onValueChange={([value]) => handleTransitionChange('delay', value)}
-                      max={500}
-                      min={0}
-                      step={25}
-                      className="mt-2"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Show message for non-button elements */}
-              {currentElement.type !== "button" && (
-                <div className="text-center text-gray-500 py-8">
-                  <p>Animation controls are only available for button elements.</p>
-                  <p className="text-sm mt-2">Select a button to customize its animations and transitions.</p>
                 </div>
               )}
             </TabsContent>
+
 
             <TabsContent value="advanced" className="space-y-4">
               {/* Position */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label>X Position: {currentElement.position?.x || 0}px</Label>
+                  <Label>X Position: {element?.position?.x || 0}px</Label>
                   <Slider
-                    value={[currentElement.position?.x || 0]}
+                    value={[element?.position?.x || 0]}
                     onValueChange={([value]) => handlePositionChange("x", value)}
                     max={1000}
                     min={0}
@@ -783,9 +694,9 @@ export function TemplateEditingPanel({ elementId, onClose }: TemplateEditingPane
                   />
                 </div>
                 <div>
-                  <Label>Y Position: {currentElement.position?.y || 0}px</Label>
+                  <Label>Y Position: {element?.position?.y || 0}px</Label>
                   <Slider
-                    value={[currentElement.position?.y || 0]}
+                    value={[element?.position?.y || 0]}
                     onValueChange={([value]) => handlePositionChange("y", value)}
                     max={1000}
                     min={0}

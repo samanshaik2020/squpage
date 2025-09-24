@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, Edit, Share2, Download } from 'lucide-react'
 import Link from 'next/link'
 import { useAnalyticsTracking } from '@/hooks/use-analytics-tracking'
+import { ThemeStyles } from './theme-styles'
 
 // Import template components
 import { SaasLandingTemplate } from '@/components/templates/saas-landing'
@@ -24,6 +25,7 @@ interface TemplateProject {
   name: string
   type: string
   templateId: string
+  themeId?: string
   elements: any[]
   settings: {
     title: string
@@ -232,6 +234,9 @@ export default function TemplateProjectPreviewPage() {
         </div>
       </div>
 
+      {/* Theme Styles */}
+      <ThemeStyles themeId={project.themeId} />
+      
       {/* Custom CSS */}
       {project.settings.customCSS && (
         <style dangerouslySetInnerHTML={{ __html: project.settings.customCSS }} />

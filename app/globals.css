@@ -5,6 +5,9 @@
 /* Import button animations */
 @import '../styles/button-animations.css';
 
+/* Import theme styles */
+@import '../styles/themes.css';
+
 @layer base {
   :root {
     --background: 0 0% 100%;

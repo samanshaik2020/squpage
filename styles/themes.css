@@ -1,0 +1,230 @@
+/* Theme System CSS */
+
+:root {
+  /* Default theme variables */
+  --color-primary: #3B82F6;
+  --color-secondary: #1E40AF;
+  --color-accent: #EAB308;
+  --color-background: #FFFFFF;
+  --color-text: #1F2937;
+  --color-heading: #111827;
+  --color-button-bg: #3B82F6;
+  --color-button-text: #FFFFFF;
+  --color-button-hover: #2563EB;
+  --color-card-bg: #FFFFFF;
+  --color-card-border: #E5E7EB;
+  --color-footer-bg: #F9FAFB;
+  --color-footer-text: #6B7280;
+  
+  --font-heading: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-size-base: 16px;
+  --font-size-h1: 3rem;
+  --font-size-h2: 2.25rem;
+  --font-size-h3: 1.5rem;
+  
+  --border-radius: 0.5rem;
+  --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --spacing-section: 5rem;
+  --spacing-element: 1.5rem;
+}
+
+/* Theme-specific styles */
+/* Modern-minimal theme uses default values from :root */
+
+.theme-bold-vibrant {
+  --color-primary: #8B5CF6;
+  --color-secondary: #6D28D9;
+  --color-accent: #F97316;
+  --color-button-bg: #8B5CF6;
+  --color-button-hover: #6D28D9;
+  --color-footer-bg: #111827;
+  --color-footer-text: #F9FAFB;
+  
+  --font-heading: 'Poppins', sans-serif;
+  --font-body: 'Poppins', sans-serif;
+  --font-size-h1: 3.5rem;
+  --font-size-h2: 2.5rem;
+  --font-size-h3: 1.75rem;
+  
+  --border-radius: 1rem;
+  --box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --spacing-section: 6rem;
+  --spacing-element: 2rem;
+}
+
+.theme-elegant-serif {
+  --color-primary: #10B981;
+  --color-secondary: #059669;
+  --color-accent: #F59E0B;
+  --color-background: #FFFBF5;
+  --color-text: #4B5563;
+  --color-button-bg: #10B981;
+  --color-button-hover: #059669;
+  --color-footer-bg: #F3F4F6;
+  
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'Lora', serif;
+  --font-size-base: 18px;
+  --font-size-h1: 3.25rem;
+  --font-size-h2: 2.5rem;
+  --font-size-h3: 1.75rem;
+  
+  --border-radius: 0.25rem;
+  --box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --spacing-section: 6rem;
+  --spacing-element: 1.75rem;
+}
+
+.theme-dark-mode {
+  --color-primary: #3B82F6;
+  --color-secondary: #60A5FA;
+  --color-accent: #F59E0B;
+  --color-background: #111827;
+  --color-text: #F9FAFB;
+  --color-heading: #F3F4F6;
+  --color-button-bg: #3B82F6;
+  --color-button-text: #FFFFFF;
+  --color-button-hover: #2563EB;
+  --color-card-bg: #1F2937;
+  --color-card-border: #374151;
+  --color-footer-bg: #0F172A;
+  --color-footer-text: #9CA3AF;
+  
+  --font-heading: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-size-base: 16px;
+  --font-size-h1: 3rem;
+  --font-size-h2: 2.25rem;
+  --font-size-h3: 1.5rem;
+  
+  --border-radius: 0.5rem;
+  --box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+  --spacing-section: 5rem;
+  --spacing-element: 1.5rem;
+}
+
+.theme-creative-playful {
+  --color-primary: #EC4899;
+  --color-secondary: #DB2777;
+  --color-accent: #8B5CF6;
+  --color-background: #FFFFFF;
+  --color-text: #4B5563;
+  --color-heading: #111827;
+  --color-button-bg: #EC4899;
+  --color-button-text: #FFFFFF;
+  --color-button-hover: #DB2777;
+  --color-card-bg: #FFFFFF;
+  --color-card-border: #FECDD3;
+  --color-footer-bg: #FECDD3;
+  --color-footer-text: #9D174D;
+  
+  --font-heading: 'Quicksand', sans-serif;
+  --font-body: 'Nunito', sans-serif;
+  --font-size-base: 16px;
+  --font-size-h1: 3.25rem;
+  --font-size-h2: 2.5rem;
+  --font-size-h3: 1.75rem;
+  
+  --border-radius: 1.5rem;
+  --box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --spacing-section: 5rem;
+  --spacing-element: 2rem;
+}
+
+/* Button styles */
+.button-rounded button[data-editable="true"],
+.button-rounded .button {
+  border-radius: 0.5rem;
+}
+
+.button-pill button[data-editable="true"],
+.button-pill .button {
+  border-radius: 9999px;
+}
+
+.button-square button[data-editable="true"],
+.button-square .button {
+  border-radius: 0;
+}
+
+.button-minimal button[data-editable="true"],
+.button-minimal .button {
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+}
+
+.button-gradient button[data-editable="true"],
+.button-gradient .button {
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  color: var(--color-button-text);
+}
+
+/* Card styles */
+.card-flat .card {
+  box-shadow: none;
+}
+
+.card-raised .card {
+  box-shadow: var(--box-shadow);
+}
+
+.card-bordered .card {
+  border: 2px solid var(--color-card-border);
+}
+
+.card-floating .card {
+  box-shadow: var(--box-shadow);
+  transform: translateY(0);
+  transition: transform 0.3s ease;
+}
+
+.card-floating .card:hover {
+  transform: translateY(-5px);
+}
+
+/* Apply theme styles to editable elements */
+[data-editable="true"] {
+  font-family: var(--font-body);
+  color: var(--color-text);
+}
+
+[data-editable="true"][data-type="heading"] {
+  font-family: var(--font-heading);
+  color: var(--color-heading);
+}
+
+[data-editable="true"][data-type="button"] {
+  background-color: var(--color-button-bg);
+  color: var(--color-button-text);
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+}
+
+[data-editable="true"][data-type="button"]:hover {
+  background-color: var(--color-button-hover);
+}
+
+/* Template sections */
+.template-section {
+  padding: var(--spacing-section) 0;
+}
+
+.template-element {
+  margin-bottom: var(--spacing-element);
+}
+
+/* Footer styling */
+footer[data-editable="true"] {
+  background-color: var(--color-footer-bg);
+  color: var(--color-footer-text);
+}
+
+/* Card styling */
+.template-card {
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+}

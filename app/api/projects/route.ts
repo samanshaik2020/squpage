@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, type = 'Elementor', elements = [], settings = {}, templateId } = body
+    const { name, type = 'Elementor', elements = [], settings = {}, templateId, themeId = 'modern-minimal' } = body
     
     if (!name) {
       return NextResponse.json({ error: 'Project name is required' }, { status: 400 })
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
       thumbnail: '/placeholder.svg?height=120&width=200&text=' + encodeURIComponent(name),
       elements: [],
       templateId, // Add templateId to the project data
+      themeId, // Add themeId to the project data
       settings: {
         title: name,
         description: '',
@@ -53,7 +54,8 @@ export async function POST(request: NextRequest) {
       id: newProject.id,
       name: newProject.name,
       type: newProject.type,
-      templateId: newProject.templateId
+      templateId: newProject.templateId,
+      themeId: newProject.themeId
     })
     
     const createdProject = await projectsStore.create(newProject)

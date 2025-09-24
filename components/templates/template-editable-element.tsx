@@ -85,10 +85,28 @@ export function TemplateEditableElement({
 
   switch (type) {
     case "text":
+      // Get animation and transition styles for text
+      const textElement = editorContext?.elements.find((el) => el.id === id);
+      
+      // Try to get animation from styles first, then fall back to root level (deprecated)
+      const textAnimation = textElement?.styles?.animation || textElement?.animation;
+      const textTransition = textElement?.styles?.transition || textElement?.transition;
+      
+      const textAnimationClass = getAnimationClass(textAnimation);
+      const textTransitionStyles = getTransitionStyles(textTransition);
+      const textAnimationStyles = getAnimationStyles(textAnimation);
+      
+      const textClassName = `${combinedClassName} ${textAnimationClass}`.trim();
+      const textStyles = {
+        ...combinedStyles,
+        ...textTransitionStyles,
+        ...textAnimationStyles
+      };
+      
       return (
         <p
-          className={combinedClassName}
-          style={combinedStyles}
+          className={textClassName}
+          style={textStyles}
           onClick={handleClick}
           data-editable={isEditable}
         >
@@ -97,10 +115,28 @@ export function TemplateEditableElement({
       )
 
     case "heading":
+      // Get animation and transition styles for headings
+      const headingElement = editorContext?.elements.find((el) => el.id === id);
+      
+      // Try to get animation from styles first, then fall back to root level (deprecated)
+      const headingAnimation = headingElement?.styles?.animation || headingElement?.animation;
+      const headingTransition = headingElement?.styles?.transition || headingElement?.transition;
+      
+      const headingAnimationClass = getAnimationClass(headingAnimation);
+      const headingTransitionStyles = getTransitionStyles(headingTransition);
+      const headingAnimationStyles = getAnimationStyles(headingAnimation);
+      
+      const headingClassName = `${combinedClassName} ${headingAnimationClass}`.trim();
+      const headingStyles = {
+        ...combinedStyles,
+        ...headingTransitionStyles,
+        ...headingAnimationStyles
+      };
+      
       return (
         <h1
-          className={combinedClassName}
-          style={combinedStyles}
+          className={headingClassName}
+          style={headingStyles}
           onClick={handleClick}
           data-editable={isEditable}
         >
@@ -110,10 +146,15 @@ export function TemplateEditableElement({
 
     case "button":
       // Get animation and transition styles for buttons
-      const element = editorContext?.elements.find((el) => el.id === id)
-      const animationClass = getAnimationClass(element?.animation)
-      const transitionStyles = getTransitionStyles(element?.transition)
-      const animationStyles = getAnimationStyles(element?.animation)
+      const buttonElement = editorContext?.elements.find((el) => el.id === id)
+      
+      // Try to get animation from styles first, then fall back to root level (deprecated)
+      const buttonAnimation = buttonElement?.styles?.animation || buttonElement?.animation;
+      const buttonTransition = buttonElement?.styles?.transition || buttonElement?.transition;
+      
+      const animationClass = getAnimationClass(buttonAnimation)
+      const transitionStyles = getTransitionStyles(buttonTransition)
+      const animationStyles = getAnimationStyles(buttonAnimation)
       
       const buttonClassName = `${combinedClassName} ${animationClass}`.trim()
       const buttonStyles = {
@@ -122,18 +163,43 @@ export function TemplateEditableElement({
         ...animationStyles
       }
       
-      return (
-        <Button
-          variant={variant}
-          size={size}
-          className={buttonClassName}
-          style={buttonStyles}
-          onClick={handleClick}
-          data-editable={isEditable}
-        >
-          {content}
-        </Button>
-      )
+      // If we're in edit mode, make the button clickable for editing
+      // If not in edit mode and we have a URL, make it a link
+      if (isEditable) {
+        return (
+          <Button
+            variant={variant}
+            size={size}
+            className={buttonClassName}
+            style={buttonStyles}
+            onClick={handleClick}
+            data-editable={isEditable}
+          >
+            {content}
+          </Button>
+        )
+      } else {
+        // When not in edit mode, make the button a link if URL is provided
+        return (
+          <Button
+            variant={variant}
+            size={size}
+            className={buttonClassName}
+            style={buttonStyles}
+            onClick={elementUrl ? undefined : handleClick}
+            data-editable={isEditable}
+            asChild={!!elementUrl}
+          >
+            {elementUrl ? (
+              <a href={elementUrl} target="_blank" rel="noopener noreferrer">
+                {content}
+              </a>
+            ) : (
+              content
+            )}
+          </Button>
+        )
+      }
 
     case "badge":
       return (
